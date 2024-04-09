@@ -195,9 +195,26 @@ def get_repay_events(contract, from_block, to_block):
 
     return events
 
-def get_events(contract, from_block, to_block):
-    
-    return
+# # gets how many seconds we should wait between contract calls
+def get_wait_time(index):
+    wait_time_list = [0.5]
+
+    wait_time = wait_time_list[index]
+
+    return wait_time
+
+# # returns a list of relevant events
+def get_events(contract, from_block, to_block, wait_time, index):
+
+    event_list = []
+    if index == 0:
+        redemption_events = get_redemption_events(contract, from_block, to_block)
+        time.sleep(wait_time)
+        trove_updated_events = get_trove_updated_events(contract, from_block, to_block)
+        event_list.append(redemption_events)
+        event_list.append(trove_updated_events)
+
+    return event_list
 #makes a dataframe and stores it in a csv file
 def make_user_data_csv(df, index):
     
@@ -216,13 +233,79 @@ def make_user_data_csv(df, index):
 
         combined_df = pd.concat(combined_df_list)
 
-        combined_df = combined_df.drop_duplicates(subset=subset_list[i], keep='last')
+        combined_df = combined_df.drop_duplicates(subset=subset_list, keep='last')
         
         if len(combined_df) >= len(old_df):
             combined_df.to_csv(csv, index=False)
             print('Event CSV Updated')
 
     return
+
+# will tell us whether we need to find new data
+# returns a list of [tx_hash, wallet_address]
+def already_part_of_df(event, csv, contract_type):
+
+    all_exist = False
+    tx_hash = ''
+    wallet_address = ''
+
+    df = pd.read_csv(csv)
+
+    tx_hash = event['transactionHash'].hex()
+
+    new_df = tx_hash_exists(df, tx_hash)
+    wallet_address = handle_weth_gateway(event, contract_type)
+
+    if len(new_df) > 0:
+        new_df = wallet_address_exists(df, wallet_address, contract_type)
+
+        if len(new_df) > 0:
+            all_exist = True
+
+    response_list = [tx_hash, wallet_address, all_exist]
+
+    return response_list
+
+#makes our dataframe
+def get_event_df(events, wait_time, csv, index):
+    
+    df = pd.DataFrame()
+
+    redemption_df_list = []
+
+    # # tracks how many events we've gone through
+    i = 1
+    for event in events:
+        time.sleep(wait_time)
+        
+        print(' Batch of Events Processed: ', i, '/', len(events), ' Events Remaining: ', len(events) - i)
+            
+        exists_list = already_part_of_df(event, contract_type)
+
+        tx_hash = exists_list[0]
+        wallet_address = exists_list[1]
+        exists = exists_list[2]
+
+        if exists == False and len(wallet_address) == 42: 
+            if contract_type == 0:
+                df = make_redemption_event_df(event, tx_hash, wallet_address)
+            if contract_type == 1:
+                df = make_trove_updated_event_df(event, tx_hash, wallet_address)
+            
+            else:
+                pass
+
+        i+=1
+
+    if len(df) < 1:
+        if contract_type == 0:
+            df = make_redemption_event_df(event, tx_hash, '')
+        
+        elif contract_type == 1:
+            df = make_trove_updated_event_df(event, '', '')
+    
+    # print('User Data Event Looping done in: ', time.time() - start_time)
+    return df
 
 # # runs all our looks
 # # updates our csv
@@ -245,6 +328,10 @@ def find_all_transactions(index):
     contract = get_contract(contract_address, abi, web3)
 
     latest_block = get_latest_block(web3)
+
+    wait_time = get_wait_time(index)
+
+    csv = get_csv(index)
     
     # if contract_type == 0:
     #     df = pd.read_csv('aurelius_redemption_events.csv')
@@ -260,19 +347,13 @@ def find_all_transactions(index):
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
-        aurelius_redemption_events = get_redemption_events(aurelius_contract, from_block, to_block)
-        aurelius_trove_updated_events = get_trove_updated_events(aurelius_contract, from_block, to_block)
+        event_list = get_events(contract, from_block, to_block, wait_time, index)
         
-
-        if len(aurelius_redemption_events) > 0:
-            contract_type = 0
-            df = user_data(aurelius_redemption_events, contract_type)
-            make_user_data_csv(df, contract_type)
-        
-        if len(aurelius_trove_updated_events) > 0:
-            contract_type = 1
-            df = user_data(aurelius_trove_updated_events, contract_type)
-            make_user_data_csv(df, contract_type)
+        for events in event_list:
+            if len(events) > 0:
+                print()
+                event_df = get_event_df(events, wait_time, csv, index)
+                make_user_data_csv(event_df, index)
 
         from_block += interval
         to_block += interval
