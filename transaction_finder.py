@@ -4,24 +4,31 @@ import pandas as pd
 import time
 
 def get_rpc_url(index):
-    rpc_list = ['wss://mantle-rpc.publicnode.com']
+    # rpc_list = ['wss://mantle-rpc.publicnode.com']
+    rpc_list = ['https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com']
 
     rpc_url = rpc_list[index]
     
     return rpc_url
 
+# # makes our web3 object and injects it's middleware
 def get_web_3(rpc_url):
-    web3 = Web3(Web3.HTTPProvider(rpc_url))
+
+    if 'wss' in rpc_url:
+        provider = Web3.WebsocketProvider(rpc_url)
+        web3 = Web3(provider)
+    else:
+        web3 = Web3(Web3.HTTPProvider(rpc_url))
     time.sleep(2.5)
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
     time.sleep(2.5)
-
+    
     return web3
 
 # # will get how many block we want to check between
 def get_block_interval(index):
     
-    interval_list = [9555]
+    interval_list = [9555, 9555]
 
     interval = interval_list[index]
 
@@ -31,8 +38,6 @@ def get_block_interval(index):
 def get_latest_block(web3):
 
     latest_block = web3.eth.get_block_number()
-
-    latest_block = int(latest_block['number'])
 
     return latest_block
 
@@ -109,6 +114,7 @@ def get_redemption_events(contract, from_block, to_block):
 # # gets our troveUpdated events
 def get_trove_updated_events(contract, from_block, to_block):
     events = contract.events.TroveUpdated.get_logs(fromBlock=from_block, toBlock=to_block)
+    print(events)
 
     return events
 
@@ -197,7 +203,7 @@ def get_repay_events(contract, from_block, to_block):
 
 # # gets how many seconds we should wait between contract calls
 def get_wait_time(index):
-    wait_time_list = [0.5]
+    wait_time_list = [0.5, 0.5]
 
     wait_time = wait_time_list[index]
 
@@ -206,15 +212,31 @@ def get_wait_time(index):
 # # returns a list of relevant events
 def get_events(contract, from_block, to_block, wait_time, index):
 
-    event_list = []
-    if index == 0:
-        redemption_events = get_redemption_events(contract, from_block, to_block)
-        time.sleep(wait_time)
-        trove_updated_events = get_trove_updated_events(contract, from_block, to_block)
-        event_list.append(redemption_events)
-        event_list.append(trove_updated_events)
+    redemption_index_list = [0]
+    trove_updated_list = [1]
 
-    return event_list
+    events = ''
+
+    if index in redemption_index_list:
+        events = get_redemption_events(contract, from_block, to_block)
+
+    elif index in trove_updated_list:
+        events = get_trove_updated_events(contract, from_block, to_block)
+
+    return events
+
+# # returns a list of redemption_indexes for our script
+def get_redemption_index_list():
+    redemption_index_list = [0]
+    
+    return redemption_index_list
+
+# # returns a list of trove_updated_indexes for our script
+def get_trove_updated_index_list():
+    trove_updated_index_list = [1]
+    
+    return trove_updated_index_list
+
 #makes a dataframe and stores it in a csv file
 def make_user_data_csv(df, index):
     
@@ -241,33 +263,225 @@ def make_user_data_csv(df, index):
 
     return
 
+#returns a df if a tx_hash exists
+def tx_hash_exists(df, tx_hash):
+
+    new_df = pd.DataFrame()
+
+    if ((df['tx_hash'] == tx_hash)).any():
+        new_df = df.loc[df['tx_hash'] == tx_hash]
+    
+    return new_df
+
+# # sees if a redemption event's collateral_fee already exists
+def collateral_fee_exists(df, collateral_fee):
+    
+    if ((df['collateral_fee'] == collateral_fee)).any():
+        df = df.loc[df['collateral_fee'] == collateral_fee]
+
+    else:
+        df = pd.DataFrame()
+
+    return df
+
+# # sees if a borrower_operation event's number_of_redeemed_tokens already exists
+def number_of_redeemed_tokens_exists(df, number_of_redeemed_tokens):
+    
+    if ((df['number_of_redeemed_tokens'] == number_of_redeemed_tokens)).any():
+        df = df.loc[df['number_of_redeemed_tokens'] == number_of_redeemed_tokens]
+
+    else:
+        df = pd.DataFrame()
+
+    return df
+
+#handles our weth_gateway events and returns the accurate user_address
+def handle_weth_gateway(event, redemption_index_list, trove_updated_index_list, index):
+
+    if index in redemption_index_list:
+        payload_address = event['address']
+    
+    elif index in trove_updated_index_list:
+        # print(event)
+        payload_address = event['args']['_borrower']
+
+    # elif payload_address == '0x9546f673ef71ff666ae66d01fd6e7c6dae5a9995':
+    #     if contract_type == 2:
+    #         user = 'onBehalfOf'
+    #         payload_address = event['args'][user]
+    
+    return payload_address
+
+# # returns a wallet address column
+def get_wallet_address_column(index):
+    wallet_address_column_list = ['liquidator_address', 'trove_owner']
+    wallet_address_column = wallet_address_column_list[index]
+
+    return wallet_address_column
+
+#returns df if wallet_address exists
+def wallet_address_exists(df, wallet_address, index):
+
+    wallet_address_column_name = get_wallet_address_column(index)
+
+    if ((df[wallet_address_column_name] == wallet_address)).any():
+        df = df.loc[df[wallet_address_column_name] == wallet_address]
+
+    else:
+        df = pd.DataFrame()
+
+    return df
+
+# # returns the required dataframe depending on our contract_type and index
+def get_index_df(event, tx_hash, wallet_address, web3, contract_type, index):
+
+    redemption_index_list = get_redemption_index_list()
+    trove_updated_index_list = get_trove_updated_index_list()
+
+    df = pd.DataFrame()
+
+    if index in redemption_index_list:
+        df = get_redemption_event_df(event, tx_hash, wallet_address, web3)
+
+    elif index in trove_updated_index_list:
+        df = get_trove_updated_event_df(event, tx_hash, wallet_address, web3)
+
+    return df
+
+# # turns our redemption event into a dataframe and returns it
+def get_redemption_event_df(event, tx_hash, wallet_address, web3):
+
+    df = pd.DataFrame()
+
+    tx_hash_list = []
+    liquidator_address_list = []
+    collateral_redeemed_list = []
+    number_of_collateral_redeemed_tokens_list = []
+    ern_redeemed_list = []
+    collateral_fee_list = []
+    timestamp_list = []
+    block_list = []
+
+    #adds wallet_address if it doesn't exist
+    if len(wallet_address) == 42:
+
+        block = web3.eth.get_block(event['blockNumber'])
+        block_number = int(block['number'])
+        block_list.append(block_number)
+        time.sleep(0.25)
+
+        liquidator_address_list.append(wallet_address)
+        tx_hash_list.append(tx_hash)
+        timestamp_list.append(block['timestamp'])
+        token_address = event['args']['_collateral']
+        collateral_redeemed_list.append(token_address)
+        time.sleep(0.25)
+        token_amount = event['args']['_collSent']
+        number_of_collateral_redeemed_tokens_list.append(token_amount)
+        ern_redeemed = event['args']['_actualLUSDAmount']
+        ern_redeemed_list.append(ern_redeemed)
+        time.sleep(0.25)
+        collateral_fee = event['args']['_collFee']
+        collateral_fee_list.append(collateral_fee)
+
+    df['tx_hash'] = tx_hash_list
+    df['liquidator_address'] = liquidator_address_list
+    df['collateral_redeemed'] = collateral_redeemed_list
+    df['number_of_collateral_redeemed_tokens'] = number_of_collateral_redeemed_tokens_list
+    df['ern_redeemed'] = ern_redeemed_list
+    df['collateral_fee'] = collateral_fee_list
+    df['timestamp'] = timestamp_list
+    df['block_number'] = block_list
+
+    return df
+
+# # turns our troveUpdated event into a dataframe and returns it
+def get_trove_updated_event_df(event, tx_hash, wallet_address, web3):
+
+    df = pd.DataFrame()
+
+    tx_hash_list = []
+    trove_owner_list = []
+    collateral_redeemed_list = []
+    number_of_collateral_tokens_list = []
+    debt_list = []
+    timestamp_list = []
+    operation_list = []
+    block_list = []
+
+    #adds wallet_address if it doesn't exist
+    if len(wallet_address) == 42:
+
+        block = web3.eth.get_block(event['blockNumber'])
+        block_number = int(block['number'])
+        block_list.append(block_number)
+
+        trove_owner_list.append(wallet_address)
+        tx_hash_list.append(tx_hash)
+        timestamp_list.append(block['timestamp'])
+        token_address = event['args']['_collateral']
+        collateral_redeemed_list.append(token_address)
+        token_amount = event['args']['_coll']
+        number_of_collateral_tokens_list.append(token_amount)
+        debt = event['args']['_debt']
+        debt_list.append(debt)
+        operation = int(event['args']['_operation'])
+        operation_list.append(operation)
+
+    df['tx_hash'] = tx_hash_list
+    df['trove_owner'] = trove_owner_list
+    df['collateral_redeemed'] = collateral_redeemed_list
+    df['number_of_collateral_tokens'] = number_of_collateral_tokens_list
+    df['debt'] = debt_list
+    df['operation'] = operation_list
+    df['timestamp'] = timestamp_list
+    df['block_number'] = block_list
+
+    return df
+
 # will tell us whether we need to find new data
 # returns a list of [tx_hash, wallet_address]
-def already_part_of_df(event, csv, contract_type):
+def already_part_of_df(event, index):
 
     all_exist = False
     tx_hash = ''
     wallet_address = ''
+    contract_type = -1
+
+    csv = get_csv(index)
 
     df = pd.read_csv(csv)
 
     tx_hash = event['transactionHash'].hex()
 
     new_df = tx_hash_exists(df, tx_hash)
-    wallet_address = handle_weth_gateway(event, contract_type)
+    
+    redemption_index_list = get_redemption_index_list()
+    trove_udpated_index_list = get_trove_updated_index_list()
+
+    wallet_address = handle_weth_gateway(event, redemption_index_list, trove_udpated_index_list, index)
 
     if len(new_df) > 0:
-        new_df = wallet_address_exists(df, wallet_address, contract_type)
+        new_df = wallet_address_exists(df, wallet_address, index)
 
         if len(new_df) > 0:
-            all_exist = True
+            if index in redemption_index_list:
+                collateral_fee = event['args']['_collFee']
+                new_df = collateral_fee_exists(df, wallet_address, collateral_fee)
+            
+            elif index in trove_udpated_index_list:
+                number_of_collateral_tokens = event['args']['number_of_collateral_tokens']
+                new_df = number_of_redeemed_tokens_exists(df, number_of_collateral_tokens)
 
-    response_list = [tx_hash, wallet_address, all_exist]
+            if len(new_df) > 0:
+                all_exist = True
+
+    response_list = [tx_hash, wallet_address, contract_type, all_exist]
 
     return response_list
 
 #makes our dataframe
-def get_event_df(events, wait_time, csv, index):
+def get_event_df(events, wait_time, csv, web3, index):
     
     df = pd.DataFrame()
 
@@ -280,29 +494,21 @@ def get_event_df(events, wait_time, csv, index):
         
         print(' Batch of Events Processed: ', i, '/', len(events), ' Events Remaining: ', len(events) - i)
             
-        exists_list = already_part_of_df(event, contract_type)
+        exists_list = already_part_of_df(event, index)
 
         tx_hash = exists_list[0]
         wallet_address = exists_list[1]
-        exists = exists_list[2]
+        contract_type = exists_list[2]
+        exists = exists_list[3]
+
 
         if exists == False and len(wallet_address) == 42: 
-            if contract_type == 0:
-                df = make_redemption_event_df(event, tx_hash, wallet_address)
-            if contract_type == 1:
-                df = make_trove_updated_event_df(event, tx_hash, wallet_address)
-            
-            else:
-                pass
+            df = get_index_df(event, tx_hash, wallet_address, web3, contract_type, index)
 
         i+=1
 
     if len(df) < 1:
-        if contract_type == 0:
-            df = make_redemption_event_df(event, tx_hash, '')
-        
-        elif contract_type == 1:
-            df = make_trove_updated_event_df(event, '', '')
+        df = get_index_df(event, '', '', web3, contract_type, index)
     
     # print('User Data Event Looping done in: ', time.time() - start_time)
     return df
@@ -314,6 +520,8 @@ def find_all_transactions(index):
     interval = get_block_interval(index)
 
     from_block = get_from_block(index)
+
+    from_block = 52100152
 
     to_block = from_block + interval
 
@@ -347,13 +555,11 @@ def find_all_transactions(index):
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
-        event_list = get_events(contract, from_block, to_block, wait_time, index)
+        events = get_events(contract, from_block, to_block, wait_time, index)
         
-        for events in event_list:
-            if len(events) > 0:
-                print()
-                event_df = get_event_df(events, wait_time, csv, index)
-                make_user_data_csv(event_df, index)
+        if len(events) > 0:
+            event_df = get_event_df(events, wait_time, csv, web3, index)
+            make_user_data_csv(event_df, index)
 
         from_block += interval
         to_block += interval
@@ -369,3 +575,7 @@ def find_all_transactions(index):
             to_block = latest_block
     
     return
+
+index = 1
+
+find_all_transactions(index)
