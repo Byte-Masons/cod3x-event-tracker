@@ -41,11 +41,28 @@ def get_latest_block(web3):
 
     return latest_block
 
+# # gets the column name of our block column
+def get_block_column_name(index):
+
+    block_column_name_list = ['block_number', 'block_number']
+
+    block_column_name = block_column_name_list[index]
+
+    return block_column_name
+
 # # finds our contract launch_block
 def get_from_block(index):
     from_block_list = [51922528, 51922639]
 
     from_block = from_block_list[index]
+
+    csv = get_csv(index)
+    block_column_name = get_block_column_name(index)
+
+    last_block_checked = get_last_block_tracked(csv, block_column_name)
+
+    if last_block_checked > from_block:
+        from_block = last_block_checked
 
     return from_block
 
@@ -113,8 +130,8 @@ def get_redemption_events(contract, from_block, to_block):
 
 # # gets our troveUpdated events
 def get_trove_updated_events(contract, from_block, to_block):
+    
     events = contract.events.TroveUpdated.get_logs(fromBlock=from_block, toBlock=to_block)
-    print(events)
 
     return events
 
@@ -284,11 +301,11 @@ def collateral_fee_exists(df, collateral_fee):
 
     return df
 
-# # sees if a borrower_operation event's number_of_redeemed_tokens already exists
-def number_of_redeemed_tokens_exists(df, number_of_redeemed_tokens):
+# # sees if a borrower_operation event's number_of_collateral_tokens already exists
+def number_of_collateral_tokens_exists(df, number_of_collateral_tokens):
     
-    if ((df['number_of_redeemed_tokens'] == number_of_redeemed_tokens)).any():
-        df = df.loc[df['number_of_redeemed_tokens'] == number_of_redeemed_tokens]
+    if ((df['number_of_collateral_tokens'] == number_of_collateral_tokens)).any():
+        df = df.loc[df['number_of_collateral_tokens'] == number_of_collateral_tokens]
 
     else:
         df = pd.DataFrame()
@@ -425,7 +442,7 @@ def get_trove_updated_event_df(event, tx_hash, wallet_address, web3):
         number_of_collateral_tokens_list.append(token_amount)
         debt = event['args']['_debt']
         debt_list.append(debt)
-        operation = int(event['args']['_operation'])
+        operation = int(event['args']['operation'])
         operation_list.append(operation)
 
     df['tx_hash'] = tx_hash_list
@@ -467,11 +484,11 @@ def already_part_of_df(event, index):
         if len(new_df) > 0:
             if index in redemption_index_list:
                 collateral_fee = event['args']['_collFee']
-                new_df = collateral_fee_exists(df, wallet_address, collateral_fee)
+                new_df = collateral_fee_exists(df, collateral_fee)
             
             elif index in trove_udpated_index_list:
-                number_of_collateral_tokens = event['args']['number_of_collateral_tokens']
-                new_df = number_of_redeemed_tokens_exists(df, number_of_collateral_tokens)
+                number_of_collateral_tokens = event['args']['_coll']
+                new_df = number_of_collateral_tokens_exists(df, number_of_collateral_tokens)
 
             if len(new_df) > 0:
                 all_exist = True
@@ -519,9 +536,11 @@ def find_all_transactions(index):
 
     interval = get_block_interval(index)
 
+    csv = get_csv(index)
+
     from_block = get_from_block(index)
 
-    from_block = 52100152
+    # from_block = 52100152
 
     to_block = from_block + interval
 
@@ -538,8 +557,6 @@ def find_all_transactions(index):
     latest_block = get_latest_block(web3)
 
     wait_time = get_wait_time(index)
-
-    csv = get_csv(index)
     
     # if contract_type == 0:
     #     df = pd.read_csv('aurelius_redemption_events.csv')
@@ -576,6 +593,8 @@ def find_all_transactions(index):
     
     return
 
-index = 1
 
-find_all_transactions(index)
+index_list = [0, 1]
+
+for index in index_list:
+    find_all_transactions(index)
