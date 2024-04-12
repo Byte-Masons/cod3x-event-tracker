@@ -5,7 +5,7 @@ import time
 
 def get_rpc_url(index):
     # rpc_list = ['wss://mantle-rpc.publicnode.com']
-    rpc_list = ['https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com']
+    rpc_list = ['https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com']
 
     rpc_url = rpc_list[index]
     
@@ -28,7 +28,7 @@ def get_web_3(rpc_url):
 # # will get how many block we want to check between
 def get_block_interval(index):
     
-    interval_list = [9555, 9555]
+    interval_list = [20000, 20000, 20000]
 
     interval = interval_list[index]
 
@@ -44,7 +44,7 @@ def get_latest_block(web3):
 # # gets the column name of our block column
 def get_block_column_name(index):
 
-    block_column_name_list = ['block_number', 'block_number']
+    block_column_name_list = ['block_number', 'block_number', 'block_number']
 
     block_column_name = block_column_name_list[index]
 
@@ -52,14 +52,14 @@ def get_block_column_name(index):
 
 # # finds our contract launch_block
 def get_from_block(index):
-    from_block_list = [51922528, 51922639]
+    from_block_list = [51922528, 51922528, 51922639]
 
     from_block = from_block_list[index]
 
     csv = get_csv(index)
     block_column_name = get_block_column_name(index)
 
-    last_block_checked = get_last_block_tracked(csv, block_column_name)
+    last_block_checked = get_last_block_tracked(csv, block_column_name, index)
 
     if last_block_checked > from_block:
         from_block = last_block_checked
@@ -68,7 +68,7 @@ def get_from_block(index):
 
 # # gets our trove_manager address
 def get_trove_manager_address(index):
-    trove_manager_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A']
+    trove_manager_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x295c6074F090f85819cbC911266522e43A8e0f4A']
 
     trove_manager_address = trove_manager_list[index]
 
@@ -82,11 +82,17 @@ def get_borrower_operations_address(index):
 
     return borrower_operations_address
 
+# # will tell whether the contract is a trove_manager or borrower_operations contract
+def get_trove_updated_type_list(index):
+
+    trove_updated_list = get_
+    
+    return
 # # simplified way of getting our needed contract_address
 def get_contract_address(index):
 
     
-    contract_address_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1']
+    contract_address_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1', '0x295c6074F090f85819cbC911266522e43A8e0f4A']
 
     contract_address = contract_address_list[index]
 
@@ -108,7 +114,7 @@ def get_abi(index):
     trove_manager_abi = get_trove_manager_abi()
     borrower_operations_abi = get_borrower_operations_abi()
 
-    abi_list = [trove_manager_abi, borrower_operations_abi]
+    abi_list = [trove_manager_abi, borrower_operations_abi, trove_manager_abi]
 
     abi = abi_list[index]
 
@@ -136,12 +142,28 @@ def get_trove_updated_events(contract, from_block, to_block):
     return events
 
 # # gets the last block number we have gotten data from and returns this block number
-def get_last_block_tracked(csv_name, last_block_column_name):
+def get_last_block_tracked(csv_name, last_block_column_name, index):
+
+    redemption_index_list = get_redemption_index_list()
+    trove_manager_list = get_trove_updated_index_list()
+    borrower_operation_list = get_borrower_operations_index_list
+
     df = pd.read_csv(csv_name)
     
-    last_block_monitored = df[last_block_column_name].max()
+    last_block_monitored = 0
 
-    last_block_monitored = int(last_block_monitored)
+    if len(df) > 1:
+        if index not in redemption_index_list:
+            trove_updated_contract_type = get_trove_type_value(index)
+            
+            df = df.loc[df['contract_type'] == trove_updated_contract_type]
+
+        last_block_monitored = df[last_block_column_name].max()
+
+        try:
+            last_block_monitored = int(last_block_monitored)
+        except:
+            pass
 
     return last_block_monitored
 
@@ -158,7 +180,7 @@ def get_checksum_values(df, column_name):
 
 def get_csv(index):
 
-    csv_list = ['aurelius_redemption_events.csv', 'aurelius_trove_updated_events.csv']
+    csv_list = ['aurelius_redemption_events.csv', 'aurelius_trove_updated_events.csv', 'aurelius_trove_updated_events.csv']
 
     csv = csv_list[index]
 
@@ -220,17 +242,17 @@ def get_repay_events(contract, from_block, to_block):
 
 # # gets how many seconds we should wait between contract calls
 def get_wait_time(index):
-    wait_time_list = [0.5, 0.5]
+    wait_time_list = [0.5, 0.5, 0.5]
 
     wait_time = wait_time_list[index]
 
     return wait_time
 
 # # returns a list of relevant events
-def get_events(contract, from_block, to_block, wait_time, index):
+def get_events(contract, from_block, to_block, index):
 
-    redemption_index_list = [0]
-    trove_updated_list = [1]
+    redemption_index_list = get_redemption_index_list()
+    trove_updated_list = get_trove_updated_index_list()
 
     events = ''
 
@@ -250,9 +272,28 @@ def get_redemption_index_list():
 
 # # returns a list of trove_updated_indexes for our script
 def get_trove_updated_index_list():
-    trove_updated_index_list = [1]
+    trove_updated_index_list = [1,2]
     
     return trove_updated_index_list
+
+# # returns the index of of our borrower_operations
+def get_borrower_operations_index_list():
+
+    borrower_operations_index_list = [2]
+
+    return borrower_operations_index_list
+
+# # gets the the contract type we got our trove_update from
+def get_trove_type_value(index):
+    borrower_operations_index_list = get_borrower_operations_index_list()
+
+    if index in borrower_operations_index_list:
+        type_value = 'borrower_operations'
+    
+    else:
+        type_value = 'trove_manager'
+
+    return type_value
 
 #makes a dataframe and stores it in a csv file
 def make_user_data_csv(df, index):
@@ -349,8 +390,9 @@ def wallet_address_exists(df, wallet_address, index):
 
     return df
 
+
 # # returns the required dataframe depending on our contract_type and index
-def get_index_df(event, tx_hash, wallet_address, web3, contract_type, index):
+def get_index_df(event, tx_hash, wallet_address, web3, index):
 
     redemption_index_list = get_redemption_index_list()
     trove_updated_index_list = get_trove_updated_index_list()
@@ -361,7 +403,7 @@ def get_index_df(event, tx_hash, wallet_address, web3, contract_type, index):
         df = get_redemption_event_df(event, tx_hash, wallet_address, web3)
 
     elif index in trove_updated_index_list:
-        df = get_trove_updated_event_df(event, tx_hash, wallet_address, web3)
+        df = get_trove_updated_event_df(event, tx_hash, wallet_address, web3, index)
 
     return df
 
@@ -413,7 +455,9 @@ def get_redemption_event_df(event, tx_hash, wallet_address, web3):
     return df
 
 # # turns our troveUpdated event into a dataframe and returns it
-def get_trove_updated_event_df(event, tx_hash, wallet_address, web3):
+def get_trove_updated_event_df(event, tx_hash, wallet_address, web3, index):
+
+    trove_updated_contract_type = get_trove_type_value(index)
 
     df = pd.DataFrame()
 
@@ -452,6 +496,7 @@ def get_trove_updated_event_df(event, tx_hash, wallet_address, web3):
     df['debt'] = debt_list
     df['operation'] = operation_list
     df['timestamp'] = timestamp_list
+    df['contract_type'] = trove_updated_contract_type
     df['block_number'] = block_list
 
     return df
@@ -498,11 +543,9 @@ def already_part_of_df(event, index):
     return response_list
 
 #makes our dataframe
-def get_event_df(events, wait_time, csv, web3, index):
+def get_event_df(events, wait_time, web3, index):
     
     df = pd.DataFrame()
-
-    redemption_df_list = []
 
     # # tracks how many events we've gone through
     i = 1
@@ -515,17 +558,16 @@ def get_event_df(events, wait_time, csv, web3, index):
 
         tx_hash = exists_list[0]
         wallet_address = exists_list[1]
-        contract_type = exists_list[2]
         exists = exists_list[3]
 
 
         if exists == False and len(wallet_address) == 42: 
-            df = get_index_df(event, tx_hash, wallet_address, web3, contract_type, index)
+            df = get_index_df(event, tx_hash, wallet_address, web3, index)
 
         i+=1
 
     if len(df) < 1:
-        df = get_index_df(event, '', '', web3, contract_type, index)
+        df = get_index_df(event, '', '', web3, index)
     
     # print('User Data Event Looping done in: ', time.time() - start_time)
     return df
@@ -538,9 +580,9 @@ def find_all_transactions(index):
 
     csv = get_csv(index)
 
-    from_block = get_from_block(index)
+    # from_block = get_from_block(index)
 
-    # from_block = 52100152
+    from_block = 60100152
 
     to_block = from_block + interval
 
@@ -558,24 +600,16 @@ def find_all_transactions(index):
 
     wait_time = get_wait_time(index)
     
-    # if contract_type == 0:
-    #     df = pd.read_csv('aurelius_redemption_events.csv')
-    # # handles empty csv files
-    # try:
-    #     from_block = int(max(df['block_number']))
-    # except:
-    #     from_block = FROM_BLOCK
-    
     to_block = from_block + interval
 
     while to_block < latest_block:
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
-        events = get_events(contract, from_block, to_block, wait_time, index)
+        events = get_events(contract, from_block, to_block, index)
         
         if len(events) > 0:
-            event_df = get_event_df(events, wait_time, csv, web3, index)
+            event_df = get_event_df(events, wait_time, web3, index)
             make_user_data_csv(event_df, index)
 
         from_block += interval
@@ -593,8 +627,35 @@ def find_all_transactions(index):
     
     return
 
+# returns a list of borrowers who have been redeemed
+def get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df):
 
-index_list = [0, 1]
+    unique_redemption_user_df = redemption_df.drop_duplicates(subset=['tx_hash'])
 
-for index in index_list:
-    find_all_transactions(index)
+    redemption_tx_hash_list = unique_redemption_user_df['tx_hash'].tolist()
+
+    trove_updated_redemption_tx_list = [trove_updated_df.loc[trove_updated_df['tx_hash'] == x] for x in redemption_tx_hash_list]
+
+    trove_updated_redemption_df = pd.concat(trove_updated_redemption_tx_list)
+
+    print(trove_updated_redemption_tx_list)
+    print(redemption_tx_hash_list)
+
+    trove_updated_redemption_df = trove_updated_redemption_df.drop_duplicates(subset=['tx_hash'])
+
+    unique_redeemed_trove_owner_address_list = trove_updated_redemption_df['trove_owner'].tolist()
+
+    return unique_redeemed_trove_owner_address_list
+
+# index_list = [0, 1]
+
+# for index in index_list:
+#     find_all_transactions(index)
+
+find_all_transactions(2)
+
+# redemption_df = pd.read_csv('aurelius_redemption_events.csv')
+# trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
+
+# unique_user_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
+# print(unique_user_list)
