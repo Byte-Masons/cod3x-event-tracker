@@ -188,7 +188,7 @@ def get_csv(index):
 
 def get_csv_subset_list(index):
 
-    subset_list_list = [['liquidator_address', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed']]
+    subset_list_list = [['liquidator_address', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed']]
 
     subset_list = subset_list_list[index]
 
@@ -372,7 +372,7 @@ def handle_weth_gateway(event, redemption_index_list, trove_updated_index_list, 
 
 # # returns a wallet address column
 def get_wallet_address_column(index):
-    wallet_address_column_list = ['liquidator_address', 'trove_owner']
+    wallet_address_column_list = ['liquidator_address', 'trove_owner', 'trove_owner']
     wallet_address_column = wallet_address_column_list[index]
 
     return wallet_address_column
@@ -486,7 +486,11 @@ def get_trove_updated_event_df(event, tx_hash, wallet_address, web3, index):
         number_of_collateral_tokens_list.append(token_amount)
         debt = event['args']['_debt']
         debt_list.append(debt)
-        operation = int(event['args']['operation'])
+        try:
+            operation = int(event['args']['operation'])
+        except:
+            operation = int(event['args']['_operation'])
+
         operation_list.append(operation)
 
     df['tx_hash'] = tx_hash_list
@@ -582,7 +586,7 @@ def find_all_transactions(index):
 
     # from_block = get_from_block(index)
 
-    from_block = 60100152
+    from_block = 51922528
 
     to_block = from_block + interval
 
@@ -652,7 +656,7 @@ def get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df):
 # for index in index_list:
 #     find_all_transactions(index)
 
-find_all_transactions(2)
+find_all_transactions(0)
 
 # redemption_df = pd.read_csv('aurelius_redemption_events.csv')
 # trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
