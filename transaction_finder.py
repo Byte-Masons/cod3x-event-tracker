@@ -25,6 +25,15 @@ def get_web_3(rpc_url):
     
     return web3
 
+def get_config_df():
+    config_df = pd.DataFrame()
+
+    interval_list = [20000, 20000, 20000]
+    block_column_name_list = ['block_number', 'block_number', 'block_number']
+    from_block_list = [51922528, 51922528, 51922639]
+    contract_address_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1', '0x295c6074F090f85819cbC911266522e43A8e0f4A']
+
+    return
 # # will get how many block we want to check between
 def get_block_interval(index):
     
@@ -82,12 +91,6 @@ def get_borrower_operations_address(index):
 
     return borrower_operations_address
 
-# # will tell whether the contract is a trove_manager or borrower_operations contract
-def get_trove_updated_type_list(index):
-
-    trove_updated_list = get_
-    
-    return
 # # simplified way of getting our needed contract_address
 def get_contract_address(index):
 
@@ -146,7 +149,7 @@ def get_last_block_tracked(csv_name, last_block_column_name, index):
 
     redemption_index_list = get_redemption_index_list()
     trove_manager_list = get_trove_updated_index_list()
-    borrower_operation_list = get_borrower_operations_index_list
+    borrower_operation_list = get_borrower_operations_index_list()
 
     df = pd.read_csv(csv_name)
     
@@ -279,7 +282,7 @@ def get_trove_updated_index_list():
 # # returns the index of of our borrower_operations
 def get_borrower_operations_index_list():
 
-    borrower_operations_index_list = [2]
+    borrower_operations_index_list = [1]
 
     return borrower_operations_index_list
 
@@ -551,6 +554,8 @@ def get_event_df(events, wait_time, web3, index):
     
     df = pd.DataFrame()
 
+    df_list = []
+
     # # tracks how many events we've gone through
     i = 1
     for event in events:
@@ -567,12 +572,18 @@ def get_event_df(events, wait_time, web3, index):
 
         if exists == False and len(wallet_address) == 42: 
             df = get_index_df(event, tx_hash, wallet_address, web3, index)
+            if len(df) > 0:
+                df_list.append(df)
 
         i+=1
 
     if len(df) < 1:
         df = get_index_df(event, '', '', web3, index)
+        df_list.append(df)
     
+    df = pd.concat(df_list)
+
+    print(df)
     # print('User Data Event Looping done in: ', time.time() - start_time)
     return df
 
@@ -584,9 +595,9 @@ def find_all_transactions(index):
 
     csv = get_csv(index)
 
-    # from_block = get_from_block(index)
+    from_block = get_from_block(index)
 
-    from_block = 51922528
+    # from_block = 57966560
 
     to_block = from_block + interval
 
@@ -613,6 +624,7 @@ def find_all_transactions(index):
         events = get_events(contract, from_block, to_block, index)
         
         if len(events) > 0:
+            # print(events)
             event_df = get_event_df(events, wait_time, web3, index)
             make_user_data_csv(event_df, index)
 
@@ -642,8 +654,8 @@ def get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df):
 
     trove_updated_redemption_df = pd.concat(trove_updated_redemption_tx_list)
 
-    print(trove_updated_redemption_tx_list)
-    print(redemption_tx_hash_list)
+    # print(trove_updated_redemption_tx_list)
+    # print(redemption_tx_hash_list)
 
     trove_updated_redemption_df = trove_updated_redemption_df.drop_duplicates(subset=['tx_hash'])
 
@@ -651,15 +663,54 @@ def get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df):
 
     return unique_redeemed_trove_owner_address_list
 
-# index_list = [0, 1]
+# # calculates a users rolling trove balance
+def calculate_user_balance_history(trove_owner_df):
 
-# for index in index_list:
-#     find_all_transactions(index)
+    trove_owner_df = trove_owner_df.sort_values(by=['block_number'], ascending=False)
+    trove_owner_df = trove_owner_df.reset_index(drop=True)
 
-find_all_transactions(0)
+    trove_owner_df['number_of_collateral_tokens'] = trove_owner_df['number_of_collateral_tokens'].astype(float)
+    trove_owner_df['debt'] = trove_owner_df['debt'].astype(float)
+    # print(trove_owner_df.dtypes)
+    
+    trove_owner_df['collateral_change'] = trove_owner_df['number_of_collateral_tokens'].diff()
+    trove_owner_df['debt_change'] = trove_owner_df['debt'].diff()
+    # print(trove_owner_df)
+
+    return trove_owner_df
+
+# # finds our rolling balance for each redeemed trove_owner
+def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
+
+    unique_redeemed_trove_owner_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
+    
+    for trove_owner in unique_redeemed_trove_owner_list:
+        trove_owner_df = trove_updated_df.loc[trove_updated_df['trove_owner'] == trove_owner]
+        unique_collateral_list = trove_owner_df.collateral_redeemed.unique()
+        
+
+        for collateral in unique_collateral_list:
+            user_collateral_df = trove_owner_df.loc[trove_owner_df['collateral_redeemed'] == collateral]
+            print(user_collateral_df)
+            user_collateral_df = calculate_user_balance_history(user_collateral_df)
+            print(user_collateral_df)
+
+    return
+
+index_list = [0, 1, 2]
+
+for index in index_list:
+    find_all_transactions(index)
+
+# find_all_transactions(1)
 
 # redemption_df = pd.read_csv('aurelius_redemption_events.csv')
 # trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 
 # unique_user_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
 # print(unique_user_list)
+
+# trove_owner_df = calculate_user_balance_history(trove_updated_df)
+# print(trove_owner_df)
+
+# get_redeemed_user_trove_history(redemption_df, trove_updated_df)
