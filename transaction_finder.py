@@ -3,14 +3,6 @@ from web3.middleware import geth_poa_middleware
 import pandas as pd
 import time
 
-def get_rpc_url(index):
-    # rpc_list = ['wss://mantle-rpc.publicnode.com']
-    rpc_list = ['https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com']
-
-    rpc_url = rpc_list[index]
-    
-    return rpc_url
-
 # # makes our web3 object and injects it's middleware
 def get_web_3(rpc_url):
 
@@ -29,19 +21,35 @@ def get_config_df():
     config_df = pd.DataFrame()
 
     interval_list = [20000, 20000, 20000]
+    csv_list = csv_list = ['aurelius_redemption_events.csv', 'aurelius_trove_updated_events.csv', 'aurelius_trove_updated_events.csv']
+    subset_list_list = [['liquidator_address', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed']]
     block_column_name_list = ['block_number', 'block_number', 'block_number']
     from_block_list = [51922528, 51922528, 51922639]
     contract_address_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1', '0x295c6074F090f85819cbC911266522e43A8e0f4A']
+    wait_time_list = [0.5, 0.5, 0.5]
+    rpc_url_list = ['https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com']
 
-    return
-# # will get how many block we want to check between
-def get_block_interval(index):
+    config_df['interval'] = interval_list
+    config_df['csv'] = csv_list
+    config_df['rpc_url'] = rpc_url_list
+    config_df['csv_subset'] = subset_list_list
+    config_df['block_column_name'] = block_column_name_list
+    config_df['from_block'] = from_block_list
+    config_df['contract_address'] = contract_address_list
+    config_df['wait_time'] = wait_time_list
+
+    return config_df
+
+# # will return data from our config_df depending on the column name and index
+def get_config_df_value(column_name, index):
     
-    interval_list = [20000, 20000, 20000]
+    df = get_config_df()
 
-    interval = interval_list[index]
+    config_list = df[column_name].tolist()
 
-    return interval
+    config_value = config_list[index]
+
+    return config_value
 
 # # finds the latest block on a given blockchain
 def get_latest_block(web3):
@@ -50,23 +58,14 @@ def get_latest_block(web3):
 
     return latest_block
 
-# # gets the column name of our block column
-def get_block_column_name(index):
-
-    block_column_name_list = ['block_number', 'block_number', 'block_number']
-
-    block_column_name = block_column_name_list[index]
-
-    return block_column_name
-
 # # finds our contract launch_block
 def get_from_block(index):
     from_block_list = [51922528, 51922528, 51922639]
 
     from_block = from_block_list[index]
 
-    csv = get_csv(index)
-    block_column_name = get_block_column_name(index)
+    csv = get_config_df_value('csv', index)
+    block_column_name = get_config_df_value('block_column_name', index)
 
     last_block_checked = get_last_block_tracked(csv, block_column_name, index)
 
@@ -90,16 +89,6 @@ def get_borrower_operations_address(index):
     borrower_operations_address = borrower_operations_list[index]
 
     return borrower_operations_address
-
-# # simplified way of getting our needed contract_address
-def get_contract_address(index):
-
-    
-    contract_address_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1', '0x295c6074F090f85819cbC911266522e43A8e0f4A']
-
-    contract_address = contract_address_list[index]
-
-    return contract_address
 
 # # gets the ABI for our redemption contract
 def get_trove_manager_abi():
@@ -148,8 +137,6 @@ def get_trove_updated_events(contract, from_block, to_block):
 def get_last_block_tracked(csv_name, last_block_column_name, index):
 
     redemption_index_list = get_redemption_index_list()
-    trove_manager_list = get_trove_updated_index_list()
-    borrower_operation_list = get_borrower_operations_index_list()
 
     df = pd.read_csv(csv_name)
     
@@ -180,22 +167,6 @@ def get_checksum_values(df, column_name):
     df[column_name] = checksum_address_list
 
     return df
-
-def get_csv(index):
-
-    csv_list = ['aurelius_redemption_events.csv', 'aurelius_trove_updated_events.csv', 'aurelius_trove_updated_events.csv']
-
-    csv = csv_list[index]
-
-    return csv
-
-def get_csv_subset_list(index):
-
-    subset_list_list = [['liquidator_address', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed']]
-
-    subset_list = subset_list_list[index]
-
-    return subset_list
 
 # # takes in an a_token address and returns it's contract object
 def get_a_token_contract(contract_address, web3):
@@ -242,14 +213,6 @@ def get_repay_events(contract, from_block, to_block):
     events = contract.events.Repay.get_logs(fromBlock=from_block, toBlock=to_block)
 
     return events
-
-# # gets how many seconds we should wait between contract calls
-def get_wait_time(index):
-    wait_time_list = [0.5, 0.5, 0.5]
-
-    wait_time = wait_time_list[index]
-
-    return wait_time
 
 # # returns a list of relevant events
 def get_events(contract, from_block, to_block, index):
@@ -303,9 +266,9 @@ def make_user_data_csv(df, index):
     
     combined_df_list = []
 
-    csv = get_csv(index)
+    csv = get_config_df_value('csv', index)
 
-    subset_list = get_csv_subset_list(index)
+    subset_list = get_config_df_value('csv_subset', index)
 
     if len(df) > 0:
         
@@ -517,7 +480,7 @@ def already_part_of_df(event, index):
     wallet_address = ''
     contract_type = -1
 
-    csv = get_csv(index)
+    csv = get_config_df_value('csv', index)
 
     df = pd.read_csv(csv)
 
@@ -591,9 +554,9 @@ def get_event_df(events, wait_time, web3, index):
 # # updates our csv
 def find_all_transactions(index):
 
-    interval = get_block_interval(index)
+    interval = get_config_df_value('interval', index)
 
-    csv = get_csv(index)
+    csv = get_config_df_value('csv', index)
 
     from_block = get_from_block(index)
 
@@ -603,17 +566,17 @@ def find_all_transactions(index):
 
     abi = get_abi(index)
 
-    rpc_url = get_rpc_url(index)
+    rpc_url = get_config_df_value('rpc_url', index)
 
     web3 = get_web_3(rpc_url)
 
-    contract_address = get_contract_address(index)
+    contract_address = get_config_df_value('contract_address', index)
 
     contract = get_contract(contract_address, abi, web3)
 
     latest_block = get_latest_block(web3)
 
-    wait_time = get_wait_time(index)
+    wait_time = get_config_df_value('wait_time', index)
     
     to_block = from_block + interval
 
@@ -685,6 +648,8 @@ def calculate_user_balance_history(trove_owner_df):
 # # finds our rolling balance for each redeemed trove_owner
 def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
 
+    user_collateral_df_list = []
+
     unique_redeemed_trove_owner_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
     
     for trove_owner in unique_redeemed_trove_owner_list:
@@ -695,21 +660,28 @@ def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
 
         for collateral in unique_collateral_list:
             user_collateral_df = trove_owner_df.loc[trove_owner_df['collateral_redeemed'] == collateral]
-            print(user_collateral_df)
             user_collateral_df = calculate_user_balance_history(user_collateral_df)
-            print(user_collateral_df)
+            if len(user_collateral_df) > 0:
+                user_collateral_df_list.append(user_collateral_df)
+    
+    user_collateral_df = pd.concat(user_collateral_df_list)
+    user_collateral_df = user_collateral_df.reset_index(drop=True)
+
+    return user_collateral_df
+
+def find_redeemed_trove_cr(redeemed_trove_history_df):
 
     return
 
-# index_list = [0, 1, 2]
+index_list = [0, 1, 2]
 
-# for index in index_list:
-#     find_all_transactions(index)
+for index in index_list:
+    find_all_transactions(index)
 
-# find_all_transactions(1)
+# find_all_transactions(0)
 
-redemption_df = pd.read_csv('aurelius_redemption_events.csv')
-trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
+# redemption_df = pd.read_csv('aurelius_redemption_events.csv')
+# trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 
 # unique_user_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
 # print(unique_user_list)
@@ -717,4 +689,6 @@ trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 # trove_owner_df = calculate_user_balance_history(trove_updated_df)
 # print(trove_owner_df)
 
-get_redeemed_user_trove_history(redemption_df, trove_updated_df)
+# df = get_redeemed_user_trove_history(redemption_df, trove_updated_df)
+
+# print(df)
