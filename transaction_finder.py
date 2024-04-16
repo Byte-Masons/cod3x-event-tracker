@@ -17,6 +17,7 @@ def get_web_3(rpc_url):
     
     return web3
 
+# # gets a dataframe with a lot of static values
 def get_config_df():
     config_df = pd.DataFrame()
 
@@ -39,6 +40,20 @@ def get_config_df():
     config_df['wait_time'] = wait_time_list
 
     return config_df
+
+# # gets a dataframe with specific asset pricing values
+def get_token_info_df():
+    df = pd.DataFrame()
+
+    token_address_list = ['0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9', '0x201EBa5CC46D216Ce6DC03F6a759e8E766e956aE', '0xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2', '0xdEAddEaDdeadDEadDEADDEAddEADDEAddead1111', '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8', '0xcda86a272531e8640cd7f1a92c01839911b90bb0', '0x5bE26527e817998A7206475496fDE1E68957c5A6']
+    token_symbol_list = ['USDC', 'USDT', 'WBTC', 'WETH', 'MNT', 'mETH', 'USDY']
+    division_list = [1e6, 1e6, 1e8, 1e18, 1e18, 1e18, 1e18]
+
+    df['token_address'] = token_address_list
+    df['token_symbol'] = token_symbol_list
+    df['division'] = division_list
+
+    return df
 
 # # will return data from our config_df depending on the column name and index
 def get_config_df_value(column_name, index):
@@ -673,10 +688,10 @@ def find_redeemed_trove_cr(redeemed_trove_history_df):
 
     return
 
-index_list = [0, 1, 2]
+# index_list = [0, 1, 2]
 
-for index in index_list:
-    find_all_transactions(index)
+# for index in index_list:
+#     find_all_transactions(index)
 
 # find_all_transactions(0)
 
@@ -692,3 +707,6 @@ for index in index_list:
 # df = get_redeemed_user_trove_history(redemption_df, trove_updated_df)
 
 # print(df)
+
+token_df = get_token_info_df()
+print(token_df)
