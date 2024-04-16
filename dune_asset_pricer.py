@@ -181,6 +181,17 @@ def df_write_to_cloud_storage(df, filename):
 
     return
 
+#makes a dataframe and stores it in a csv file
+def make_user_data_csv(df):
+
+    csv = 'prices.csv'
+
+    df.to_csv(csv)
+    print('Prices Updated')
+
+    return
+
+
 #takes in a query_id and gets our query results in a dataframe
 async def query_extractor(query_id):
 
@@ -208,9 +219,21 @@ async def query_extractor(query_id):
 
   return data
 
+def get_prices():
+   prices = pd.read_csv('prices.csv')
 
-index = 0
+   return prices
 
-query_id = get_query_id(index)
-data = asyncio.run(query_extractor(query_id))
-print(data)
+def set_prices():
+    index_list = [0]
+
+    for index in index_list:
+
+        query_id = get_query_id(index)
+        data = asyncio.run(query_extractor(query_id))
+        make_user_data_csv(data)
+    
+    return
+
+prices = get_prices()
+print(prices)
