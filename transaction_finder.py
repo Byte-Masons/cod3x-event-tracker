@@ -684,6 +684,44 @@ def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
 
     return user_collateral_df
 
+# # gets our USD balances over time
+def get_usd_balance_history(balance_df):
+    token_info_df = get_token_info_df()
+
+    token_info_address_list = token_info_df['token_address'].tolist()
+    token_info_symbol_list = token_info_df['token_symbol'].tolist()
+
+    token_list = balance_df['collateral_redeemed'].tolist()
+
+    unique_token_list = list(set(token_list))
+
+    new_df_list = []
+
+    for unique_token in unique_token_list:
+        new_df = balance_df.loc[balance_df['collateral_redeemed'] == unique_token]
+
+        i = 0
+        while i < len(token_info_address_list):
+
+            token_address = token_info_address_list[i]
+            
+            unique_token = unique_token.lower()
+            token_address = token_address.lower()
+
+            if token_address == unique_token:
+                token_symbol = token_info_symbol_list[i]
+                new_df['token_symbol'] = token_symbol
+                break
+
+            i += 1
+        
+        if len(new_df) > 0:
+            new_df_list.append(new_df)
+
+    new_df = pd.concat(new_df_list)
+
+    return new_df
+
 def find_redeemed_trove_cr(redeemed_trove_history_df):
 
     return
@@ -695,8 +733,8 @@ def find_redeemed_trove_cr(redeemed_trove_history_df):
 
 # find_all_transactions(0)
 
-# redemption_df = pd.read_csv('aurelius_redemption_events.csv')
-# trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
+redemption_df = pd.read_csv('aurelius_redemption_events.csv')
+trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 
 # unique_user_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
 # print(unique_user_list)
@@ -704,9 +742,15 @@ def find_redeemed_trove_cr(redeemed_trove_history_df):
 # trove_owner_df = calculate_user_balance_history(trove_updated_df)
 # print(trove_owner_df)
 
-# df = get_redeemed_user_trove_history(redemption_df, trove_updated_df)
+df = get_redeemed_user_trove_history(redemption_df, trove_updated_df)
+
+df = get_usd_balance_history(df)
+
+print(df)
 
 # print(df)
 
-token_df = get_token_info_df()
-print(token_df)
+# token_df = get_token_info_df()
+
+
+# print(token_df)
