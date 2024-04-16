@@ -583,7 +583,7 @@ def get_event_df(events, wait_time, web3, index):
     
     df = pd.concat(df_list)
 
-    print(df)
+    # print(df)
     # print('User Data Event Looping done in: ', time.time() - start_time)
     return df
 
@@ -666,7 +666,7 @@ def get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df):
 # # calculates a users rolling trove balance
 def calculate_user_balance_history(trove_owner_df):
 
-    trove_owner_df = trove_owner_df.sort_values(by=['block_number'], ascending=False)
+    trove_owner_df = trove_owner_df.sort_values(by=['block_number'], ascending=True)
     trove_owner_df = trove_owner_df.reset_index(drop=True)
 
     trove_owner_df['number_of_collateral_tokens'] = trove_owner_df['number_of_collateral_tokens'].astype(float)
@@ -677,6 +677,9 @@ def calculate_user_balance_history(trove_owner_df):
     trove_owner_df['debt_change'] = trove_owner_df['debt'].diff()
     # print(trove_owner_df)
 
+    trove_owner_df = trove_owner_df.sort_values(by=['block_number'], ascending=False)
+    # trove_owner_df = trove_owner_df.reset_index(drop=True)
+
     return trove_owner_df
 
 # # finds our rolling balance for each redeemed trove_owner
@@ -685,6 +688,7 @@ def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
     unique_redeemed_trove_owner_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
     
     for trove_owner in unique_redeemed_trove_owner_list:
+        # print(trove_owner)
         trove_owner_df = trove_updated_df.loc[trove_updated_df['trove_owner'] == trove_owner]
         unique_collateral_list = trove_owner_df.collateral_redeemed.unique()
         
@@ -697,15 +701,15 @@ def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
 
     return
 
-index_list = [0, 1, 2]
+# index_list = [0, 1, 2]
 
-for index in index_list:
-    find_all_transactions(index)
+# for index in index_list:
+#     find_all_transactions(index)
 
 # find_all_transactions(1)
 
-# redemption_df = pd.read_csv('aurelius_redemption_events.csv')
-# trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
+redemption_df = pd.read_csv('aurelius_redemption_events.csv')
+trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 
 # unique_user_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
 # print(unique_user_list)
@@ -713,4 +717,4 @@ for index in index_list:
 # trove_owner_df = calculate_user_balance_history(trove_updated_df)
 # print(trove_owner_df)
 
-# get_redeemed_user_trove_history(redemption_df, trove_updated_df)
+get_redeemed_user_trove_history(redemption_df, trove_updated_df)
