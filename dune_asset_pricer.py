@@ -62,7 +62,7 @@ def execute_query(query_id, engine="medium"):
       "performance": engine,
   }
   response = post(url, headers=HEADER, params=params)
-  #print(response)
+  # print(response)
   execution_id = response.json()['execution_id']
 
   return execution_id
@@ -186,7 +186,7 @@ def make_user_data_csv(df):
 
     csv = 'prices.csv'
 
-    df.to_csv(csv)
+    df.to_csv(csv, index=False)
     print('Prices Updated')
 
     return
@@ -231,9 +231,29 @@ def set_prices():
 
         query_id = get_query_id(index)
         data = asyncio.run(query_extractor(query_id))
+        data = add_unix_timestamp_to_df(data)
         make_user_data_csv(data)
     
     return
 
-prices = get_prices()
-print(prices)
+# # converts UTC timestamp into unix timestamp
+def set_timestamp_to_unix(dt_str):
+
+  datetime_obj = datetime.datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S.%f UTC")
+  
+  return datetime_obj.timestamp()
+
+# # creates our unix_timestamp column and returns the df with this new column
+def add_unix_timestamp_to_df(df):
+  df['timestamp'] = df['minute'].apply(set_timestamp_to_unix)
+  df['timestamp'] = df['timestamp'].astype(int)
+
+  return df
+
+set_prices()
+
+# prices = get_prices()
+
+# prices = add_unix_timestamp_to_df(prices)
+
+# print(prices['timestamp'])
