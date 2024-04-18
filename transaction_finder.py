@@ -2,6 +2,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware 
 import pandas as pd
 import time
+import datetime
 
 # # makes our web3 object and injects it's middleware
 def get_web_3(rpc_url):
@@ -17,29 +18,18 @@ def get_web_3(rpc_url):
     
     return web3
 
-# # gets a dataframe with a lot of static values
+# # reads our config from our static csv
 def get_config_df():
-    config_df = pd.DataFrame()
-
-    interval_list = [20000, 20000, 20000]
-    csv_list = csv_list = ['aurelius_redemption_events.csv', 'aurelius_trove_updated_events.csv', 'aurelius_trove_updated_events.csv']
-    subset_list_list = [['liquidator_address', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed']]
-    block_column_name_list = ['block_number', 'block_number', 'block_number']
-    from_block_list = [51922528, 51922528, 51922639]
-    contract_address_list = ['0x295c6074F090f85819cbC911266522e43A8e0f4A', '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1', '0x295c6074F090f85819cbC911266522e43A8e0f4A']
-    wait_time_list = [0.5, 0.5, 0.5]
-    rpc_url_list = ['https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com', 'https://mantle-rpc.publicnode.com']
-
-    config_df['interval'] = interval_list
-    config_df['csv'] = csv_list
-    config_df['rpc_url'] = rpc_url_list
-    config_df['csv_subset'] = subset_list_list
-    config_df['block_column_name'] = block_column_name_list
-    config_df['from_block'] = from_block_list
-    config_df['contract_address'] = contract_address_list
-    config_df['wait_time'] = wait_time_list
+    config_df = pd.read_csv('cdp_config.csv')
 
     return config_df
+# # gets our duplicate subset
+def get_csv_subset(index):
+    subset_list = [['liquidator_address', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed'], ['trove_owner', 'tx_hash', 'collateral_redeemed']]
+
+    subset = subset_list[index]
+
+    return subset
 
 # # gets a dataframe with specific asset pricing values
 def get_token_info_df():
@@ -283,7 +273,7 @@ def make_user_data_csv(df, index):
 
     csv = get_config_df_value('csv', index)
 
-    subset_list = get_config_df_value('csv_subset', index)
+    subset_list = get_csv_subset(index)
 
     if len(df) > 0:
         
@@ -684,8 +674,9 @@ def get_redeemed_user_trove_history(redemption_df, trove_updated_df):
 
     return user_collateral_df
 
-# # gets our USD balances over time
-def get_usd_balance_history(balance_df):
+# # will match our blockchain's contract with our dune contract for the same token
+# # adds the token symbol to our dataframe that can be used as a key to get pricing data
+def get_collateral_symbol(balance_df):
     token_info_df = get_token_info_df()
 
     token_info_address_list = token_info_df['token_address'].tolist()
@@ -722,19 +713,64 @@ def get_usd_balance_history(balance_df):
 
     return new_df
 
+# # will convert our collateral tokens and debt tokens into a more human readible form that is also more compatible with the dune pricing data
+def get_normalized_balance(balance_df):
+    
+    df_list = []
+
+    token_info_df = get_token_info_df()
+
+    token_list = balance_df['token_symbol'].tolist()
+
+    unique_token_list = list(set(token_list))
+
+    for token_symbol in unique_token_list:
+        new_df = balance_df.loc[balance_df['token_symbol'] == token_symbol]
+        new_token_info_df = token_info_df.loc[token_info_df['token_symbol'] == token_symbol]
+
+        if len(new_df) > 0:
+            division = new_token_info_df['division'].tolist()
+            division = division[0]
+            new_df['normalized_collateral'] = df['number_of_collateral_tokens'] / division
+
+            df_list.append(new_df)
+
+    if len(df_list) > 0:
+        balance_df = pd.concat(df_list)
+    
+    return balance_df
+
+def set_timestamp_to_unix(dt_str):
+
+  datetime_obj = datetime.datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S.%f UTC")
+  
+  return datetime_obj.timestamp()
+
+
+def get_closest_price(balance_df):
+
+
+    return
+
+# # gets our USD balances over time
+def get_usd_balance_history(balance_df):
+    
+
+    return
+
 def find_redeemed_trove_cr(redeemed_trove_history_df):
 
     return
 
-# index_list = [0, 1, 2]
+index_list = [0, 1, 2]
 
-# for index in index_list:
-#     find_all_transactions(index)
+for index in index_list:
+    find_all_transactions(index)
 
 # find_all_transactions(0)
 
-redemption_df = pd.read_csv('aurelius_redemption_events.csv')
-trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
+# redemption_df = pd.read_csv('aurelius_redemption_events.csv')
+# trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 
 # unique_user_list = get_redeemed_trove_owner_address_list(redemption_df, trove_updated_df)
 # print(unique_user_list)
@@ -742,11 +778,15 @@ trove_updated_df = pd.read_csv('aurelius_trove_updated_events.csv')
 # trove_owner_df = calculate_user_balance_history(trove_updated_df)
 # print(trove_owner_df)
 
-df = get_redeemed_user_trove_history(redemption_df, trove_updated_df)
+# df = get_redeemed_user_trove_history(redemption_df, trove_updated_df)
 
-df = get_usd_balance_history(df)
+# df = get_collateral_symbol(df)
 
-print(df)
+# df = get_normalized_balance(df)
+
+# timestamp = set_timestamp_to_unix(df)
+
+# print(timestamp)
 
 # print(df)
 
