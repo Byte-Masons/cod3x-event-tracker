@@ -1,0 +1,4 @@
+﻿interval,csv,rpc_url,block_column_name,from_block,contract_address,wait_time,contract_type
+20000,aurelius_redemption_events.csv,https://mantle-rpc.publicnode.com,block_number,51922528,0x295c6074F090f85819cbC911266522e43A8e0f4A,0.5,0
+20000,aurelius_trove_updated_events.csv,https://mantle-rpc.publicnode.com,block_number,51922528,0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1,0.5,1
+20000,aurelius_trove_updated_events.csv,https://mantle-rpc.publicnode.com,block_number,51922639,0x295c6074F090f85819cbC911266522e43A8e0f4A,0.5,0
