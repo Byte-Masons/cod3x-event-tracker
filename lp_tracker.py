@@ -45,7 +45,10 @@ def get_lp_config_value(column_name, index):
 def get_token_config_value(column_name, token_address):
     df = get_token_config_df()
 
-    df = df.loc[df['token_address'] == token_address]
+    temp_df = df.loc[df['token_address'] == token_address]
+
+    if len(temp_df) < 1:
+        df = df.loc[df['underlying_address'] == token_address]
 
     config_list = df[column_name].tolist()
 
@@ -132,20 +135,17 @@ def make_checksum_values(df):
 #makes a dataframe and stores it in a csv file
 def make_user_data_csv(df):
     old_df = pd.read_csv('all_events.csv')
-    old_df = old_df.drop_duplicates(subset=['wallet_address', 'txHash', 'lendBorrowType'], keep='last')
+    old_df = old_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash','token_volume'], keep='last')
 
     combined_df_list = [df, old_df]
     combined_df = pd.concat(combined_df_list)
-    combined_df = combined_df.drop_duplicates(subset=['wallet_address', 'txHash', 'lendBorrowType'], keep='last')
-
-    combined_df['txHash'] = combined_df['txHash'].str.lower()
-    combined_df['tokenAddress'] = combined_df['tokenAddress'].str.lower()
+    combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash','token_volume'], keep='last')
 
     # combined_df['txHash'] = Web3.to_checksum_address(combined_df['txHash'])
     # combined_df['tokenAddress'] = Web3.to_checksum_address(combined_df['tokenAddress'])
     # combined_df['wallet_address'] = Web3.to_checksum_address(combined_df['wallet_address'])
 
-    combined_df = make_checksum_values(combined_df)
+    # combined_df = make_checksum_values(combined_df)
     # print(df)
     # print(len(old_df), len(df), len(combined_df))
     if len(combined_df) >= len(old_df):
@@ -154,7 +154,7 @@ def make_user_data_csv(df):
     return
 
 # # takes in an a_token address and returns it's contract object
-def get_a_token_contract(contract_address):
+def get_a_token_contract(web3, contract_address):
     # contract_address = "0xEB329420Fae03176EC5877c34E2c38580D85E069"
     contract_abi = [{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"owner","type":"address"},{"indexed":True,"internalType":"address","name":"spender","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":True,"internalType":"address","name":"to","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"index","type":"uint256"}],"name":"BalanceTransfer","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":True,"internalType":"address","name":"target","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"index","type":"uint256"}],"name":"Burn","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"underlyingAsset","type":"address"},{"indexed":True,"internalType":"address","name":"pool","type":"address"},{"indexed":False,"internalType":"address","name":"treasury","type":"address"},{"indexed":False,"internalType":"address","name":"incentivesController","type":"address"},{"indexed":False,"internalType":"uint8","name":"aTokenDecimals","type":"uint8"},{"indexed":False,"internalType":"string","name":"aTokenName","type":"string"},{"indexed":False,"internalType":"string","name":"aTokenSymbol","type":"string"},{"indexed":False,"internalType":"bytes","name":"params","type":"bytes"}],"name":"Initialized","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"index","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":True,"internalType":"address","name":"to","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"ATOKEN_REVISION","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"EIP712_REVISION","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"POOL","outputs":[{"internalType":"contract ILendingPool","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"RESERVE_TREASURY_ADDRESS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UNDERLYING_ASSET_ADDRESS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"_nonces","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"receiverOfUnderlying","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getIncentivesController","outputs":[{"internalType":"contract IAaveIncentivesController","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getScaledUserBalanceAndSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"handleRepayment","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"contract ILendingPool","name":"pool","type":"address"},{"internalType":"address","name":"treasury","type":"address"},{"internalType":"address","name":"underlyingAsset","type":"address"},{"internalType":"contract IAaveIncentivesController","name":"incentivesController","type":"address"},{"internalType":"uint8","name":"aTokenDecimals","type":"uint8"},{"internalType":"string","name":"aTokenName","type":"string"},{"internalType":"string","name":"aTokenSymbol","type":"string"},{"internalType":"bytes","name":"params","type":"bytes"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"mint","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"mintToTreasury","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"scaledBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"scaledTotalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferOnLiquidation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"target","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferUnderlyingTo","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}]    
     contract = web3.eth.contract(address=contract_address, abi=contract_abi)
@@ -162,7 +162,7 @@ def get_a_token_contract(contract_address):
     return contract
 
 # # takes in an v_token address and returns it's contract object
-def get_v_token_contract(contract_address):
+def get_v_token_contract(web3, contract_address):
     # contract_address = "0xBE8afE7E442fFfFE576B979D490c5ADb7823C3c6"
     contract_abi = [{"type":"event","name":"Approval","inputs":[{"type":"address","name":"owner","internalType":"address","indexed":True},{"type":"address","name":"spender","internalType":"address","indexed":True},{"type":"uint256","name":"value","internalType":"uint256","indexed":False}],"anonymous":False},{"type":"event","name":"BorrowAllowanceDelegated","inputs":[{"type":"address","name":"fromUser","internalType":"address","indexed":True},{"type":"address","name":"toUser","internalType":"address","indexed":True},{"type":"address","name":"asset","internalType":"address","indexed":False},{"type":"uint256","name":"amount","internalType":"uint256","indexed":False}],"anonymous":False},{"type":"event","name":"Burn","inputs":[{"type":"address","name":"user","internalType":"address","indexed":True},{"type":"uint256","name":"amount","internalType":"uint256","indexed":False},{"type":"uint256","name":"currentBalance","internalType":"uint256","indexed":False},{"type":"uint256","name":"balanceIncrease","internalType":"uint256","indexed":False},{"type":"uint256","name":"avgStableRate","internalType":"uint256","indexed":False},{"type":"uint256","name":"newTotalSupply","internalType":"uint256","indexed":False}],"anonymous":False},{"type":"event","name":"Initialized","inputs":[{"type":"address","name":"underlyingAsset","internalType":"address","indexed":True},{"type":"address","name":"pool","internalType":"address","indexed":True},{"type":"address","name":"incentivesController","internalType":"address","indexed":False},{"type":"uint8","name":"debtTokenDecimals","internalType":"uint8","indexed":False},{"type":"string","name":"debtTokenName","internalType":"string","indexed":False},{"type":"string","name":"debtTokenSymbol","internalType":"string","indexed":False},{"type":"bytes","name":"params","internalType":"bytes","indexed":False}],"anonymous":False},{"type":"event","name":"Mint","inputs":[{"type":"address","name":"user","internalType":"address","indexed":True},{"type":"address","name":"onBehalfOf","internalType":"address","indexed":True},{"type":"uint256","name":"amount","internalType":"uint256","indexed":False},{"type":"uint256","name":"currentBalance","internalType":"uint256","indexed":False},{"type":"uint256","name":"balanceIncrease","internalType":"uint256","indexed":False},{"type":"uint256","name":"newRate","internalType":"uint256","indexed":False},{"type":"uint256","name":"avgStableRate","internalType":"uint256","indexed":False},{"type":"uint256","name":"newTotalSupply","internalType":"uint256","indexed":False}],"anonymous":False},{"type":"event","name":"Transfer","inputs":[{"type":"address","name":"from","internalType":"address","indexed":True},{"type":"address","name":"to","internalType":"address","indexed":True},{"type":"uint256","name":"value","internalType":"uint256","indexed":False}],"anonymous":False},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"DEBT_TOKEN_REVISION","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract ILendingPool"}],"name":"POOL","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"UNDERLYING_ASSET_ADDRESS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"allowance","inputs":[{"type":"address","name":"owner","internalType":"address"},{"type":"address","name":"spender","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"approve","inputs":[{"type":"address","name":"spender","internalType":"address"},{"type":"uint256","name":"amount","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"approveDelegation","inputs":[{"type":"address","name":"delegatee","internalType":"address"},{"type":"uint256","name":"amount","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"balanceOf","inputs":[{"type":"address","name":"account","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"borrowAllowance","inputs":[{"type":"address","name":"fromUser","internalType":"address"},{"type":"address","name":"toUser","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"burn","inputs":[{"type":"address","name":"user","internalType":"address"},{"type":"uint256","name":"amount","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"decimals","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"decreaseAllowance","inputs":[{"type":"address","name":"spender","internalType":"address"},{"type":"uint256","name":"subtractedValue","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getAverageStableRate","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IRewarder"}],"name":"getIncentivesController","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"},{"type":"uint256","name":"","internalType":"uint256"},{"type":"uint256","name":"","internalType":"uint256"},{"type":"uint40","name":"","internalType":"uint40"}],"name":"getSupplyData","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"},{"type":"uint256","name":"","internalType":"uint256"}],"name":"getTotalSupplyAndAvgRate","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint40","name":"","internalType":"uint40"}],"name":"getTotalSupplyLastUpdated","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint40","name":"","internalType":"uint40"}],"name":"getUserLastUpdated","inputs":[{"type":"address","name":"user","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getUserStableRate","inputs":[{"type":"address","name":"user","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"increaseAllowance","inputs":[{"type":"address","name":"spender","internalType":"address"},{"type":"uint256","name":"addedValue","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialize","inputs":[{"type":"address","name":"pool","internalType":"contract ILendingPool"},{"type":"address","name":"underlyingAsset","internalType":"address"},{"type":"address","name":"incentivesController","internalType":"contract IRewarder"},{"type":"uint8","name":"debtTokenDecimals","internalType":"uint8"},{"type":"string","name":"debtTokenName","internalType":"string"},{"type":"string","name":"debtTokenSymbol","internalType":"string"},{"type":"bytes","name":"params","internalType":"bytes"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"mint","inputs":[{"type":"address","name":"user","internalType":"address"},{"type":"address","name":"onBehalfOf","internalType":"address"},{"type":"uint256","name":"amount","internalType":"uint256"},{"type":"uint256","name":"rate","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"name","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"principalBalanceOf","inputs":[{"type":"address","name":"user","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"symbol","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"totalSupply","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"transfer","inputs":[{"type":"address","name":"recipient","internalType":"address"},{"type":"uint256","name":"amount","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"transferFrom","inputs":[{"type":"address","name":"sender","internalType":"address"},{"type":"address","name":"recipient","internalType":"address"},{"type":"uint256","name":"amount","internalType":"uint256"}]}]    
     contract = web3.eth.contract(address=contract_address, abi=contract_abi)
@@ -174,6 +174,13 @@ def get_deposit_events(contract, from_block, to_block):
 
     # events = contract.events.Transfer.get_logs(fromBlock=from_block, toBlock=latest_block)
     events = contract.events.Deposit.get_logs(fromBlock=from_block, toBlock=to_block)
+
+    return events
+
+# # gets our token transfer events
+def get_transfer_events(contract, from_block, to_block):
+    
+    events = contract.events.Transfer.get_logs(fromBlock=from_block, toBlock=to_block)
 
     return events
 
@@ -222,8 +229,8 @@ def tx_hash_exists(df, tx_hash):
 
     new_df = pd.DataFrame()
 
-    if ((df['txHash'] == tx_hash)).any():
-        new_df = df.loc[df['txHash'] == tx_hash]
+    if ((df['tx_hash'] == tx_hash)).any():
+        new_df = df.loc[df['tx_hash'] == tx_hash]
     
     return new_df
 
@@ -249,38 +256,80 @@ def wallet_address_exists(df, wallet_address):
 
     return df
 
+# # generalized exists function that will help us reduce rpc calls
+def value_exists(df, input_value, column_name):
+
+    if (df[column_name] == input_value).any():
+        df = df.loc[df[column_name] == input_value]
+    
+    else:
+        df = pd.DataFrame()
+    
+    return df
+
+# # will return a list of our token contract objects for our index
+def get_token_contract_list(web3, index):
+    df = get_token_config_df()
+
+    df = df.loc[df['chain_index'] == index]
+
+    contract_address_list = df['token_address'].tolist()
+
+    contract_list = [get_a_token_contract(web3, contract_address) for contract_address in contract_address_list]
+    
+    return contract_list
+
 # will tell us whether we need to find new data
 # returns a list of [tx_hash, wallet_address]
-def already_part_of_df(event, enum):
+def already_part_of_df(event):
 
     all_exist = False
     tx_hash = ''
-    wallet_address = ''
+    from_address = ''
+    to_address = ''
+    token_amount = -1
 
     df = pd.read_csv('all_events.csv')
 
     tx_hash = event['transactionHash'].hex()
-    tx_hash = tx_hash.lower()
+    tx_hash = tx_hash
 
-    new_df = tx_hash_exists(df, tx_hash)
+    new_df = value_exists(df, tx_hash, 'tx_hash')
 
     if len(new_df) > 0:
-        new_df = lend_borrow_type_exists(new_df, enum)
+        from_address = event['args']['from']
+
+        new_df = value_exists(new_df, from_address,'from_address')
 
         if len(new_df) > 0:
-            wallet_address = handle_weth_gateway(event, enum, index).lower()
-            new_df = wallet_address_exists(df, wallet_address)
+            to_address = event['args']['to']
+
+            new_df = value_exists(new_df, to_address, 'to_address')
 
             if len(new_df) > 0:
-                all_exist = True
+                token_amount = event['args']['value']
 
-    response_list = [tx_hash, wallet_address, all_exist]
+                new_df = value_exists(new_df, token_amount, 'token_volume')
+
+                if len(new_df) > 0:
+                    all_exist = True
+
+    response_list = [tx_hash, from_address, to_address, token_amount, all_exist]
 
     return response_list
+
+# # will return the string of our 
+def get_event_type_enum(to_address, from_address, index):
+
+    enum = ''
+
+    return enum
 
 #gets our reserve price
 #@cache
 def get_tx_usd_amount(reserve_address, token_amount, web3, index):
+
+    asset_price_tx_usd_value_list = []
 
     contract_address = get_lp_config_value('aave_oracle_address', index)
     contract_abi = get_aave_oracle_abi()
@@ -292,20 +341,25 @@ def get_tx_usd_amount(reserve_address, token_amount, web3, index):
     decimals = get_token_config_value('decimals', reserve_address)
     usd_amount = (value_usd/1e8)*(token_amount/decimals)
     # print(usd_amount)
-    return usd_amount
+    asset_price_tx_usd_value_list.append(value_usd/1e8)
+    asset_price_tx_usd_value_list.append(usd_amount)
+
+    return asset_price_tx_usd_value_list
 
 #makes our dataframe
-def user_data(events, enum_name, web3, index):
+def user_data(events, web3, index):
     
     df = pd.DataFrame()
 
-    user_address_list = []
+    to_address_list = []
+    from_address_list = []
     tx_hash_list = []
     timestamp_list = []
     token_address_list = []
+    reserve_address_list = []
     token_volume_list = []
+    asset_price_list = []
     token_usd_amount_list = []
-    lend_borrow_type_list = []
     block_list = []
 
     user = ''
@@ -316,85 +370,65 @@ def user_data(events, enum_name, web3, index):
         time.sleep(0.25)
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
-        # if enum_name == 'REPAY':
-        #     user = 'user'
-        # elif enum_name == 'COLLATERALISE':
-        #     user = 'user'
-        # else:
-        #     user = 'user'
-
-        # block = web3.eth.get_block(event['blockNumber'])
-        # if block['timestamp'] >= 1701086400:
-        if enum_name != 'COLLATERALISE':
             
-            exists_list = already_part_of_df(event, enum_name)
+        exists_list = already_part_of_df(event)
 
-            tx_hash = exists_list[0]
-            wallet_address = exists_list[1]
-            exists = exists_list[2]
+        tx_hash = exists_list[0]
+        from_address = exists_list[1]
+        to_address = exists_list[2]
+        token_amount = exists_list[3]
+        exists = exists_list[4]
 
-            if exists == False and len(wallet_address) < 2:
-                
-                #adds wallet_address if it doesn't exist
-                if len(wallet_address) < 2:
-                    wallet_address = handle_weth_gateway(event, enum_name, index)
-                
+        if exists == False and (len(from_address) < 2 or len(to_address) < 2):
+            
+            try:
+                block = web3.eth.get_block(event['blockNumber'])
+                block_number = int(block['number'])
+            except:
+                block_number = int(event['blockNumber'])
 
-                try:
-                    block = web3.eth.get_block(event['blockNumber'])
-                    block_number = int(block['number'])
-                except:
-                    block_number = int(event['blockNumber'])
-                    # print(event)
+            if len(from_address) < 2:
+                from_address = event['args']['from']
+            
+            if len(to_address) < 2:
+                to_address = event['args']['to']
+
+            if token_amount < 0:
+                token_amount = event['args']['value']
+
+            if token_amount > 1:
 
                 block_list.append(block_number)
 
-                user_address_list.append(wallet_address)
+                from_address_list.append(from_address)
+                to_address_list.append(to_address)
                 tx_hash_list.append(tx_hash)
                 timestamp_list.append(block['timestamp'])
-                token_address = event['args']['reserve']
+                token_address = event['address']
                 token_address_list.append(token_address)
-                token_volume = event['args']['amount']
-                token_volume_list.append(token_volume)
-                token_usd_amount_list.append(get_tx_usd_amount(token_address, token_volume, web3, index))
-                lend_borrow_type_list.append(enum_name)
-            
-            else:
-                pass
+                reserve_address = get_token_config_value('underlying_address', token_address)
+                reserve_address_list.append(reserve_address)
+                token_volume_list.append(token_amount)
+
+                asset_tx_price_combo_list = get_tx_usd_amount(reserve_address, token_amount, web3, index)
+                asset_price_list.append(asset_tx_price_combo_list[0])
+                token_usd_amount_list.append(asset_tx_price_combo_list[1])
 
         else:
-            exists_list = already_part_of_df(event, enum_name)
-
-            tx_hash = exists_list[0]
-            wallet_address = exists_list[1]
-            exists = exists_list[2]
-            
-            if exists == False and len(wallet_address) < 2:
-                
-                wallet_address = handle_weth_gateway(event, enum_name, index)
-
-                block = web3.eth.get_block(event['blockNumber'])
-                block_list.append(block)
-
-                user_address_list.append(wallet_address)
-                tx_hash_list.append(tx_hash)
-                timestamp_list.append(block['timestamp'])
-                token_address_list.append(event['args']['reserve'])
-                token_volume_list.append(0)
-                token_usd_amount_list.append(0)
-                lend_borrow_type_list.append(enum_name)
-            
-            else:
-                pass
-
-    df['wallet_address'] = user_address_list
-    df['txHash'] = tx_hash_list
-    df['timestamp'] = timestamp_list
-    df['tokenAddress'] = token_address_list
-    df['tokenVolume'] = token_volume_list
-    df['tokenUSDAmount'] = token_usd_amount_list
-    df['blockNumber'] = block_list
-    df['lendBorrowType'] = lend_borrow_type_list
+            pass
+    
+    if len(from_address_list) > 0:
+        df['from_address'] = from_address_list
+        df['to_address'] = to_address_list
+        df['tx_hash'] = tx_hash_list
+        df['timestamp'] = timestamp_list
+        df['token_address'] = token_address_list
+        df['reserve_address'] = reserve_address_list
+        df['token_volume'] = token_volume_list
+        df['asset_price'] = asset_price_list
+        df['usd_token_amount'] = token_usd_amount_list
+        df['block_number'] = block_list
+    
 
     # print('User Data Event Looping done in: ', time.time() - start_time)
     return df
@@ -403,7 +437,7 @@ def user_data(events, enum_name, web3, index):
 # # subtracts the interval from our from block to help account for the script quitting on one of the 4 deposit,withdraw,repay,borrow event sets before iterating to the next set of blocks
 def get_from_block(df, index):
 
-    interval = get_lp_config_value('last_block', index)
+    interval = get_lp_config_value('interval', index)
 
     from_block = get_lp_config_value('from_block', index)
 
@@ -442,40 +476,22 @@ def find_all_lp_transactions(index):
 
     to_block = from_block + interval
 
-    temp_df = pd.read_csv('test.csv')
+    contract_list = get_token_contract_list(web3, index)
 
-    block_list = temp_df['blockNumber'].tolist()
 
-    # # temporariliy going through wethGateway blocks
-    for from_block in block_list:
-        to_block = from_block + 5
-
-        from_block = int(from_block)
-        to_block = int(to_block)
-    # # while to_block < latest_block:
+    while to_block < latest_block:
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
-        deposit_events = get_deposit_events(contract, from_block, to_block)
-        withdraw_events = get_withdraw_events(contract, from_block, to_block)
-        borrow_events = get_borrow_events(contract, from_block, to_block)
-        repay_events = get_repay_events(contract, from_block, to_block)
-
-        if len(deposit_events) > 0:
-            deposit_df = user_data(deposit_events, 'DEPOSIT', web3, index)
-            make_user_data_csv(deposit_df)
-
-        if len(withdraw_events) > 0:
-            withdraw_df = user_data(withdraw_events, 'WITHDRAW', web3, index)
-            make_user_data_csv(withdraw_df)
-
-        if len(borrow_events) > 0:
-            borrow_df = user_data(borrow_events, 'BORROW', web3, index)
-            make_user_data_csv(borrow_df)
+        for contract in contract_list:
             
-        if len(repay_events) > 0:
-            repay_df = user_data(repay_events, 'REPAY', web3, index)
-            make_user_data_csv(repay_df)
+            events = get_transfer_events(contract, from_block, to_block)
+
+            if len(events) > 0:
+                contract_df = user_data(events, web3, index)
+                
+                if len(contract_df) > 0:
+                    make_user_data_csv(contract_df)
 
         config_df['last_block'] = from_block
         config_df.to_csv('lp_config.csv', index=False)
@@ -494,7 +510,7 @@ def find_all_lp_transactions(index):
             to_block = latest_block
         
     
-    return deposit_df
+    return contract_df
 
 # Gets transactions of all blocks within a specified range and returns a df with info from blocks that include our contract
 def get_all_gateway_transactions():
