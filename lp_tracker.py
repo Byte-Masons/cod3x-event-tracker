@@ -364,10 +364,14 @@ def user_data(events, web3, index):
 
     user = ''
 
+    wait_time = get_lp_config_value('wait_time', index)
+
     start_time = time.time()
     i = 1
     for event in events:
-        time.sleep(0.25)
+        
+        time.sleep(wait_time)
+
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
@@ -380,7 +384,6 @@ def user_data(events, web3, index):
         exists = exists_list[4]
 
         if exists == False and (len(from_address) < 2 or len(to_address) < 2):
-            
             try:
                 block = web3.eth.get_block(event['blockNumber'])
                 block_number = int(block['number'])
@@ -396,7 +399,7 @@ def user_data(events, web3, index):
             if token_amount < 0:
                 token_amount = event['args']['value']
 
-            if token_amount > 1:
+            if token_amount > 2:
 
                 block_list.append(block_number)
 
