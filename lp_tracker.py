@@ -358,21 +358,28 @@ def get_batch_pricing_df(df, web3, index):
 
     pricing_df = df
 
-    pricing_df = pricing_df.drop_duplicates(subset='reserve_address')
+    pricing_df = pricing_df.drop_duplicates(subset=['reserve_address'])
 
     reserve_list = pricing_df['reserve_address'].tolist()
 
     temp_reserve_list = []
     reserve_price_list = []
 
+    temp_df_list = []
+
     for reserve in reserve_list:
+
+        temp_df = pricing_df.loc[pricing_df['reserve_address'] == reserve]
+
         reserve_price = get_tx_usd_amount(reserve, 1, web3, index)
 
         reserve_price = reserve_price[0]
 
-        reserve_price_list.append(reserve_price)
+        temp_df['reserve_price'] = reserve_price
+
+        temp_df_list.append(temp_df)
     
-    pricing_df['reserve_price'] = reserve_price_list
+    pricing_df = pd.concat(temp_df_list)
 
     return pricing_df
 
@@ -551,6 +558,8 @@ def find_all_lp_transactions(index):
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
         for contract in contract_list:
+
+            print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             
             events = get_transfer_events(contract, from_block, to_block)
 
@@ -703,15 +712,15 @@ def run_all(index_list):
         try:
             find_all_lp_transactions(index)
         except:
-            print(index, ' :failed')
+            print(index, ' :failed')33
             time.sleep(65)
             run_all(index_list)
 
-# index_list = [0]
+index_list = [0]
 
-# run_all(index_list)
+run_all(index_list)
 
-find_all_lp_transactions(0)
+# find_all_lp_transactions(0)
 
 # df = pd.read_csv('all_events.csv')
 
