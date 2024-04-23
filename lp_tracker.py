@@ -42,8 +42,10 @@ def get_lp_config_value(column_name, index):
     return config_value
 
 # # returns our token_config value
-def get_token_config_value(column_name, token_address):
+def get_token_config_value(column_name, token_address, index):
     df = get_token_config_df()
+
+    df = df.loc[df['chain_index'] == index]
 
     temp_df = df.loc[df['token_address'] == token_address]
 
@@ -134,7 +136,9 @@ def make_checksum_values(df):
 
 #makes a dataframe and stores it in a csv file
 def make_user_data_csv(df, index):
-    old_df = pd.read_csv('all_events.csv')
+
+    event_csv = get_lp_config_value('event_csv_name', index)
+    old_df = pd.read_csv(event_csv)
     old_df = old_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash','token_volume'], keep='last')
 
     combined_df_list = [df, old_df]
@@ -341,7 +345,7 @@ def get_tx_usd_amount(reserve_address, token_amount, web3, index):
 
     value_usd = contract.functions.getAssetPrice(reserve_address).call()
     time.sleep(0.1)
-    decimals = get_token_config_value('decimals', reserve_address)
+    decimals = get_token_config_value('decimals', reserve_address, index)
     usd_amount = (value_usd/1e8)*(token_amount/decimals)
     # print(usd_amount)
     asset_price_tx_usd_value_list.append(value_usd/1e8)
@@ -412,7 +416,7 @@ def user_data(events, web3, index):
                 timestamp_list.append(block['timestamp'])
                 token_address = event['address']
                 token_address_list.append(token_address)
-                reserve_address = get_token_config_value('underlying_address', token_address)
+                reserve_address = get_token_config_value('underlying_address', token_address, index)
                 reserve_address_list.append(reserve_address)
                 token_volume_list.append(token_amount)
 
@@ -640,16 +644,21 @@ def find_rolling_lp_balance(df):
     calculated_df.to_json('outputData.json', orient='records')
     return df
 
-index_list = [0]
-
 def run_all(index_list):
 
     for index in index_list:
         try:
             find_all_lp_transactions(index)
         except:
-            run_all(index)
+            print('failed')
+            pass
+            # run_all(index_list)
 
+# index_list = [1]
+
+# run_all(index_list)
+
+find_all_lp_transactions(1)
 
 # df = pd.read_csv('all_events.csv')
 
