@@ -133,7 +133,7 @@ def make_checksum_values(df):
     return df
 
 #makes a dataframe and stores it in a csv file
-def make_user_data_csv(df):
+def make_user_data_csv(df, index):
     old_df = pd.read_csv('all_events.csv')
     old_df = old_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash','token_volume'], keep='last')
 
@@ -149,7 +149,8 @@ def make_user_data_csv(df):
     # print(df)
     # print(len(old_df), len(df), len(combined_df))
     if len(combined_df) >= len(old_df):
-        combined_df.to_csv('all_events.csv', index=False)
+        event_csv = get_lp_config_value('event_csv_name', index)
+        combined_df.to_csv(event_csv, index=False)
         print('Event CSV Updated')
     return
 
@@ -281,7 +282,7 @@ def get_token_contract_list(web3, index):
 
 # will tell us whether we need to find new data
 # returns a list of [tx_hash, wallet_address]
-def already_part_of_df(event):
+def already_part_of_df(event, index):
 
     all_exist = False
     tx_hash = ''
@@ -289,7 +290,9 @@ def already_part_of_df(event):
     to_address = ''
     token_amount = -1
 
-    df = pd.read_csv('all_events.csv')
+    csv = get_lp_config_value('event_csv_name', index)
+
+    df = pd.read_csv(csv)
 
     tx_hash = event['transactionHash'].hex()
     tx_hash = tx_hash
@@ -375,7 +378,7 @@ def user_data(events, web3, index):
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
-        exists_list = already_part_of_df(event)
+        exists_list = already_part_of_df(event, index)
 
         tx_hash = exists_list[0]
         from_address = exists_list[1]
@@ -383,7 +386,7 @@ def user_data(events, web3, index):
         token_amount = exists_list[3]
         exists = exists_list[4]
 
-        if exists == False and (len(from_address) < 2 or len(to_address) < 2):
+        if exists == False:
             try:
                 block = web3.eth.get_block(event['blockNumber'])
                 block_number = int(block['number'])
@@ -451,6 +454,8 @@ def get_from_block(df, index):
         from_block = last_block_checked
         from_block = from_block - interval
 
+    from_block = int(from_block)
+
     return from_block
 
 # # runs all our looks
@@ -471,7 +476,9 @@ def find_all_lp_transactions(index):
 
     latest_block = tf.get_latest_block(web3) 
 
-    event_df = pd.read_csv('all_events.csv')
+    event_csv = get_lp_config_value('event_csv_name', index)
+
+    event_df = pd.read_csv(event_csv)
 
     interval = get_lp_config_value('interval', index)
 
@@ -492,9 +499,9 @@ def find_all_lp_transactions(index):
 
             if len(events) > 0:
                 contract_df = user_data(events, web3, index)
-                
+                # # print(contract_df)
                 if len(contract_df) > 0:
-                    make_user_data_csv(contract_df)
+                    make_user_data_csv(contract_df, index)
 
         config_df['last_block'] = from_block
         config_df.to_csv('lp_config.csv', index=False)
@@ -635,8 +642,13 @@ def find_rolling_lp_balance(df):
 
 index_list = [0]
 
-for index in index_list:
-    find_all_lp_transactions(index)
+def run_all(index_list):
+
+    for index in index_list:
+        try:
+            find_all_lp_transactions(index)
+        except:
+            run_all(index)
 
 
 # df = pd.read_csv('all_events.csv')

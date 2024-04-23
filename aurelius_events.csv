@@ -1,0 +1,1 @@
+from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,block_number
