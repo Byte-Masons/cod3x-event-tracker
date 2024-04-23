@@ -304,19 +304,19 @@ def already_part_of_df(event, index):
     new_df = value_exists(df, tx_hash, 'tx_hash')
 
     if len(new_df) > 0:
-        from_address = event['args']['from']
+        token_amount = event['args']['value']
 
-        new_df = value_exists(new_df, from_address,'from_address')
+        new_df = value_exists(new_df, token_amount, 'token_volume')
 
         if len(new_df) > 0:
-            to_address = event['args']['to']
+            from_address = event['args']['from']
 
-            new_df = value_exists(new_df, to_address, 'to_address')
+            new_df = value_exists(new_df, from_address,'from_address')
 
             if len(new_df) > 0:
-                token_amount = event['args']['value']
+                to_address = event['args']['to']
 
-                new_df = value_exists(new_df, token_amount, 'token_volume')
+                new_df = value_exists(new_df, to_address, 'to_address')
 
                 if len(new_df) > 0:
                     all_exist = True
@@ -352,6 +352,62 @@ def get_tx_usd_amount(reserve_address, token_amount, web3, index):
     asset_price_tx_usd_value_list.append(usd_amount)
 
     return asset_price_tx_usd_value_list
+
+# # returns a df that has each batch of event's reserve addresses and prices in a single df
+def get_batch_pricing_df(df, web3, index):
+
+    pricing_df = df
+
+    pricing_df = pricing_df.drop_duplicates(subset='reserve_address')
+
+    reserve_list = pricing_df['reserve_address'].tolist()
+
+    temp_reserve_list = []
+    reserve_price_list = []
+
+    for reserve in reserve_list:
+        reserve_price = get_tx_usd_amount(reserve, 1, web3, index)
+
+        reserve_price = reserve_price[0]
+
+        reserve_price_list.append(reserve_price)
+    
+    pricing_df['reserve_price'] = reserve_price_list
+
+    return pricing_df
+
+# # users our batches pricing data to update our batches df asset_price and tx_usd_amount
+# # saves contract calls massively
+def set_batch_df_pricing(batch_df, pricing_df):
+
+    df_list = []
+
+    reserve_list = pricing_df['reserve_address'].tolist()
+
+    for reserve in reserve_list:
+        temp_batch_df = batch_df.loc[batch_df['reserve_address'] == reserve]
+        temp_pricing_df = pricing_df.loc[pricing_df['reserve_address'] == reserve]
+
+        asset_price = temp_pricing_df['reserve_price'].tolist()
+        asset_price = asset_price[0]
+
+        temp_batch_df['asset_price'] = asset_price
+        temp_batch_df['usd_token_amount'] = temp_batch_df['token_volume'] * temp_batch_df['asset_price']
+
+        df_list.append(temp_batch_df)
+
+    df = pd.concat(df_list)
+
+    return df
+
+# # aggregate function that gets our asset pricing and returns updated batch_df
+def update_batch_pricing(batch_df, web3, index):
+
+    pricing_df = get_batch_pricing_df(batch_df, web3, index)
+    batch_df = set_batch_df_pricing(batch_df, pricing_df)
+
+
+    return batch_df
 
 #makes our dataframe
 def user_data(events, web3, index):
@@ -420,14 +476,12 @@ def user_data(events, web3, index):
                 reserve_address_list.append(reserve_address)
                 token_volume_list.append(token_amount)
 
-                asset_tx_price_combo_list = get_tx_usd_amount(reserve_address, token_amount, web3, index)
-                asset_price_list.append(asset_tx_price_combo_list[0])
-                token_usd_amount_list.append(asset_tx_price_combo_list[1])
-
         else:
             pass
     
     if len(from_address_list) > 0:
+
+    
         df['from_address'] = from_address_list
         df['to_address'] = to_address_list
         df['tx_hash'] = tx_hash_list
@@ -435,8 +489,7 @@ def user_data(events, web3, index):
         df['token_address'] = token_address_list
         df['reserve_address'] = reserve_address_list
         df['token_volume'] = token_volume_list
-        df['asset_price'] = asset_price_list
-        df['usd_token_amount'] = token_usd_amount_list
+        df = update_batch_pricing(df, web3, index)
         df['block_number'] = block_list
     
 
@@ -524,7 +577,7 @@ def find_all_lp_transactions(index):
             to_block = latest_block
         
     
-    return contract_df
+    return
 
 # Gets transactions of all blocks within a specified range and returns a df with info from blocks that include our contract
 def get_all_gateway_transactions():
@@ -650,15 +703,15 @@ def run_all(index_list):
         try:
             find_all_lp_transactions(index)
         except:
-            print('failed')
-            pass
-            # run_all(index_list)
+            print(index, ' :failed')
+            time.sleep(65)
+            run_all(index_list)
 
-# index_list = [1]
+# index_list = [0]
 
 # run_all(index_list)
 
-find_all_lp_transactions(1)
+find_all_lp_transactions(0)
 
 # df = pd.read_csv('all_events.csv')
 
