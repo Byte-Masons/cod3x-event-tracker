@@ -439,8 +439,6 @@ def user_data(events, web3, index):
     start_time = time.time()
     i = 1
     for event in events:
-        
-        time.sleep(wait_time)
 
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
@@ -454,6 +452,7 @@ def user_data(events, web3, index):
         exists = exists_list[4]
 
         if exists == False:
+            time.sleep(wait_time)
             try:
                 block = web3.eth.get_block(event['blockNumber'])
                 block_number = int(block['number'])
@@ -484,6 +483,7 @@ def user_data(events, web3, index):
                 token_volume_list.append(token_amount)
 
         else:
+            time.sleep(wait_time/5)
             pass
     
     if len(from_address_list) > 0:
@@ -527,6 +527,7 @@ def get_from_block(df, index):
 def find_all_lp_transactions(index):
 
     config_df = get_lp_config_df()
+    config_df = config_df.loc[config_df['index'] == index]
 
     rpc_url = get_lp_config_value('rpc_url', index)
     contract_address = get_lp_config_value('contract_address', index)
@@ -557,17 +558,36 @@ def find_all_lp_transactions(index):
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
+        receipt_counter = 0
+
+        receipt_list = event_df['token_address'].tolist()
+        receipt_list = list(set(receipt_list))
+
         for contract in contract_list:
 
             print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             
-            events = get_transfer_events(contract, from_block, to_block)
+            receipt_address = receipt_list[receipt_counter]
+            receipt_counter += 1
+            
+            temp_df = event_df.loc[event_df['token_address'] == receipt_address]
+
+            temp_from_block = temp_df['block_number'].max()
+
+            temp_from_block = int(temp_from_block)
+
+            to_block = from_block + interval
+
+            events = get_transfer_events(contract, temp_from_block, to_block)
 
             if len(events) > 0:
                 contract_df = user_data(events, web3, index)
                 # # print(contract_df)
                 if len(contract_df) > 0:
+                    time.sleep(wait_time)
                     make_user_data_csv(contract_df, index)
+            else:
+                time.sleep(wait_time/2)
 
         config_df['last_block'] = from_block
         config_df.to_csv('lp_config.csv', index=False)
@@ -577,7 +597,6 @@ def find_all_lp_transactions(index):
 
         # print(deposit_events)
 
-        time.sleep(wait_time)
 
         if from_block >= latest_block:
             from_block = latest_block - 1
@@ -712,15 +731,15 @@ def run_all(index_list):
         try:
             find_all_lp_transactions(index)
         except:
-            print(index, ' :failed')33
+            print(index, ' :failed')
             time.sleep(65)
             run_all(index_list)
 
-index_list = [0]
+# index_list = [0]
 
-run_all(index_list)
+# run_all(index_list)
 
-# find_all_lp_transactions(0)
+find_all_lp_transactions(0)
 
 # df = pd.read_csv('all_events.csv')
 
