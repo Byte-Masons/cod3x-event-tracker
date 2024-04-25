@@ -27,7 +27,7 @@ def get_lp_config_df():
 
 # # reads from our static config csv
 def get_token_config_df():
-    token_config_df = pd.read_csv('token_lp_config.csv')
+    token_config_df = pd.read_csv('token_config.csv')
 
     return token_config_df
 
@@ -76,27 +76,6 @@ def get_v_token_abi():
     abi = [{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"owner","type":"address"},{"indexed":True,"internalType":"address","name":"spender","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":True,"internalType":"address","name":"to","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"index","type":"uint256"}],"name":"BalanceTransfer","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":True,"internalType":"address","name":"target","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"index","type":"uint256"}],"name":"Burn","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"underlyingAsset","type":"address"},{"indexed":True,"internalType":"address","name":"pool","type":"address"},{"indexed":False,"internalType":"address","name":"treasury","type":"address"},{"indexed":False,"internalType":"address","name":"incentivesController","type":"address"},{"indexed":False,"internalType":"uint8","name":"aTokenDecimals","type":"uint8"},{"indexed":False,"internalType":"string","name":"aTokenName","type":"string"},{"indexed":False,"internalType":"string","name":"aTokenSymbol","type":"string"},{"indexed":False,"internalType":"bytes","name":"params","type":"bytes"}],"name":"Initialized","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"index","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"from","type":"address"},{"indexed":True,"internalType":"address","name":"to","type":"address"},{"indexed":False,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"ATOKEN_REVISION","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"EIP712_REVISION","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"POOL","outputs":[{"internalType":"contract ILendingPool","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"RESERVE_TREASURY_ADDRESS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"UNDERLYING_ASSET_ADDRESS","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"_nonces","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"address","name":"receiverOfUnderlying","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getIncentivesController","outputs":[{"internalType":"contract IAaveIncentivesController","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getScaledUserBalanceAndSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"handleRepayment","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"contract ILendingPool","name":"pool","type":"address"},{"internalType":"address","name":"treasury","type":"address"},{"internalType":"address","name":"underlyingAsset","type":"address"},{"internalType":"contract IAaveIncentivesController","name":"incentivesController","type":"address"},{"internalType":"uint8","name":"aTokenDecimals","type":"uint8"},{"internalType":"string","name":"aTokenName","type":"string"},{"internalType":"string","name":"aTokenSymbol","type":"string"},{"internalType":"bytes","name":"params","type":"bytes"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"mint","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"mintToTreasury","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"scaledBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"scaledTotalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferOnLiquidation","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"target","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferUnderlyingTo","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}]    
     return abi
 
-# returns basic data about our reserves in a dataframe
-def get_reserve_data():
-    # a_token_list = ['0x245B368d5a969179Df711774e7BdC5eC670e92EF', '0x5C4866349ff0Bf1e7C4b7f6d8bB2dBcbe76f8895', '0xa0f8323A84AdC89346eD3F7c5dcddf799916b51E', '0xB36535765A7421B397Cfd9fEc03cF96aA99C8D08', '0xdc66aC2336742E387b766B4c264c993ee6a3EF28']
-    # v_token_list = ['0xd4c3692B753302Ef0Ef1d50dd7928D60ef00B9ff', '0x157903B7c6D759c9D3c65A675a15aA0723eea95B', '0x393a64Fc561D6c8f5D8D8c427005cAB66DfeCA9D', '0xd8A40a27dD36565cC2B17C8B937eE50B69209E22', '0x9576c6FDd82474177781330Fc47C38D89936E7c8']
-
-    reserve_address_list = ['0x245B368d5a969179Df711774e7BdC5eC670e92EF', '0x5C4866349ff0Bf1e7C4b7f6d8bB2dBcbe76f8895', '0xa0f8323A84AdC89346eD3F7c5dcddf799916b51E', '0xB36535765A7421B397Cfd9fEc03cF96aA99C8D08', '0xdc66aC2336742E387b766B4c264c993ee6a3EF28',
-                '0xd4c3692B753302Ef0Ef1d50dd7928D60ef00B9ff', '0x157903B7c6D759c9D3c65A675a15aA0723eea95B', '0x393a64Fc561D6c8f5D8D8c427005cAB66DfeCA9D', '0xd8A40a27dD36565cC2B17C8B937eE50B69209E22', '0x9576c6FDd82474177781330Fc47C38D89936E7c8']
-
-    reserve_decimal_list = [1e18, 1e6, 1e6, 1e18, 1e8, 1e18, 1e6, 1e6, 1e18, 1e8]
-
-    reserve_name_list = ['a_dai', 'a_usdc', 'a_usdt', 'a_eth', 'a_wbtc', 'v_dai', 'v_usdc', 'v_usdt', 'v_eth', 'v_wbtc']
-
-    df = pd.DataFrame()
-
-    df['reserve_name'] = reserve_name_list
-    df['reserve_address'] = reserve_address_list
-    df['reserve_decimal'] = reserve_decimal_list
-
-    return df
-
-
 # # gets our web3 contract object
 def get_contract(contract_address, contract_abi, web3):
 
@@ -139,23 +118,18 @@ def make_user_data_csv(df, index):
 
     event_csv = get_lp_config_value('event_csv_name', index)
     old_df = pd.read_csv(event_csv)
-    old_df = old_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash','token_volume'], keep='last')
+    old_df = old_df.drop_duplicates(subset=['tx_hash','token_volume','log_index', 'transaction_index'], keep='last')
 
     combined_df_list = [df, old_df]
     combined_df = pd.concat(combined_df_list)
-    combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash','token_volume'], keep='last')
-
-    # combined_df['txHash'] = Web3.to_checksum_address(combined_df['txHash'])
-    # combined_df['tokenAddress'] = Web3.to_checksum_address(combined_df['tokenAddress'])
-    # combined_df['wallet_address'] = Web3.to_checksum_address(combined_df['wallet_address'])
-
-    # combined_df = make_checksum_values(combined_df)
-    # print(df)
-    # print(len(old_df), len(df), len(combined_df))
+    combined_df = combined_df.drop_duplicates(subset=['tx_hash','token_volume','log_index', 'transaction_index'], keep='last')
+    
     if len(combined_df) >= len(old_df):
         event_csv = get_lp_config_value('event_csv_name', index)
         combined_df.to_csv(event_csv, index=False)
-        print('Event CSV Updated')
+        print()
+        print('Event CSV Updated. Old Length: ', len(old_df), ' New Length: ', len(combined_df), ' Events Added: ', len(combined_df) - len(old_df))
+        print()
     return
 
 # # takes in an a_token address and returns it's contract object
@@ -185,8 +159,12 @@ def get_deposit_events(contract, from_block, to_block):
 # # gets our token transfer events
 def get_transfer_events(contract, from_block, to_block):
     
+    from_block = int(from_block)
+    to_block = int(to_block)
+    
     events = contract.events.Transfer.get_logs(fromBlock=from_block, toBlock=to_block)
 
+    
     return events
 
 # # takes in a contract object and returns all associated withdrawal events
@@ -286,12 +264,12 @@ def get_token_contract_list(web3, index):
 
 # will tell us whether we need to find new data
 # returns a list of [tx_hash, wallet_address]
-def already_part_of_df(event, index):
+def already_part_of_df(event, wait_time, index):
 
     all_exist = False
     tx_hash = ''
-    from_address = ''
-    to_address = ''
+    log_index = -1
+    tx_index = -1
     token_amount = -1
 
     csv = get_lp_config_value('event_csv_name', index)
@@ -302,26 +280,29 @@ def already_part_of_df(event, index):
     tx_hash = tx_hash
 
     new_df = value_exists(df, tx_hash, 'tx_hash')
+    time.sleep(wait_time)
 
     if len(new_df) > 0:
         token_amount = event['args']['value']
+        time.sleep(wait_time)
 
         new_df = value_exists(new_df, token_amount, 'token_volume')
 
         if len(new_df) > 0:
-            from_address = event['args']['from']
+            log_index = event['logIndex']
+            time.sleep(wait_time)
 
-            new_df = value_exists(new_df, from_address,'from_address')
+            new_df = value_exists(new_df, log_index,'log_index')
 
             if len(new_df) > 0:
-                to_address = event['args']['to']
+                tx_index = event['transactionIndex']
 
-                new_df = value_exists(new_df, to_address, 'to_address')
+                new_df = value_exists(new_df, tx_index, 'transaction_index')
 
                 if len(new_df) > 0:
                     all_exist = True
 
-    response_list = [tx_hash, from_address, to_address, token_amount, all_exist]
+    response_list = [tx_hash, log_index, tx_index, token_amount, all_exist]
 
     return response_list
 
@@ -430,11 +411,15 @@ def user_data(events, web3, index):
     token_volume_list = []
     asset_price_list = []
     token_usd_amount_list = []
+    log_index_list = []
+    tx_index_list = []
     block_list = []
 
     user = ''
 
+    # reduces wait time by 50%
     wait_time = get_lp_config_value('wait_time', index)
+    wait_time = wait_time/2
 
     start_time = time.time()
     i = 1
@@ -443,11 +428,11 @@ def user_data(events, web3, index):
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
-        exists_list = already_part_of_df(event, index)
+        exists_list = already_part_of_df(event, wait_time, index)
 
         tx_hash = exists_list[0]
-        from_address = exists_list[1]
-        to_address = exists_list[2]
+        log_index = exists_list[1]
+        tx_index = exists_list[2]
         token_amount = exists_list[3]
         exists = exists_list[4]
 
@@ -459,34 +444,47 @@ def user_data(events, web3, index):
             except:
                 block_number = int(event['blockNumber'])
 
-            if len(from_address) < 2:
-                from_address = event['args']['from']
+            time.sleep(wait_time)
+            if log_index < 0:
+                log_index = event['logIndex']
             
-            if len(to_address) < 2:
-                to_address = event['args']['to']
+            time.sleep(wait_time)
+            if tx_index < 0:
+                tx_index = event['transactionIndex']
 
+            time.sleep(wait_time)
             if token_amount < 0:
                 token_amount = event['args']['value']
+            
+            log_index = event['logIndex']
+            time.sleep(wait_time)
 
-            if token_amount > 2:
+            if token_amount > 0:
 
                 block_list.append(block_number)
-
+                from_address = event['args']['from']
+                time.sleep(wait_time)
+                to_address = event['args']['to']
                 from_address_list.append(from_address)
                 to_address_list.append(to_address)
                 tx_hash_list.append(tx_hash)
                 timestamp_list.append(block['timestamp'])
+                time.sleep(wait_time)
                 token_address = event['address']
                 token_address_list.append(token_address)
                 reserve_address = get_token_config_value('underlying_address', token_address, index)
                 reserve_address_list.append(reserve_address)
                 token_volume_list.append(token_amount)
+                log_index_list.append(log_index)
+                tx_index_list.append(tx_index)
 
         else:
-            time.sleep(wait_time/5)
+            print(event)
+            time.sleep(wait_time)
             pass
     
     if len(from_address_list) > 0:
+        time.sleep(wait_time)
 
     
         df['from_address'] = from_address_list
@@ -497,6 +495,8 @@ def user_data(events, web3, index):
         df['reserve_address'] = reserve_address_list
         df['token_volume'] = token_volume_list
         df = update_batch_pricing(df, web3, index)
+        df['log_index'] = log_index_list
+        df['transaction_index'] = tx_index_list
         df['block_number'] = block_list
     
 
@@ -522,6 +522,23 @@ def get_from_block(df, index):
 
     return from_block
 
+# # returns the last from block of an asset
+def get_last_asset_block(event_df, token_config_df, receipt_counter, index):
+
+    token_config_df = token_config_df.loc[token_config_df['chain_index'] == index]
+
+    receipt_list = token_config_df['token_address'].tolist()
+
+    receipt_token = receipt_list[receipt_counter]
+
+    temp_df = event_df.loc[event_df['token_address'] == receipt_token]
+
+    last_asset_from_block = temp_df['block_number'].max()
+
+    last_asset_from_block = int(last_asset_from_block)
+
+    return last_asset_from_block
+
 # # runs all our looks
 # # updates our csv
 def find_all_lp_transactions(index):
@@ -535,7 +552,7 @@ def find_all_lp_transactions(index):
     
     web3 = tf.get_web_3(rpc_url)
 
-    contract = tf.get_contract(contract_address, contract_abi, web3)
+    # contract = tf.get_contract(contract_address, contract_abi, web3)
 
     from_block = get_from_block(config_df, index)
 
@@ -545,6 +562,8 @@ def find_all_lp_transactions(index):
 
     event_df = pd.read_csv(event_csv)
 
+    token_config_df = get_token_config_df()
+
     interval = get_lp_config_value('interval', index)
 
     wait_time = get_lp_config_value('wait_time', index)
@@ -553,6 +572,11 @@ def find_all_lp_transactions(index):
 
     contract_list = get_token_contract_list(web3, index)
 
+    token_config_df = get_token_config_df()
+
+    token_config_df = token_config_df.loc[token_config_df['chain_index'] == index]
+
+    receipt_token_list = token_config_df['token_address'].tolist()
 
     while to_block < latest_block:
 
@@ -560,25 +584,18 @@ def find_all_lp_transactions(index):
 
         receipt_counter = 0
 
-        receipt_list = event_df['token_address'].tolist()
-        receipt_list = list(set(receipt_list))
+        while receipt_counter < len(receipt_token_list):
+            receipt_token_address = receipt_token_list[receipt_counter]
 
-        for contract in contract_list:
+            receipt_contract = get_a_token_contract(web3, receipt_token_address)
 
-            print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
-            
-            receipt_address = receipt_list[receipt_counter]
+
+            print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+
+            events = get_transfer_events(receipt_contract, from_block, to_block)
+
             receipt_counter += 1
             
-            temp_df = event_df.loc[event_df['token_address'] == receipt_address]
-
-            temp_from_block = temp_df['block_number'].max()
-
-            temp_from_block = int(temp_from_block)
-
-            to_block = from_block + interval
-
-            events = get_transfer_events(contract, temp_from_block, to_block)
 
             if len(events) > 0:
                 contract_df = user_data(events, web3, index)
@@ -587,7 +604,7 @@ def find_all_lp_transactions(index):
                     time.sleep(wait_time)
                     make_user_data_csv(contract_df, index)
             else:
-                time.sleep(wait_time/2)
+                time.sleep(wait_time)
 
         config_df['last_block'] = from_block
         config_df.to_csv('lp_config.csv', index=False)
@@ -735,9 +752,11 @@ def run_all(index_list):
             time.sleep(65)
             run_all(index_list)
 
-# index_list = [0]
+index_list = [0]
+
 
 # run_all(index_list)
+
 
 find_all_lp_transactions(0)
 
