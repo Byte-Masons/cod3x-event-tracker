@@ -505,7 +505,7 @@ def user_data(events, web3, index):
 
 # # finds our contract launch_block
 # # subtracts the interval from our from block to help account for the script quitting on one of the 4 deposit,withdraw,repay,borrow event sets before iterating to the next set of blocks
-def get_from_block(df, index):
+def get_from_block(index):
 
     interval = get_lp_config_value('interval', index)
 
@@ -521,6 +521,32 @@ def get_from_block(df, index):
     from_block = int(from_block)
 
     return from_block
+
+# # gets the from_block for our reverse search
+def get_reverse_from_block(index):
+
+    from_block = get_lp_config_value('from_block', index)
+
+    return from_block
+
+# # finds our contract launch_block
+# # subtracts the interval from our from block to help account for the script quitting on one of the 4 deposit,withdraw,repay,borrow event sets before iterating to the next set of blocks
+def get_smart_latest_block(web3, index):
+
+    latest_block = tf.get_latest_block(web3)
+
+    interval = get_lp_config_value('interval', index)
+
+    config_latest_block = get_lp_config_value('last_block', index)
+
+
+    if latest_block > config_latest_block:
+        latest_block = config_latest_block
+        latest_block = latest_block - interval
+
+    latest_block = int(latest_block)
+
+    return latest_block
 
 # # returns the last from block of an asset
 def get_last_asset_block(event_df, token_config_df, receipt_counter, index):
@@ -554,7 +580,7 @@ def find_all_lp_transactions(index):
 
     # contract = tf.get_contract(contract_address, contract_abi, web3)
 
-    from_block = get_from_block(config_df, index)
+    from_block = get_from_block(index)
 
     latest_block = tf.get_latest_block(web3) 
 
@@ -621,6 +647,81 @@ def find_all_lp_transactions(index):
         if to_block >= latest_block:
             to_block = latest_block
         
+    
+    return
+
+# # runs all our looks
+# # updates our csv
+def find_reverse_lp_transactions(index):
+
+    config_df = get_lp_config_df()
+    config_df = config_df.loc[config_df['index'] == index]
+
+    rpc_url = get_lp_config_value('rpc_url', index)
+    
+    web3 = tf.get_web_3(rpc_url)
+
+    # contract = tf.get_contract(contract_address, contract_abi, web3)
+
+    from_block = get_reverse_from_block(index)
+
+    latest_block = get_smart_latest_block(web3, index)
+
+    token_config_df = get_token_config_df()
+
+    interval = get_lp_config_value('interval', index)
+
+    wait_time = get_lp_config_value('wait_time', index)
+
+    to_block = from_block + interval
+
+    token_config_df = get_token_config_df()
+
+    token_config_df = token_config_df.loc[token_config_df['chain_index'] == index]
+
+    receipt_token_list = token_config_df['token_address'].tolist()
+    
+    temp_from_block = latest_block - interval
+
+    temp_to_block = latest_block
+
+    while latest_block > from_block :
+
+        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', temp_to_block, 'Blocks Remaining: ', temp_to_block - from_block)
+
+        receipt_counter = 0
+
+        while receipt_counter < len(receipt_token_list):
+            receipt_token_address = receipt_token_list[receipt_counter]
+
+            receipt_contract = get_a_token_contract(web3, receipt_token_address)
+
+
+            print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', temp_to_block, 'Blocks Remaining: ', temp_to_block - from_block)
+
+            events = get_transfer_events(receipt_contract, temp_from_block, temp_to_block)
+
+            receipt_counter += 1
+            
+
+            if len(events) > 0:
+                contract_df = user_data(events, web3, index)
+                # # print(contract_df)
+                if len(contract_df) > 0:
+                    time.sleep(wait_time)
+                    make_user_data_csv(contract_df, index)
+            else:
+                time.sleep(wait_time)
+
+        config_df['last_block'] = temp_to_block
+        config_df.to_csv('lp_config.csv', index=False)
+
+        temp_from_block -= interval
+        temp_to_block -= interval
+        
+        latest_block -= interval
+
+        # print(deposit_events)
     
     return
 
@@ -754,11 +855,12 @@ def run_all(index_list):
 
 index_list = [0]
 
+find_reverse_lp_transactions(0)
 
-# run_all(index_list)
+# # run_all(index_list)
 
 
-find_all_lp_transactions(0)
+# find_all_lp_transactions(0)
 
 # df = pd.read_csv('all_events.csv')
 
