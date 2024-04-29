@@ -271,6 +271,7 @@ def already_part_of_df(event, wait_time, index):
     log_index = -1
     tx_index = -1
     token_amount = -1
+    wait_time = wait_time / 3
 
     csv = get_lp_config_value('event_csv_name', index)
 
@@ -419,7 +420,7 @@ def user_data(events, web3, index):
 
     # reduces wait time by 50%
     wait_time = get_lp_config_value('wait_time', index)
-    wait_time = wait_time/2
+    wait_time = wait_time/3
 
     start_time = time.time()
     i = 1
@@ -582,7 +583,11 @@ def find_all_lp_transactions(index):
 
     from_block = get_from_block(index)
 
-    latest_block = tf.get_latest_block(web3) 
+    # # latest_block = tf.get_latest_block(web3) 
+
+    # latest_block = 6849655
+
+    latest_block = 6298662
 
     event_csv = get_lp_config_value('event_csv_name', index)
 
@@ -718,7 +723,7 @@ def find_reverse_lp_transactions(index):
 
         temp_from_block -= interval
         temp_to_block -= interval
-        
+
         latest_block -= interval
 
         # print(deposit_events)
@@ -855,14 +860,16 @@ def run_all(index_list):
 
 index_list = [0]
 
-find_reverse_lp_transactions(0)
+# find_reverse_lp_transactions(0)
 
-# # run_all(index_list)
+
+run_all(index_list)
 
 
 # find_all_lp_transactions(0)
 
-# df = pd.read_csv('all_events.csv')
+# df = pd.read_csv('ironclad_events.csv')
+# print(df['block_number'].max())
 
 # df = df.loc[df['wallet_address'] != '0x6387c7193B5563DD17d659b9398ACd7b03FF0080']
 

@@ -65,6 +65,7 @@ def get_latest_block(web3):
 
 # # finds our contract launch_block
 def get_from_block(index):
+
     from_block_list = [51922528, 51922528, 51922639]
 
     from_block = from_block_list[index]
@@ -762,10 +763,10 @@ def find_redeemed_trove_cr(redeemed_trove_history_df):
 
     return
 
-index_list = [0, 1, 2]
+# index_list = [0, 1, 2]
 
-for index in index_list:
-    find_all_transactions(index)
+# for index in index_list:
+#     find_all_transactions(index)
 
 # find_all_transactions(0)
 
