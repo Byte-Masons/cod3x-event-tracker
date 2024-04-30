@@ -117,12 +117,12 @@ def make_checksum_values(df):
 def make_user_data_csv(df, index):
 
     event_csv = get_lp_config_value('event_csv_name', index)
-    old_df = pd.read_csv(event_csv)
-    old_df = old_df.drop_duplicates(subset=['tx_hash','token_volume','log_index', 'transaction_index'], keep='last')
+    old_df = pd.read_csv(event_csv, dtype={'from_address': str, 'to_address': str, 'tx_hash': str, 'timestamp': str, 'token_address': str, 'reserve_address': str, 'token_volume': str, 'asset_price': str, 'usd_token_amount': str, 'log_index': int, 'transaction_index': int, 'block_number': int})
+    old_df = old_df.drop_duplicates(subset=['tx_hash','log_index', 'transaction_index'], keep='last')
 
     combined_df_list = [df, old_df]
     combined_df = pd.concat(combined_df_list)
-    combined_df = combined_df.drop_duplicates(subset=['tx_hash','token_volume','log_index', 'transaction_index'], keep='last')
+    combined_df = combined_df.drop_duplicates(subset=['tx_hash', 'log_index', 'transaction_index'], keep='last')
     
     if len(combined_df) >= len(old_df):
         event_csv = get_lp_config_value('event_csv_name', index)
@@ -197,7 +197,8 @@ def handle_weth_gateway(event, enum_name, index):
     payload_address = event['args']['user']
 
     if payload_address.lower() == gateway_address.lower():
-        print(event)
+        print('Already part of the dataframe')
+        # print(event)
         # if enum_name == 'LEND' or enum_name == 'BORROW':
         #     user = 'onBehalfOf'
         try:
@@ -264,7 +265,7 @@ def get_token_contract_list(web3, index):
 
 # will tell us whether we need to find new data
 # returns a list of [tx_hash, wallet_address]
-def already_part_of_df(event, wait_time, index):
+def already_part_of_df(event, wait_time, from_block, to_block, index):
 
     all_exist = False
     tx_hash = ''
@@ -275,30 +276,33 @@ def already_part_of_df(event, wait_time, index):
 
     csv = get_lp_config_value('event_csv_name', index)
 
-    df = pd.read_csv(csv)
+    df = pd.read_csv(csv, usecols=['tx_hash', 'transaction_index', 'log_index', 'block_number'], dtype={'tx_hash': str, 'transaction_id': int, 'log_index': int, 'block_number': int})
 
-    tx_hash = event['transactionHash'].hex()
-    tx_hash = tx_hash
+    temp_from_block = from_block - 2500
+    temp_to_block = to_block + 2500
 
-    new_df = value_exists(df, tx_hash, 'tx_hash')
-    time.sleep(wait_time)
+    df = df[df['block_number'] > temp_from_block]
+    df = df[df['block_number'] < temp_to_block]
 
-    if len(new_df) > 0:
-        token_amount = event['args']['value']
+    if len(df) > 0:
+
+        tx_hash = event['transactionHash'].hex()
+        tx_hash = tx_hash
+
+        new_df = value_exists(df, tx_hash, 'tx_hash')
         time.sleep(wait_time)
 
-        new_df = value_exists(new_df, token_amount, 'token_volume')
-
         if len(new_df) > 0:
-            log_index = event['logIndex']
+            tx_index = event['transactionIndex']
             time.sleep(wait_time)
 
-            new_df = value_exists(new_df, log_index,'log_index')
+            new_df = value_exists(new_df, tx_index, 'transaction_index')
 
             if len(new_df) > 0:
-                tx_index = event['transactionIndex']
 
-                new_df = value_exists(new_df, tx_index, 'transaction_index')
+                log_index = event['logIndex']
+
+                new_df = value_exists(new_df, log_index,'log_index')
 
                 if len(new_df) > 0:
                     all_exist = True
@@ -399,7 +403,7 @@ def update_batch_pricing(batch_df, web3, index):
     return batch_df
 
 #makes our dataframe
-def user_data(events, web3, index):
+def user_data(events, web3, from_block, to_block, index):
     
     df = pd.DataFrame()
 
@@ -429,7 +433,7 @@ def user_data(events, web3, index):
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
-        exists_list = already_part_of_df(event, wait_time, index)
+        exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
 
         tx_hash = exists_list[0]
         log_index = exists_list[1]
@@ -480,7 +484,8 @@ def user_data(events, web3, index):
                 tx_index_list.append(tx_index)
 
         else:
-            print(event)
+            print('Already part of the dataframe')
+            # print(event)
             time.sleep(wait_time)
             pass
     
@@ -583,11 +588,11 @@ def find_all_lp_transactions(index):
 
     from_block = get_from_block(index)
 
-    # # latest_block = tf.get_latest_block(web3) 
+    latest_block = tf.get_latest_block(web3) 
 
     # latest_block = 6849655
 
-    latest_block = 6298662
+    # latest_block = 6298662
 
     event_csv = get_lp_config_value('event_csv_name', index)
 
@@ -629,7 +634,7 @@ def find_all_lp_transactions(index):
             
 
             if len(events) > 0:
-                contract_df = user_data(events, web3, index)
+                contract_df = user_data(events, web3, from_block, to_block, index)
                 # # print(contract_df)
                 if len(contract_df) > 0:
                     time.sleep(wait_time)
@@ -863,10 +868,10 @@ index_list = [0]
 # find_reverse_lp_transactions(0)
 
 
-run_all(index_list)
+# run_all(index_list)
 
 
-# find_all_lp_transactions(0)
+find_all_lp_transactions(0)
 
 # df = pd.read_csv('ironclad_events.csv')
 # print(df['block_number'].max())
