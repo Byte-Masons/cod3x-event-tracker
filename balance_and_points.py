@@ -73,9 +73,14 @@ def make_user_data_csv(df, csv_name):
         print()
     return
 
+# # finds if a transaction adds to or reduces a balance 
+# # (deposit + borrow add to a balance and withdraw + repay reduce a balance)
 def set_token_flows(csv_name, index):
     event_df = pd.read_csv(csv_name, usecols=['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash'], dtype={'from_address': str,'to_address': str,'timestamp' : str,'token_address': str, 'token_volume': float,'tx_hash': str})
-
+    
+    # # tries to remove the null address to greatly reduce computation needs
+    event_df = event_df.loc[event_df['to_address'] != '0x0000000000000000000000000000000000000000']
+    
     unique_user_df = get_unique_users()
 
     unique_user_list = unique_user_df['to_address'].to_list()
@@ -115,9 +120,9 @@ def set_token_flows(csv_name, index):
     combo_df = pd.concat([deposit_df, borrow_df, withdraw_df, repay_df])
     combo_df = combo_df[['user_address', 'tx_hash', 'token_address','token_volume', 'timestamp']]
 
-    make_user_data_csv(combo_df, token_flow_csv)
+    # make_user_data_csv(combo_df, token_flow_csv)
 
-    return
+    return combo_df
 
 def get_token_flows():
     df = pd.read_csv('token_flow.csv', dtype={'from_address': str,'to_address': str,'timestamp' : float,'token_address': str, 'token_volume': float,'tx_hash': str})
@@ -140,21 +145,21 @@ def get_first_n_addresses():
 
     return df
 
-def set_rolling_balance():
-    df = get_token_flows()
+def set_rolling_balance(df):
+    # df = get_token_flows()
+
     # df = df.loc[df['user_address'] == '0xE692256D270946A407f8Ba9885D62e883479F0b8']
     df.sort_values(by=['timestamp'], ascending=True)
-    print(df)
+
     # Group the DataFrame by 'name' and calculate cumulative sum
     name_groups = df.groupby(['user_address','token_address'])['token_volume'].transform(pd.Series.cumsum)
 
     # Print the DataFrame with the new 'amount_cumulative' column
-    print(df.assign(amount_cumulative=name_groups))
     df = df.assign(amount_cumulative=name_groups)
 
-    df.to_csv('rolling_balance.csv', index=False)
+    # df.to_csv('rolling_balance.csv', index=False)
 
-    return
+    return df
 
 def get_rolling_balance():
     df = pd.read_csv('rolling_balance.csv', dtype={'user_address': str,'tx_hash': str, 'token_address':str, 'token_volume': float, 'timestamp': float, 'amount_cumulative': float})
@@ -241,7 +246,8 @@ def get_tx_usd_amount(reserve_address, token_amount, web3, index):
 
 def get_time_difference(df):
 
-    df = df.loc[df['user_address'] == '0xE692256D270946A407f8Ba9885D62e883479F0b8']
+    # # df = df.loc[df['user_address'] == '0xE692256D270946A407f8Ba9885D62e883479F0b8']
+    # # df = df.loc[df['user_address'] == '0x67D69CA5B47F7d45D9A7BB093479fcA732023dfa']
 
     # Sort by Name and timestamp for correct grouping
     df = df.sort_values(by=['user_address', 'token_address', 'timestamp'])
@@ -250,7 +256,7 @@ def get_time_difference(df):
     time_diff = df.groupby(['user_address', 'token_address'])['timestamp'].diff()
 
     # Handle the first row for each name (no difference)
-    time_diff.iloc[::2] = pd.NA  # Set difference to NaN for the first row of each name group
+    # time_diff.iloc[::2] = pd.NA  # Set difference to NaN for the first row of each name group
 
     # Calculate difference in seconds (adjust as needed)
     time_diff_seconds = time_diff.fillna(0)
@@ -261,12 +267,12 @@ def get_time_difference(df):
     # print(time_diff_seconds.astype(int).rename('time_diff_seconds'))
     return df
 
-def calculate_accrued_points(group):
-  group['previous_amount'] = group['amount_cumulative'].shift(1)
-  group['accrued_embers'] = (group['embers'] * group['time_difference'] / 86400) * group['previous_amount'].fillna(0)
+def calculate_accrued_points(df):
+  df['previous_amount'] = df['amount_cumulative'].shift(1)
+  df['accrued_embers'] = (df['embers'] * df['time_difference'] / 86400) * df['previous_amount'].fillna(0)
 
-  group = group[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'amount_cumulative', 'accrued_embers']]
-  return group
+  df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'accrued_embers']]
+  return df
 
 def set_realized_embers(df):
 
@@ -274,11 +280,129 @@ def set_realized_embers(df):
 
     return df
 
+def get_last_tracked_embers(df):
+
+    df['timestamp'] = df['timestamp'].astype(float)
+    df['accrued_embers'] = df['accrued_embers'].astype(float)
+    # Group by wallet_address and token_address
+    grouped_df = df.groupby(['user_address', 'token_address'])
+
+    ember_balance = grouped_df['accrued_embers'].sum()
+
+    # df['ember_balance'] = ember_balance.reset_index(drop=True)  # Drop unnecessary index
+
+    # Get max embers and corresponding timestamp using agg
+    max_embers_df = grouped_df.agg(max_embers=('accrued_embers', max), max_timestamp=('timestamp', max))
+
+    # Reset index to remove multi-level indexing
+    max_embers_df = max_embers_df.reset_index()
+
+    max_embers_df['max_embers'] = ember_balance.reset_index(drop=True) 
+    timestamp_list = max_embers_df['max_timestamp'].tolist()
+    timestamp_list = [float(timestamp) for timestamp in timestamp_list]
+
+    max_embers_df.rename(columns = {'max_timestamp':'timestamp', 'max_embers': 'ember_balance'}, inplace = True) 
+
+    merged_df = max_embers_df.merge(df, how='inner', on=['user_address', 'token_address', 'timestamp'])
+
+    merged_df = merged_df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance']]
+
+    # print(merged_df)
+    # Set amount_cumulative values less than 0 to 0 (in-place modification)
+    merged_df['amount_cumulative'] = merged_df['amount_cumulative'].clip(lower=0)
+    merged_df['ember_balance'] = merged_df['ember_balance'].clip(lower=0)
+    
+    # print(merged_df)
+
+    return merged_df
+
+# # function we will apply to out dataframe to estimate how many embers users have earned since their last event
+def simulate_accrued_points(df):
+  df['ember_balance'] += (df['embers'] * df['time_difference'] / 86400) * df['amount_cumulative'].fillna(0)
+
+  df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance']]
+  return df
+
+# # takes in a dataframe with the last known balance and accrued ember amount
+# # outputs a dataframe with expected accrued embers since last event
+def accrue_latest_embers(df):
+
+    current_unix = int(time.time())
+    df['time_difference'] = current_unix - df['timestamp']
+
+    df = df.groupby(['user_address','token_address']).apply(simulate_accrued_points)
+
+    df['total_ember_balance'] = df.groupby('user_address')['ember_balance'].transform('sum')
+
+    df = df.loc[df['total_ember_balance'] > 0]
+
+    return df
+
+def set_embers_2(index):
+    csv_name = get_lp_config_value('event_csv_name', index)
+
+    df = set_token_flows(csv_name, index)
+
+    df = set_rolling_balance(df)
+
+    config_df = get_token_config_df(index)
+
+    reserve_address_list = config_df['underlying_address'].tolist()
+    token_address_list = config_df['token_address'].tolist()
+    embers_list = config_df['embers'].tolist()
+    
+    contract_address = get_lp_config_value('aave_oracle_address', index)
+    contract_abi = get_aave_oracle_abi()
+    rpc_url = get_lp_config_value('rpc_url', index)
+    web3 = get_web_3(rpc_url)
+
+    contract = get_contract(contract_address, contract_abi, web3)
+
+    df_list = []
+
+    i = 0
+    while i < len(reserve_address_list):
+        reserve_address = reserve_address_list[i]
+        token_address = token_address_list[i]
+        embers = embers_list[i]
+        
+        time.sleep(0.25)
+        value_usd = contract.functions.getAssetPrice(reserve_address).call()
+        time.sleep(0.25)
+
+        value_usd = value_usd / 1e8
+
+        decimals = get_token_config_value('decimals', reserve_address, index)
+
+        temp_df = df.loc[df['token_address'] == token_address]
+
+        if len(temp_df) > 0:
+
+            temp_df['amount_cumulative'] = temp_df['amount_cumulative'] / decimals
+            temp_df['amount_cumulative'] = temp_df['amount_cumulative'] * value_usd
+            temp_df['embers'] = embers
+
+
+            df_list.append(temp_df)
+        # print(temp_df[['user_address', 'amount_cumulative']])
+        
+        i += 1
+    
+    df = pd.concat(df_list)
+
+    df = get_time_difference(df)
+
+    df = df.reset_index(drop=True)
+
+    # df.to_csv('test.csv', index=False)
+    
+    return df
+
 def set_embers(index):
 
     df = get_rolling_balance()
 
-    df = df.loc[df['user_address'] == '0xE692256D270946A407f8Ba9885D62e883479F0b8']
+    # df = df.loc[df['user_address'].isin(['0x67D69CA5B47F7d45D9A7BB093479fcA732023dfa', '0xE692256D270946A407f8Ba9885D62e883479F0b8'])]
 
     # # df = df.loc[df['user_address'] != '0x0000000000000000000000000000000000000000']
 
@@ -338,10 +462,15 @@ def set_embers(index):
 csv_name = 'ironclad_events.csv'
 index = 0
 
-df = set_embers(index)
+# df = set_embers(index)
 
-df = set_realized_embers(df)
+# df = set_realized_embers(df)
 
-# Apply the function by group (token)
+# df = get_last_tracked_embers(df)
 
+# df = accrue_latest_embers(df)
+
+# df.to_csv('test.csv', index=False)
+
+df = set_embers_2(index)
 print(df)
