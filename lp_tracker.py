@@ -442,7 +442,6 @@ def user_data(events, web3, from_block, to_block, index):
         exists = exists_list[4]
 
         if exists == False:
-            time.sleep(wait_time)
             try:
                 block = web3.eth.get_block(event['blockNumber'])
                 block_number = int(block['number'])
@@ -868,10 +867,10 @@ index_list = [0]
 # find_reverse_lp_transactions(0)
 
 
-# run_all(index_list)
+run_all(index_list)
 
 
-find_all_lp_transactions(0)
+# find_all_lp_transactions(0)
 
 # df = pd.read_csv('ironclad_events.csv')
 # print(df['block_number'].max())
