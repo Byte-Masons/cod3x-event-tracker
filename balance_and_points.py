@@ -10,9 +10,9 @@ def set_unique_users(csv_name):
 
     df = df.drop_duplicates(subset=['to_address'])
 
-    df.to_csv('unique_user_list.csv', index=False)
+    # df.to_csv('unique_user_list.csv', index=False)
 
-    return
+    return df
 
 def get_unique_users():
     df = pd.read_csv('unique_user_list.csv')
@@ -81,7 +81,7 @@ def set_token_flows(csv_name, index):
     # # tries to remove the null address to greatly reduce computation needs
     event_df = event_df.loc[event_df['to_address'] != '0x0000000000000000000000000000000000000000']
     
-    unique_user_df = get_unique_users()
+    unique_user_df = set_unique_users(csv_name)
 
     unique_user_list = unique_user_df['to_address'].to_list()
 
@@ -253,6 +253,7 @@ def get_time_difference(df):
     df = df.sort_values(by=['user_address', 'token_address', 'timestamp'])
 
     # Calculate time difference for each name group
+    df['timestamp'] = df['timestamp'].astype(float)
     time_diff = df.groupby(['user_address', 'token_address'])['timestamp'].diff()
 
     # Handle the first row for each name (no difference)
@@ -394,7 +395,13 @@ def set_embers_2(index):
 
     df = df.reset_index(drop=True)
 
-    # df.to_csv('test.csv', index=False)
+    df = set_realized_embers(df)
+
+    df = get_last_tracked_embers(df)
+
+    df = accrue_latest_embers(df)
+
+    df.to_csv('test.csv', index=False)
     
     return df
 
