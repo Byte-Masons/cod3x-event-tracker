@@ -3,34 +3,25 @@ from web3.middleware import geth_poa_middleware
 import pandas as pd
 import time
 import sys
-sys.path.append("..")  # Add the root directory to the search path
+import sqlite3
+# sys.path.append("..")  # Add the root directory to the search path
 import transaction_finder as tf
+import sql
 
-# Replace with the actual Optimism RPC URL
-# rpc_url = 'https://linea.blockpi.network/v1/rpc/public'
-# # rpc_url = ''
+connection = sqlite3.connect("turtle.db")
 
-# Create a Web3 instance to connect to the Optimism blockchain
-# web3 = Web3(Web3.HTTPProvider(rpc_url))
-# web3.middleware_onion.inject(geth_poa_middleware, layer=0)
-
-# LATEST_BLOCK = web3.eth.get_block_number()
-# LATEST_BLOCK = 951714 + 1
-#Lending pool founding block
-# FROM_BLOCK = 758632
-# FROM_BLOCK = 778064
-# FROM_BLOCK = 0
+cursor = connection.cursor()
 
 # # reads from our static config csv
 def get_lp_config_df():
-    csv_file_path = "../config/lp_config.csv"
+    csv_file_path = "./config/lp_config.csv"
     lp_config_df = pd.read_csv(csv_file_path)
 
     return lp_config_df
 
 # # reads from our static config csv
 def get_token_config_df():
-    token_config_df = pd.read_csv('../config/token_config.csv')
+    token_config_df = pd.read_csv('./config/token_config.csv')
 
     return token_config_df
 
@@ -291,7 +282,7 @@ def already_part_of_df(event, wait_time, from_block, to_block, index):
 
         tx_hash = event['transactionHash'].hex()
         tx_hash = tx_hash
-
+        print()
         new_df = value_exists(df, tx_hash, 'tx_hash')
         time.sleep(wait_time)
 
@@ -436,13 +427,15 @@ def user_data(events, web3, from_block, to_block, index):
         print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
-        exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
+        # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
+        exists_list = sql.already_part_of_database(cursor, event, wait_time)
 
         tx_hash = exists_list[0]
         log_index = exists_list[1]
         tx_index = exists_list[2]
         token_amount = exists_list[3]
-        exists = exists_list[4]
+        token_address = exists_list[4]
+        exists = exists_list[5]
 
         if exists == False:
             try:
@@ -463,6 +456,9 @@ def user_data(events, web3, from_block, to_block, index):
             if token_amount < 0:
                 token_amount = event['args']['value']
             
+            if len(token_address) < 1:
+                token_address = event['address']
+            
             log_index = event['logIndex']
             time.sleep(wait_time)
 
@@ -477,7 +473,7 @@ def user_data(events, web3, from_block, to_block, index):
                 tx_hash_list.append(tx_hash)
                 timestamp_list.append(block['timestamp'])
                 time.sleep(wait_time)
-                token_address = event['address']
+                # token_address = event['address']
                 token_address_list.append(token_address)
                 reserve_address = get_token_config_value('underlying_address', token_address, index)
                 reserve_address_list.append(reserve_address)
@@ -638,12 +634,13 @@ def find_all_lp_transactions(index):
                 # # print(contract_df)
                 if len(contract_df) > 0:
                     time.sleep(wait_time)
-                    make_user_data_csv(contract_df, index)
+                    sql.write_to_db(cursor, contract_df)
+                    # make_user_data_csv(contract_df, index)
             else:
                 time.sleep(wait_time)
 
         config_df['last_block'] = from_block
-        config_df.to_csv('../config/lp_config.csv', index=False)
+        config_df.to_csv('./config/lp_config.csv', index=False)
 
         from_block += interval
         to_block += interval
@@ -719,7 +716,8 @@ def find_reverse_lp_transactions(index):
                 # # print(contract_df)
                 if len(contract_df) > 0:
                     time.sleep(wait_time)
-                    make_user_data_csv(contract_df, index)
+                    sql.write_to_db(cursor, contract_df)
+                    # make_user_data_csv(contract_df, index)
             else:
                 time.sleep(wait_time)
 
@@ -794,7 +792,7 @@ def get_all_gateway_transactions():
         df['block_number'] = block_number_list
         df['last_block_number'] = last_block_number
 
-    make_user_data_csv(df)
+    # make_user_data_csv(df)
 
 # # makes deposits and borrows positive numbers
 # # makes withdrawals and repays as negative numbers
@@ -870,7 +868,7 @@ index_list = [0]
 
 # run_all(index_list)
 
-# find_all_lp_transactions(0)
+find_all_lp_transactions(0)
 
 # csv_name = '../events/ironclad_events.csv'
 # csv_name_2 = '../events/ironclad_events_2.csv'

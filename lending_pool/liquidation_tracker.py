@@ -2,7 +2,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware 
 import pandas as pd
 import time
-import transaction_finder as tf
+import lending_pool.transaction_finder as tf
 
 # # returns our config csv as a dataframe
 def get_config_df(csv_name):
