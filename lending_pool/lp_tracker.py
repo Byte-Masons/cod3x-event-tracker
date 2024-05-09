@@ -5,8 +5,8 @@ import time
 import sys
 import sqlite3
 # sys.path.append("..")  # Add the root directory to the search path
-import transaction_finder as tf
-import sql
+from lending_pool import transaction_finder as tf
+from sql_interfacer import sql
 
 connection = sqlite3.connect("turtle.db")
 
@@ -282,7 +282,7 @@ def already_part_of_df(event, wait_time, from_block, to_block, index):
 
         tx_hash = event['transactionHash'].hex()
         tx_hash = tx_hash
-        print()
+
         new_df = value_exists(df, tx_hash, 'tx_hash')
         time.sleep(wait_time)
 
@@ -635,6 +635,7 @@ def find_all_lp_transactions(index):
                 if len(contract_df) > 0:
                     time.sleep(wait_time)
                     sql.write_to_db(cursor, contract_df)
+                    # sql.drop_duplicates_from_database(cursor)
                     # make_user_data_csv(contract_df, index)
             else:
                 time.sleep(wait_time)
@@ -861,14 +862,16 @@ def run_all(index_list):
             time.sleep(65)
             run_all(index_list)
 
-index_list = [0]
+# print('Hello World')
+# bp.set_embers_smart()
+# index_list = [0]
 
 # find_reverse_lp_transactions(0)
 
 
 # run_all(index_list)
 
-find_all_lp_transactions(0)
+# find_all_lp_transactions(0)
 
 # csv_name = '../events/ironclad_events.csv'
 # csv_name_2 = '../events/ironclad_events_2.csv'
