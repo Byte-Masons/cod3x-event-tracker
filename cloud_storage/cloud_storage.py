@@ -17,8 +17,7 @@ import sys
 import io
 from io import BytesIO
 
-PATH = os.path.join(os.getcwd(), 'fast-web-419215-8532ab1a104c.json')
-
+PATH = os.path.join(os.getcwd(), 'fast-web-419215-35d284e06546.json')
 STORAGE_CLIENT = storage.Client(PATH)
 
 def read_from_cloud_storage(filename, bucketname):

@@ -617,8 +617,62 @@ def set_embers_database():
 
     cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'ironclad_bucket')
 
+    connection.close()
+
     return df
 
+import pandas as pd
+
+def filter_after_snapshot(df, embers_snapshot_df):
+  """
+  Filters rows in 'df' that occur after corresponding entries in 'embers_snapshot_df'
+
+  Args:
+      df: The DataFrame containing data to be filtered.
+      embers_snapshot_df: The DataFrame containing the snapshot reference.
+
+  Returns:
+      A new DataFrame containing filtered rows from 'df'.
+  """
+  print(df)
+  print(embers_snapshot_df)
+
+  filtered_rows = []
+  for index, row in df.iterrows():
+    user_address = row['user_address']
+    token_address = row['token_address']
+    timestamp = row['timestamp']
+
+    # Find matching snapshot entry
+    snapshot_entry = embers_snapshot_df[(embers_snapshot_df['user_address'] == user_address) & 
+                                        (embers_snapshot_df['token_address'] == token_address)]
+
+    # Check if snapshot entry exists and timestamp is after
+    if not snapshot_entry.empty and timestamp > snapshot_entry.iloc[0]['timestamp']:
+      filtered_rows.append(row.to_dict())
+
+  return pd.DataFrame(filtered_rows)
+
+# # uses our last embers snapshot to build upon
+def set_embers_database_smart():
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    column_list = ['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash']
+
+    rows = sql.select_specific_columns(cursor, column_list)
+
+    df = sql.get_sql_df(rows, column_list)
+    df[['token_volume', 'timestamp']] = df[['token_volume', 'timestamp']].astype(float)
+
+    df = set_token_flows(df, cursor)
+
+    embers_snapshot_df = pd.read_csv('./test/current_user_tvl_embers.csv')
+
+    filtered_df = filter_after_snapshot(df.copy(), embers_snapshot_df.copy())
+
+    return filtered_df
 
 def get_first_timestamp(group):
   # Select one tx_hash (any from the group)
