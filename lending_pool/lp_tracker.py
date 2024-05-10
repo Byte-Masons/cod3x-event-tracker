@@ -7,6 +7,7 @@ import sqlite3
 # sys.path.append("..")  # Add the root directory to the search path
 from lending_pool import transaction_finder as tf
 from sql_interfacer import sql
+from lending_pool import balance_and_points as bp
 
 connection = sqlite3.connect("turtle.db")
 
@@ -655,7 +656,8 @@ def find_all_lp_transactions(index):
         if to_block >= latest_block:
             to_block = latest_block
         
-    
+    bp.set_embers_database(index)
+
     return
 
 # # runs all our looks
@@ -854,11 +856,18 @@ def find_rolling_lp_balance(df):
 
 def run_all(index_list):
 
+    index_counter = 0
     for index in index_list:
         try:
             find_all_lp_transactions(index)
         except:
             print(index, ' :failed')
+            time.sleep(65)
+            run_all(index_list)
+        
+        index_counter += 1
+        if index_counter == len(index_list):
+            print('Run it Back Turbo')
             time.sleep(65)
             run_all(index_list)
 

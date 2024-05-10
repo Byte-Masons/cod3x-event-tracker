@@ -285,7 +285,7 @@ def calculate_accrued_points(df):
     # # Set accrued_embers to 0 for rows with timestamps before a specific threshold (March 22nd in this case)
     # df.loc[df['timestamp'] < 1711080000, 'accrued_embers'] = 0
 
-    df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'accrued_embers']]
+    df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'accrued_embers', 'token_cumulative']]
     return df
 
 def get_double_ember_list():
@@ -343,7 +343,7 @@ def get_last_tracked_embers(df):
 
     merged_df = max_embers_df.merge(df, how='inner', on=['user_address', 'token_address', 'timestamp'])
 
-    merged_df = merged_df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance']]
+    merged_df = merged_df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance', 'token_cumulative']]
 
     # Set amount_cumulative values less than 0 to 0 (in-place modification)
     merged_df['amount_cumulative'] = merged_df['amount_cumulative'].clip(lower=0)
@@ -363,14 +363,14 @@ def simulate_accrued_points(df):
 def simulate_regular_accrued_points(df):
   df['regular_ember_balance'] += (df['embers'] * df['time_difference'] / 86400) * df['amount_cumulative'].fillna(0)
 
-  df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance', 'regular_ember_balance',]]
+  df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance', 'regular_ember_balance', 'token_cumulative']]
   return df
 
 # # function we will apply to out dataframe to estimate how many embers users have earned since their last event
 def simulate_multiplier_accrued_points(df):
   df['multiplier_ember_balance'] += (df['embers'] * df['time_difference'] / 86400) * df['amount_cumulative'].fillna(0)
 
-  df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance', 'regular_ember_balance', 'multiplier_ember_balance',]]
+  df = df[['user_address', 'token_address', 'tx_hash', 'timestamp', 'time_difference', 'embers', 'amount_cumulative', 'ember_balance', 'regular_ember_balance', 'multiplier_ember_balance', 'token_cumulative']]
   return df
 
 # # takes in a dataframe with the last known balance and accrued ember amount
@@ -528,7 +528,7 @@ def drop_blacklisted_addresses(df):
     return df
 
 # # updates embers from our database
-def set_embers_database():
+def set_embers_database(index):
 
     connection = sqlite3.connect("turtle.db")
 
@@ -583,9 +583,9 @@ def set_embers_database():
         if len(temp_df) > 0:
 
             temp_df['amount_cumulative'] = temp_df['amount_cumulative'] / decimals
+            temp_df['token_cumulative'] = temp_df['amount_cumulative']
             temp_df['amount_cumulative'] = temp_df['amount_cumulative'] * value_usd
             temp_df['embers'] = embers
-
 
             df_list.append(temp_df)
         
@@ -597,6 +597,7 @@ def set_embers_database():
 
     # makes the lowest accumualtive = 0 (user's can't have negative balances)
     df['amount_cumulative'] = df['amount_cumulative'].clip(lower=0)
+    df['token_cumulative'] = df['token_cumulative'].clip(lower=0)
 
     df = get_time_difference(df)
 
@@ -608,16 +609,33 @@ def set_embers_database():
     
     print('set_realized_embers complete')
 
-
     df = get_last_tracked_embers(df)
     print('get_last_tracked_embers complete')
 
     df = accrue_latest_embers(df)
     print('accrue_latest_embers complete')
 
-    cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'ironclad_bucket')
+    # sql.make_new_snapshot_table(cursor, 'snapshot', df)
 
-    connection.close()
+    # rows = sql.select_star(cursor, 'snapshot')
+
+    # column_list = ['user_address','token_address','tx_hash','timestamp','time_difference','embers','amount_cumulative','ember_balance','total_ember_balance','token_cumulative']
+    
+    # df = sql.get_sql_df(rows, column_list)
+
+    # user_sum_df = df.groupby('user_address')['amount_cumulative'].sum().reset_index()
+
+    # # makes a 1 item summary of our user with their total_tvl + total_ember_balance
+#     user_summary_df = df.groupby('user_address').agg(
+#     amount_cumulative=('amount_cumulative', sum),
+#     total_ember_balance=('total_ember_balance', 'last')  # Assuming the latest total_embers is desired
+# ).reset_index()
+
+    try:
+        cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
+    except:
+        print("Couldn't write to bucket")
+
 
     return df
 
@@ -715,16 +733,16 @@ def find_median_stats(ember_csv_name, deposit_list, borrow_list, minimum_value):
     borrow_df.to_csv('borrow.csv', index=False)
     return
 
-csv_name = 'ironclad_events.csv'
-snapshot_csv_name = 'snapshot_events.csv'
-ember_csv_name = 'test.csv'
-index = 0
-deposit_list = ['0xe7334Ad0e325139329E747cF2Fc24538dD564987', '0x02CD18c03b5b3f250d2B29C87949CDAB4Ee11488', '0x9c29a8eC901DBec4fFf165cD57D4f9E03D4838f7', '0x272CfCceFbEFBe1518cd87002A8F9dfd8845A6c4',
-                '0x58254000eE8127288387b04ce70292B56098D55C', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', '0xC17312076F48764d6b4D263eFdd5A30833E311DC', '0x4522DBc3b2cA81809Fa38FEE8C1fb11c78826268']
+# csv_name = 'ironclad_events.csv'
+# snapshot_csv_name = 'snapshot_events.csv'
+# ember_csv_name = 'test.csv'
+# index = 0
+# deposit_list = ['0xe7334Ad0e325139329E747cF2Fc24538dD564987', '0x02CD18c03b5b3f250d2B29C87949CDAB4Ee11488', '0x9c29a8eC901DBec4fFf165cD57D4f9E03D4838f7', '0x272CfCceFbEFBe1518cd87002A8F9dfd8845A6c4',
+#                 '0x58254000eE8127288387b04ce70292B56098D55C', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', '0xC17312076F48764d6b4D263eFdd5A30833E311DC', '0x4522DBc3b2cA81809Fa38FEE8C1fb11c78826268']
 
-borrow_list = ['0xe5415Fa763489C813694D7A79d133F0A7363310C', '0xBcE07537DF8AD5519C1d65e902e10aA48AF83d88', '0x06D38c309d1dC541a23b0025B35d163c25754288', '0x5eEA43129024eeE861481f32c2541b12DDD44c08',
-            '0x05249f9Ba88F7d98fe21a8f3C460f4746689Aea5', '0x083E519E76fe7e68C15A6163279eAAf87E2addAE', '0x3F332f38926b809670b3cac52Df67706856a1555', '0xF8D68E1d22FfC4f09aAA809B21C46560174afE9c']
+# borrow_list = ['0xe5415Fa763489C813694D7A79d133F0A7363310C', '0xBcE07537DF8AD5519C1d65e902e10aA48AF83d88', '0x06D38c309d1dC541a23b0025B35d163c25754288', '0x5eEA43129024eeE861481f32c2541b12DDD44c08',
+#             '0x05249f9Ba88F7d98fe21a8f3C460f4746689Aea5', '0x083E519E76fe7e68C15A6163279eAAf87E2addAE', '0x3F332f38926b809670b3cac52Df67706856a1555', '0xF8D68E1d22FfC4f09aAA809B21C46560174afE9c']
 
-minimum_value = 1000
+# minimum_value = 1000
 
 # set_embers_smart()

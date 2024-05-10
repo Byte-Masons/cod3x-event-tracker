@@ -28,6 +28,46 @@ def make_table(cursor):
     
     return
 
+# # makes a table in our database for strictly our snapshot data point
+def make_snapshot_table(cursor):
+    # user_address,token_address,tx_hash,timestamp,time_difference,embers,amount_cumulative,ember_balance,total_ember_balance
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS snapshot(
+                user_address TEXT,
+                token_address TEXT,
+                tx_hash TEXT,
+                timestamp TEXT,
+                time_difference TEXT,
+                embers TEXT,
+                amount_cumulative TEXT,
+                ember_balance TEXT,
+                total_ember_balance TEXT,
+                token_cumulative TEXT
+                )
+            """)
+    
+    connection.commit()
+    
+    return
+
+# # inserts our snapshot dataframe data into our snapshot database
+def insert_data_into_snapshot_table(cursor, snapshot_df):
+
+    snapshot_df = snapshot_df[['user_address','token_address','tx_hash','timestamp','time_difference','embers','amount_cumulative','ember_balance','total_ember_balance','token_cumulative']]
+    snapshot_df = snapshot_df.astype(str)
+
+    # Get DataFrame as a list of tuples
+    data_tuples = snapshot_df.to_records(index=False)  # Avoids inserting the index as a column
+
+    cursor.executemany("""
+        INSERT INTO snapshot (user_address,token_address,tx_hash,timestamp,time_difference,embers,amount_cumulative,ember_balance,total_ember_balance,token_cumulative)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, data_tuples)
+
+    connection.commit()
+
+    return
+
 def make_dummy_data(cursor):
     cursor.execute("""
             INSERT INTO persons VALUES
@@ -37,12 +77,22 @@ def make_dummy_data(cursor):
             """)
     return
 
-def select_star(cursor):
-    cursor.execute("""
-            SELECT CAST(timestamp as FLOAT) as float_stamp
-            FROM persons
+def select_star_count(cursor, table_name):
+    cursor.execute(f"""
+            SELECT COUNT(*)
+            FROM {table_name}
             """)
 
+    rows = cursor.fetchall()
+
+    return rows
+
+def select_star(cursor, table_name):
+    cursor.execute(f"""
+        SELECT *
+        FROM {table_name}
+        """)
+    
     rows = cursor.fetchall()
 
     return rows
@@ -99,7 +149,7 @@ def drop_duplicates_from_database(cursor):
 
 def write_to_db(cursor, df):
 
-    old_length = select_star(cursor)
+    old_length = select_star_count(cursor, 'persons')
     old_length = old_length[0]
     old_length = int(old_length[0])
 
@@ -116,7 +166,7 @@ def write_to_db(cursor, df):
 
     connection.commit()
 
-    new_length = select_star(cursor)
+    new_length = select_star_count(cursor, 'persons')
     new_length = new_length[0]
     new_length = int(new_length[0])
 
@@ -230,24 +280,75 @@ def already_part_of_database(cursor, event, wait_time):
 
     return response_list
 
+# # returns only rows of data that occured since the last snapshot
+def select_next_batch_of_ember_accumulators(cursor, column_list):
+    
+    columns_string = ', '.join(column_list)
+
+    query = f"SELECT DISTINCT {columns_string} FROM persons"
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+
+    return rows
+
+# # drops our specified table
+def drop_table(cursor, table_name):
+    
+    cursor.execute(f"DROP TABLE {table_name}")
+    print('table_dropped')
+    
+    connection.commit()
+
+    return
+
+def make_new_snapshot_table(cursor, table_name, snapshot_df):
+
+    try:
+        drop_table(cursor, table_name)
+    except:
+        print('No table to drop')
+    
+    try:
+        make_snapshot_table(cursor)
+    except:
+        print('Table already exists')
+
+    insert_data_into_snapshot_table(cursor, snapshot_df)
+
+    return
+
+# t2.to_address, t2.token_address, t2.timestamp
+# from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
+def get_post_snapshot_data(cursor, snapshot_table_name, all_data_table_name):
+    query = f"""
+        SELECT t2.from_address, t2.to_address,t2.tx_hash,t2.timestamp,t2.token_address,t2.reserve_address,t2.token_volume,t2.asset_price,t2.usd_token_amount,t2.log_index,t2.transaction_index,t2.block_number
+        FROM {all_data_table_name} AS t2
+        INNER JOIN (
+        SELECT user_address, token_address, MAX(timestamp) AS latest_timestamp
+        FROM {snapshot_table_name}
+        GROUP BY user_address, token_address
+        ) AS latest_snapshots
+        ON t2.to_address = latest_snapshots.user_address 
+        AND t2.token_address = latest_snapshots.token_address
+        AND t2.timestamp > latest_snapshots.latest_timestamp;
+        """
+    
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+    
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+
+    df = get_sql_df(rows, column_list)
+
+    return rows
+
+# snapshot_df = pd.read_csv('./test/current_user_tvl_embers.csv')
+# # make_snapshot_table(cursor)
+# # insert_data_into_snapshot_table(cursor, snapshot_df)
+
 # rows = select_star(cursor)
-
-# rows = select_rows_greater_than_timestamp(cursor, 1709544909)
-
-# column_list = ['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash']
-
-# rows = select_specific_columns(cursor, column_list)
 # print(rows)
-
-# value = '0x0000000000000000000000000000000000000000'
-# column_name = 'from_address'
-# make_table(cursor)
-# write_to_db(cursor)
-# select_star(cursor)
-# sql_value_exists(cursor,value, column_name)
-
-# connection.commit()
-# # # Close the connection
 # connection.close()
-
-# print("Data inserted successfully!")
