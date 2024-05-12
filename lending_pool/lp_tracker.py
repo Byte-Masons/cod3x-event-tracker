@@ -8,6 +8,7 @@ import sqlite3
 from lending_pool import transaction_finder as tf
 from sql_interfacer import sql
 from lending_pool import balance_and_points as bp
+from cloud_storage import cloud_storage as cs
 
 connection = sqlite3.connect("turtle.db")
 
@@ -868,6 +869,8 @@ def run_all(index_list):
         index_counter += 1
         if index_counter == len(index_list):
             print('Run it Back Turbo')
+            df = sql.get_transaction_data_df('persons')
+            cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
             time.sleep(65)
             run_all(index_list)
 

@@ -8,9 +8,9 @@ cursor = connection.cursor()
 
 # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
 
-def make_table(cursor):
-    cursor.execute("""
-            CREATE TABLE IF NOT EXISTS persons(
+def make_table(cursor, table_name):
+    cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS {table_name}(
                 from_address TEXT,
                 to_address TEXT,
                 tx_hash TEXT,
@@ -31,7 +31,7 @@ def make_table(cursor):
 # # makes a table in our database for strictly our snapshot data point
 def make_snapshot_table(cursor):
     # user_address,token_address,tx_hash,timestamp,time_difference,embers,amount_cumulative,ember_balance,total_ember_balance
-    cursor.execute("""
+    cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS snapshot(
                 user_address TEXT,
                 token_address TEXT,
@@ -319,6 +319,23 @@ def make_new_snapshot_table(cursor, table_name, snapshot_df):
 
     return
 
+# # makes a transaction df table
+def make_new_table(cursor, table_name, df):
+    
+    try:
+        drop_table(cursor, table_name)
+    except:
+        print('No table to drop')
+    
+    try:
+        make_table(cursor, table_name)
+    except:
+        print('Table already exists')
+
+    insert_data_into_snapshot_table(cursor, df)
+
+    return
+
 # t2.to_address, t2.token_address, t2.timestamp
 # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
 def get_post_snapshot_data(cursor, snapshot_table_name, all_data_table_name):
@@ -344,6 +361,29 @@ def get_post_snapshot_data(cursor, snapshot_table_name, all_data_table_name):
     df = get_sql_df(rows, column_list)
 
     return rows
+
+# # makes a dataframe of our transaction table data
+def get_transaction_data_df(all_data_table_name):
+    
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    query = f"""
+        SELECT *
+        FROM {all_data_table_name}
+    """
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+    
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+
+    df = get_sql_df(rows, column_list)
+    
+
+    return df
 
 # snapshot_df = pd.read_csv('./test/current_user_tvl_embers.csv')
 # # make_snapshot_table(cursor)
