@@ -855,13 +855,96 @@ def find_rolling_lp_balance(df):
     calculated_df.to_json('outputData.json', orient='records')
     return df
 
+
+# # makes a list with our unique users
+def set_unique_users(cursor):
+    column_list = ['to_address']
+
+    rows = sql.select_specific_columns(cursor, column_list)
+
+    df = sql.get_sql_df(rows, column_list)
+
+    df = df.drop_duplicates(subset=['to_address'])
+
+    unique_user_list = df['to_address'].tolist()
+
+    # df.to_csv('unique_user_list.csv', index=False)
+
+    return unique_user_list
+
+# # finds all of our users actual final token balances
+def get_final_user_tvl(df, cursor, index):
+    
+    df = bp.set_token_flows(df, cursor, index)
+    df['timestamp'] = df['timestamp'].astype(float)
+
+    rpc_url = get_lp_config_value('rpc_url', index)
+
+    web3 = tf.get_web_3(rpc_url)
+
+    config_df = get_token_config_df()
+
+    reserve_address_list = config_df['underlying_address'].tolist()
+    token_address_list = config_df['token_address'].tolist()
+    decimal_list = config_df['decimals'].tolist()
+
+    unique_user_list = set_unique_users(cursor)
+
+    i = 0
+    # # iterates through all of our tokens
+    while i < len(token_address_list):
+        token_address = token_address_list[i]
+        token_contract = get_a_token_contract(web3, token_address)
+        decimals = decimal_list[i]
+        # # iterates through all of our user addresses
+        # # will only look for a balance of a user-token if the user-token combination exists in the dataframe
+        for user in unique_user_list:
+
+            temp_df = df.loc[df['user_address'] == user]
+
+            temp_df = temp_df.loc[temp_df['token_address'] == token_address]
+
+            # # placeholder of our temp_df that we will alter the token_volume of
+            temp_df_copy = temp_df
+
+            if len(temp_df) > 0:
+                token_volume = token_contract.functions.balanceOf(user).call()
+
+                temp_df = temp_df.loc[temp_df['timestamp'] == temp_df['timestamp'].max()]
+                print(temp_df)
+                temp_df['token_volume'] = token_volume
+                print(temp_df)
+
+                time.sleep(0.1)
+
+    return df
+
+# # updates our incorrect reserve addresses
+def fix_reserve_address(df):
+    config_df = get_token_config_df()
+
+    reserve_address_list = config_df['underlying_address'].tolist()
+    token_address_list = config_df['token_address'].tolist()
+
+    i = 0
+
+    while i < len(reserve_address_list):
+        reserve_address = reserve_address_list[i]
+        token_address = token_address_list[i]
+
+        df.loc[df['token_address'] == token_address, 'reserve_address'] = reserve_address
+
+        i += 1
+
+    return df
+
 # # correctly updates our price at the end
 def get_final_pricing(df, index):
     rpc_url = get_lp_config_value('rpc_url', index)
 
     web3 = tf.get_web_3(rpc_url)
 
-    config_df = get_token_config_df(index)
+    config_df = get_token_config_df()
 
     reserve_address_list = config_df['underlying_address'].tolist()
     token_address_list = config_df['token_address'].tolist()
@@ -869,6 +952,8 @@ def get_final_pricing(df, index):
     contract_address = get_lp_config_value('aave_oracle_address', index)
     contract_abi = get_aave_oracle_abi()
     contract = get_contract(contract_address, contract_abi, web3)
+
+    df['usd_token_amount'] = df['usd_token_amount'].astype(float)
 
     df_list = []
 
@@ -896,8 +981,6 @@ def get_final_pricing(df, index):
         
         i += 1
     
-    print('amount_cumulative clean up complete')
-    
     df = pd.concat(df_list)
 
     return df
@@ -906,6 +989,10 @@ def run_all(index_list):
 
     index_counter = 0
     for index in index_list:
+
+        df = sql.get_transaction_data_df('persons')
+        df = get_final_user_tvl(df, cursor, index)
+    
         try:
             find_all_lp_transactions(index)
         except:
@@ -917,7 +1004,8 @@ def run_all(index_list):
         if index_counter == len(index_list):
             print('Run it Back Turbo')
             df = sql.get_transaction_data_df('persons')
-            df = find_all_lp_transactions(index)
+            df = fix_reserve_address(df)
+            df = get_final_pricing(df, index)
             cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
             time.sleep(65)
             run_all(index_list)
