@@ -855,6 +855,53 @@ def find_rolling_lp_balance(df):
     calculated_df.to_json('outputData.json', orient='records')
     return df
 
+# # correctly updates our price at the end
+def get_final_pricing(df, index):
+    rpc_url = get_lp_config_value('rpc_url', index)
+
+    web3 = tf.get_web_3(rpc_url)
+
+    config_df = get_token_config_df(index)
+
+    reserve_address_list = config_df['underlying_address'].tolist()
+    token_address_list = config_df['token_address'].tolist()
+
+    contract_address = get_lp_config_value('aave_oracle_address', index)
+    contract_abi = get_aave_oracle_abi()
+    contract = get_contract(contract_address, contract_abi, web3)
+
+    df_list = []
+
+    i = 0
+    while i < len(reserve_address_list):
+        reserve_address = reserve_address_list[i]
+        token_address = token_address_list[i]
+        
+        value_usd = contract.functions.getAssetPrice(reserve_address).call()
+        time.sleep(0.1)
+
+        value_usd = value_usd / 1e8
+
+        decimals = get_token_config_value('decimals', reserve_address, index)
+
+        temp_df = df.loc[df['token_address'] == token_address]
+
+        if len(temp_df) > 0:
+
+            temp_df['asset_price'] = value_usd
+            temp_df['usd_token_amount'] = temp_df['usd_token_amount'] / decimals
+            temp_df['usd_token_amount'] *= value_usd
+
+            df_list.append(temp_df)
+        
+        i += 1
+    
+    print('amount_cumulative clean up complete')
+    
+    df = pd.concat(df_list)
+
+    return df
+
 def run_all(index_list):
 
     index_counter = 0
@@ -870,6 +917,7 @@ def run_all(index_list):
         if index_counter == len(index_list):
             print('Run it Back Turbo')
             df = sql.get_transaction_data_df('persons')
+            df = find_all_lp_transactions(index)
             cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
             time.sleep(65)
             run_all(index_list)
