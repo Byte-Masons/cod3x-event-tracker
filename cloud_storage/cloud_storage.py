@@ -17,12 +17,19 @@ import sys
 import io
 from io import BytesIO
 
-PATH = os.path.join(os.getcwd(), 'fast-web-419215-35d284e06546.json')
-STORAGE_CLIENT = storage.Client(PATH)
+# PATH = os.path.join(os.getcwd(), 'fast-web-419215-35d284e06546.json')
 
+# STORAGE_CLIENT = storage.Client(PATH)
+
+# Assuming the key file is in your user's home directory
+HOME_DIR = os.path.expanduser('~')
+PATH = os.path.join(HOME_DIR, 'fast-web-419215-35d284e06546.json')
+STORAGE_CLIENT = storage.Client.from_service_account_json(PATH)
+
+@cache
 def read_from_cloud_storage(filename, bucketname):
-    storage_client = storage.Client(PATH)
-    bucket = storage_client.get_bucket(bucketname)
+    # storage_client = storage.Client(PATH)
+    bucket = STORAGE_CLIENT.get_bucket(bucketname)
 
     df = pd.read_csv(
     io.BytesIO(

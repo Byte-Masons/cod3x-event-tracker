@@ -16,6 +16,8 @@ import os
 import sys
 import io
 from io import BytesIO
+from lending_pool import balance_and_points as bp
+from cloud_storage import cloud_storage as cs
 
 app = Flask(__name__)
 
@@ -23,13 +25,15 @@ app = Flask(__name__)
 def get_user_tvl_and_embers(user_address):
 
     data = []
-
-    df = pd.read_csv('test.csv')
-
-    df['user_address'] = df['user_address'].str.lower()
-    user_address = user_address.lower()
+    index = 0
+    
+    df = cs.read_from_cloud_storage('current_user_tvl_embers.csv', 'cooldowns2')
+    
+    user_address = Web3.to_checksum_address(user_address)
 
     df = df.loc[df['user_address'] == user_address]
+
+    df = bp.set_single_user_stats(df, index)
 
     #if we have an address with no transactions
     if len(df) < 1:
@@ -78,5 +82,6 @@ def get_api_response():
 # print('Token Balance: ', user_token_balance)
 
 
-if __name__ =='__main__':
-    app.run()
+app.run()
+# if __name__ =='__main__':
+#     app.run()

@@ -2,17 +2,81 @@ import pandas as pd
 from lending_pool import lp_tracker
 from lending_pool import balance_and_points as bp
 from sql_interfacer import sql
-# from cloud_storage import cloud_storage as cs
+from cloud_storage import cloud_storage as cs
+# from api import api
+from flask import Flask, request, jsonify
+import json
+from web3 import Web3
+import time
+import queue
+from concurrent.futures import ThreadPoolExecutor
+import threading
+import sqlite3
 
+app = Flask(__name__)
 
-df = sql.get_transaction_data_df('persons')
-print(df)
+# # makes our json response for a users total tvl and embers
+def get_user_tvl_and_embers(user_address):
 
-# df = bp.set_embers_database(0)
+    data = []
+    index = 0
+    
+    start_time = time.time()
+    df = cs.read_from_cloud_storage('current_user_tvl_embers.csv', 'cooldowns2')
+    print('Finished Reading Data in: ' + str(time.time() - start_time))
 
-# print(df)
+    user_address = Web3.to_checksum_address(user_address)
+    df = df[(df['to_address'].str.contains(user_address)) | (df['from_address'].str.contains(user_address))]
+    
+    if len(df) > 0:
+        df = df.drop_duplicates(subset=['tx_hash','log_index', 'transaction_index', 'token_address', 'token_volume'], keep='last')
+        df = bp.set_single_user_stats(df, user_address, index)
+        print(df)
+    #if we have an address with no transactions
+    if len(df) < 1:
+        data.append({
+           "user_address": user_address,
+            "user_tvl": 0,
+            "user_total_embers": 0
+        })
+    
+    else:
+        total_tvl = df['amount_cumulative'].sum()
+        total_embers = df['total_ember_balance'].median()
+        # # downrates embers a bit
+        total_embers = total_embers * 0.65
 
-# index_list = [0]
+        data.append({
+           "user_address": user_address,
+            "user_tvl": total_tvl,
+            "user_total_embers": total_embers
+        })
 
-# for index in index_list:
-#     lp_tracker.run_all(index_list)
+    # Create JSON response
+    response = {
+        "data": {
+            "result": data
+        }
+    }
+    
+    return response
+
+@app.route("/user_tvl_and_embers/", methods=["POST"])
+def get_api_response():
+
+    data = json.loads(request.data)
+
+    user_address = data['user_address']  # Assuming data is in form format
+    
+    # Threads
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(get_user_tvl_and_embers, user_address)
+    
+    response = future.result()
+
+    return jsonify(response), 200
+
+if __name__ =='__main__':
+    app.run()
+
+# lp_tracker.find_all_lp_transactions(0)

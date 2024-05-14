@@ -91,6 +91,7 @@ def select_star(cursor, table_name):
     cursor.execute(f"""
         SELECT *
         FROM {table_name}
+        LIMIT 2
         """)
     
     rows = cursor.fetchall()
