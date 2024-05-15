@@ -111,6 +111,15 @@ def select_specific_columns(cursor, column_list):
 
     return rows
 
+# # lets a user define a query that is executed and returned
+def get_user_query(query):
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+
+    return rows
+
 def get_sql_df(rows, column_list):
     df = pd.DataFrame(rows, columns=column_list)
     

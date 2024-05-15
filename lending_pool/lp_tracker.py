@@ -985,13 +985,16 @@ def get_final_pricing(df, index):
 
     return df
 
+# # runs everything on a loop
 def run_all(index_list):
 
     index_counter = 0
     for index in index_list:
 
         df = sql.get_transaction_data_df('persons')
-        df = get_final_user_tvl(df, cursor, index)
+        df = fix_reserve_address(df)
+        df = get_final_pricing(df, index)
+        cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
     
         try:
             find_all_lp_transactions(index)
@@ -1003,10 +1006,6 @@ def run_all(index_list):
         index_counter += 1
         if index_counter == len(index_list):
             print('Run it Back Turbo')
-            df = sql.get_transaction_data_df('persons')
-            df = fix_reserve_address(df)
-            df = get_final_pricing(df, index)
-            cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
             time.sleep(65)
             run_all(index_list)
 

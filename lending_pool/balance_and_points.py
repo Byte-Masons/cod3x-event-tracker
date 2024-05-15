@@ -21,6 +21,13 @@ def set_unique_users(cursor):
 
     return df
 
+# # returns our dataframe with only unique addresses
+def set_unique_users_no_database(df):
+
+    df = df.drop_duplicates(subset=['to_address'])
+
+    return df
+
 def get_unique_users():
     df = pd.read_csv('unique_user_list.csv')
 
@@ -132,8 +139,60 @@ def set_token_flows(event_df, cursor, index):
 
     return combo_df
 
+# # finds if a transaction adds to or reduces a balance 
+# # (deposit + borrow add to a balance and withdraw + repay reduce a balance)
+def set_token_flows_no_database(event_df, index):
+    # event_df = pd.read_csv(csv_name, usecols=['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash'], dtype={'from_address': str,'to_address': str,'timestamp' : str,'token_address': str, 'token_volume': float,'tx_hash': str})
+    
+    # # tries to remove the null address to greatly reduce computation needs
+    # event_df = event_df.loc[event_df['to_address'] != '0x0000000000000000000000000000000000000000']
+    
+    unique_user_df = set_unique_users_no_database(event_df)
+
+    unique_user_list = unique_user_df['to_address'].to_list()
+
+    deposit_token_df = get_deposit_token_df(index)
+    borrow_token_df = get_borrow_token_df(index)
+
+    deposit_token_list = deposit_token_df['token_address'].tolist()
+    borrow_token_list = borrow_token_df['token_address'].tolist()
+
+    i = 1
+
+    combo_df = pd.DataFrame()
+    temp_df = pd.DataFrame()
+
+    # # handles deposits and borrows
+    temp_df = event_df.loc[event_df['to_address'].isin(unique_user_list)]
+    deposit_df = temp_df.loc[temp_df['token_address'].isin(deposit_token_list)]
+    borrow_df = temp_df.loc[temp_df['token_address'].isin(borrow_token_list)]
+
+    # # handles withdrawals and repays
+    temp_df = event_df.loc[event_df['from_address'].isin(unique_user_list)]
+    withdraw_df = temp_df.loc[temp_df['token_address'].isin(deposit_token_list)]
+    repay_df = temp_df.loc[temp_df['token_address'].isin(borrow_token_list)]
+
+    withdraw_df['token_volume'] = [x * -1 for x in withdraw_df['token_volume'].tolist()]
+    repay_df['token_volume'] = [x * -1 for x in repay_df['token_volume'].tolist()]
+
+    deposit_df['user_address'] = deposit_df['to_address']
+    borrow_df['user_address'] = borrow_df['to_address']
+    
+    withdraw_df['user_address'] = withdraw_df['from_address']
+    repay_df['user_address'] = repay_df['from_address']
+
+    combo_df = pd.concat([deposit_df, borrow_df, withdraw_df, repay_df])
+    combo_df = combo_df[['user_address', 'tx_hash', 'token_address','token_volume', 'timestamp', 'asset_price']]
+
+    # make_user_data_csv(combo_df, token_flow_csv)
+
+    # # tries to remove the null address to greatly reduce computation needs
+    combo_df = combo_df.loc[combo_df['user_address'] != '0x0000000000000000000000000000000000000000']
+
+    return combo_df
+
 def get_token_flows():
-    df = pd.read_csv('token_flow.csv', dtype={'from_address': str,'to_address': str,'timestamp' : float,'token_address': str, 'token_volume': float,'tx_hash': str})
+    df = pd.read_csv('token_flow.csv', dtype={'from_address': str,'to_address': str,'timestamp' : float,'token_address': str, 'token_volume': float,'tx_hash': str, 'asset_price': float})
     
     return df
 
@@ -154,6 +213,7 @@ def get_first_n_addresses():
     return df
 
 def set_rolling_balance(df):
+    df['timestamp'] = df['timestamp'].astype(float)
     # df = get_token_flows()
 
     # df = df.loc[df['user_address'] == '0xE692256D270946A407f8Ba9885D62e883479F0b8']
@@ -640,101 +700,93 @@ def set_embers_database(index):
     return df
 
 # # returns the tvl and embers for a single user
-def set_single_user_stats(index):
+def set_single_user_stats(df, user_address, index):
 
-    connection = sqlite3.connect("turtle.db")
-
-    cursor = connection.cursor()
-
-    df = cloud_storage.read_from_cloud_storage('current_user_tvl_embers.csv', 'cooldowns2')
-
-    column_list = ['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash']
-
-    rows = sql.select_specific_columns(cursor, column_list)
-
-    df = sql.get_sql_df(rows, column_list)
     df['token_volume'] = df['token_volume'].astype(float)
+    df['timestamp'] = df['timestamp'].astype(float)
 
-    df = set_token_flows(df, cursor, index)
-    print('set_token_flows complete')
+    start_time = time.time()
+    
+    df = df.sort_values(by='timestamp', ascending=True)
+
+    df = set_token_flows_no_database(df, index)
+    print('set_token_flows complete in: ' + str(time.time() - start_time))
+
+    # df = df.loc[df['user_address'] == user_address]
     
     df = drop_blacklisted_addresses(df)
-
-    df = set_rolling_balance(df)
-    print('set_rolling_balances complete')
-
-    config_df = get_token_config_df(index)
-
-    reserve_address_list = config_df['underlying_address'].tolist()
-    token_address_list = config_df['token_address'].tolist()
-    embers_list = config_df['embers'].tolist()
     
-    contract_address = get_lp_config_value('aave_oracle_address', index)
-    contract_abi = get_aave_oracle_abi()
-    rpc_url = get_lp_config_value('rpc_url', index)
-    web3 = get_web_3(rpc_url)
-
-    contract = get_contract(contract_address, contract_abi, web3)
-
-    df_list = []
-
-    i = 0
-    while i < len(reserve_address_list):
-        reserve_address = reserve_address_list[i]
-        token_address = token_address_list[i]
-        embers = embers_list[i]
+    if len(df) > 0:
+        start_time = time.time()
         
-        time.sleep(0.25)
-        value_usd = contract.functions.getAssetPrice(reserve_address).call()
-        time.sleep(0.25)
+        df = set_rolling_balance(df)
+        print('set_rolling_balances complete: ' + str(time.time() - start_time))
 
-        value_usd = value_usd / 1e8
+        config_df = get_token_config_df(index)
 
-        decimals = get_token_config_value('decimals', reserve_address, index)
+        reserve_address_list = config_df['underlying_address'].tolist()
+        token_address_list = config_df['token_address'].tolist()
+        embers_list = config_df['embers'].tolist()
 
-        temp_df = df.loc[df['token_address'] == token_address]
+        df_list = []
 
-        if len(temp_df) > 0:
+        start_time = time.time()
+        i = 0
+        while i < len(reserve_address_list):
+            reserve_address = reserve_address_list[i]
+            token_address = token_address_list[i]
+            embers = embers_list[i]
 
-            temp_df['amount_cumulative'] = temp_df['amount_cumulative'] / decimals
-            temp_df['token_cumulative'] = temp_df['amount_cumulative']
-            temp_df['amount_cumulative'] = temp_df['amount_cumulative'] * value_usd
-            temp_df['embers'] = embers
+            if reserve_address == '0xDfc7C877a950e49D2610114102175A06C2e3167a':
+                print('Mode')
+            
+            decimals = get_token_config_value('decimals', reserve_address, index)
 
-            df_list.append(temp_df)
+            temp_df = df.loc[df['token_address'] == token_address]
+
+            if len(temp_df) > 0:
+                print(temp_df)
+                temp_df['amount_cumulative'] = temp_df['amount_cumulative'] / decimals
+                temp_df['token_cumulative'] = temp_df['amount_cumulative']
+                temp_df['amount_cumulative'] = temp_df['amount_cumulative'] * temp_df['asset_price']
+                print(temp_df)
+                temp_df['embers'] = embers
+
+                df_list.append(temp_df)
+            
+            i += 1
         
-        i += 1
-    
-    print('amount_cumulative clean up complete')
-    
-    df = pd.concat(df_list)
+        print('amount_cumulative clean up complete' + str(time.time() - start_time))
+        
+        df = pd.concat(df_list)
 
-    # makes the lowest accumualtive = 0 (user's can't have negative balances)
-    df['amount_cumulative'] = df['amount_cumulative'].clip(lower=0)
-    df['token_cumulative'] = df['token_cumulative'].clip(lower=0)
+        # makes the lowest accumualtive = 0 (user's can't have negative balances)
+        df['amount_cumulative'] = df['amount_cumulative'].clip(lower=0)
+        df['token_cumulative'] = df['token_cumulative'].clip(lower=0)
 
-    df = get_time_difference(df)
+        start_time = time.time()
+        df = get_time_difference(df)
 
-    print('time_difference complete')
+        print('time_difference complete' + str(time.time() - start_time))
 
-    df = df.reset_index(drop=True)
+        df = df.reset_index(drop=True)
 
-    df = set_realized_embers(df)
-    
-    print('set_realized_embers complete')
+        start_time = time.time()
+        df = set_realized_embers(df)
+        
+        print('set_realized_embers complete' + str(time.time() - start_time))
 
-    df = get_last_tracked_embers(df)
-    print('get_last_tracked_embers complete')
+        start_time = time.time()
+        df = get_last_tracked_embers(df)
+        print('get_last_tracked_embers complete' + str(time.time() - start_time))
 
-    df = accrue_latest_embers(df)
-    print('accrue_latest_embers complete')
+        start_time = time.time()
+        df = accrue_latest_embers(df)
+        print('accrue_latest_embers complete' + str(time.time() - start_time))
 
-    try:
-        cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
-    except:
-        print("Couldn't write to bucket")
-
-
+    else:
+        df = pd.DataFrame()
+        
     return df
 
 def filter_after_snapshot(df, embers_snapshot_df):
