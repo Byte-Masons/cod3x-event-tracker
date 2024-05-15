@@ -73,15 +73,15 @@ def make_nested_response(df):
         })
 
     else:
-        wallet_addresses = ", ".join(df["to_address"].tolist())
-        data.append({"wallet_address": wallet_addresses})
-        # temp_df = df[['to_address']]
-        # # Process data
-        # for i in range(temp_df.shape[0]):
-        #     row = temp_df.iloc[i]
-        #     data.append({
-        #         "wallet_address": str(row['to_address']),
-        #     })
+        # wallet_addresses = ", ".join(df["to_address"].tolist())
+        # data.append({"wallet_address": wallet_addresses})
+        temp_df = df[['to_address']]
+        # Process data
+        for i in range(temp_df.shape[0]):
+            row = temp_df.iloc[i]
+            data.append({
+                "wallet_address": str(row['to_address']),
+            })
 
     # Create JSON response
     response = {
