@@ -225,6 +225,7 @@ def set_rolling_balance(df):
     # Print the DataFrame with the new 'amount_cumulative' column
     df = df.assign(amount_cumulative=name_groups)
 
+    df = df.reset_index()
     # df.to_csv('rolling_balance.csv', index=False)
 
     return df
@@ -463,7 +464,7 @@ def accrue_latest_embers(df):
     df['regular_ember_balance'] = 0
 
     df = df.groupby(['user_address','token_address']).apply(simulate_regular_accrued_points)
-
+    df = df.reset_index(drop=True)
     # # accrues regular embers to users > ember start time and < multiplier start time
     # baseline sees what people's time difference is
     df['time_difference'] = df['timestamp'] - point_multiplier_start_unix
@@ -476,7 +477,7 @@ def accrue_latest_embers(df):
     df['multiplier_ember_balance'] = 0
 
     df = df.groupby(['user_address','token_address']).apply(simulate_multiplier_accrued_points)
-
+    df = df.reset_index(drop=True)
     df.loc[df['token_address'].isin(double_ember_token_list), 'multiplier_ember_balance'] *= 2
 
     df.loc[df['token_address'].isin(quadriple_ember_token_list), 'multiplier_ember_balance'] *= 4
@@ -551,20 +552,21 @@ def set_embers_full(index):
     df['amount_cumulative'] = df['amount_cumulative'].clip(lower=0)
 
     df = get_time_difference(df)
-
     print('time_difference complete')
 
 
     df = df.reset_index(drop=True)
 
     df = set_realized_embers(df)
-
+    df = df.reset_index(drop=True)
     print('set_realized_embers complete')
 
 
     df = get_last_tracked_embers(df)
+    df = df.reset_index(drop=True)
 
     df = accrue_latest_embers(df)
+    df = df.reset_index(drop=True)
 
     df.loc[df['user_address'] == '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF', 'user_address'] = '0x5bC7b531B1a8810c74E53C4b81ceF4F8f911921F'
     # df = df.loc[df['user_address'] != '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF']
@@ -773,20 +775,22 @@ def set_single_user_stats(df, user_address, index):
 
         start_time = time.time()
         df = set_realized_embers(df)
-        
+        df = df.reset_index(drop=True)
         print('set_realized_embers complete' + str(time.time() - start_time))
 
         start_time = time.time()
         df = get_last_tracked_embers(df)
+        df = df.reset_index(drop=True)
         print('get_last_tracked_embers complete' + str(time.time() - start_time))
 
         start_time = time.time()
         df = accrue_latest_embers(df)
+        df = df.reset_index(drop=True)
         print('accrue_latest_embers complete' + str(time.time() - start_time))
 
     else:
         df = pd.DataFrame()
-        
+
     return df
 
 def filter_after_snapshot(df, embers_snapshot_df):
