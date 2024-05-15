@@ -31,7 +31,6 @@ def get_user_tvl_and_embers(user_address):
     if len(df) > 0:
         df = df.drop_duplicates(subset=['tx_hash','log_index', 'transaction_index', 'token_address', 'token_volume'], keep='last')
         df = bp.set_single_user_stats(df, user_address, index)
-        print(df)
     #if we have an address with no transactions
     if len(df) < 1:
         data.append({
@@ -61,6 +60,39 @@ def get_user_tvl_and_embers(user_address):
     
     return response
 
+# # makes our nested response
+def make_nested_response(df):
+
+    data = []
+
+    #if we have an address with no transactions
+    if len(df) < 1:
+        temp_df = pd.DataFrame()
+        data.append({
+           "wallet_address": 'N/A',
+        })
+
+    else:
+        wallet_addresses = ", ".join(df["to_address"].tolist())
+        data.append({"wallet_address": wallet_addresses})
+        # temp_df = df[['to_address']]
+        # # Process data
+        # for i in range(temp_df.shape[0]):
+        #     row = temp_df.iloc[i]
+        #     data.append({
+        #         "wallet_address": str(row['to_address']),
+        #     })
+
+    # Create JSON response
+    response = {
+        "data": {
+            "result": data
+        }
+    }
+    
+    return response
+
+
 @app.route("/user_tvl_and_embers/", methods=["POST"])
 def get_api_response():
 
@@ -71,6 +103,36 @@ def get_api_response():
     # Threads
     with ThreadPoolExecutor() as executor:
         future = executor.submit(get_user_tvl_and_embers, user_address)
+    
+    response = future.result()
+
+    return jsonify(response), 200
+
+# # will be an endpoint we can ping to try to keep our website online for quicker response times
+@app.route("/keep_online/", methods=["GET"])
+def get_filler_response():
+
+    user_address = '0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA'
+
+    # Threads
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(get_user_tvl_and_embers, user_address)
+    
+    response = future.result()
+
+    return jsonify(response), 200
+
+# # will be an endpoint we can ping to try to keep our website online for quicker response times
+@app.route("/get_all_users/", methods=["GET"])
+def get_all_users():
+
+    df = cs.read_from_cloud_storage('current_user_tvl_embers.csv', 'cooldowns2')
+    df = bp.set_unique_users_no_database(df)
+    df = df[['to_address', 'log_index']]
+
+    # Threads
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(make_nested_response, df)
     
     response = future.result()
 
