@@ -28,6 +28,53 @@ def make_table(cursor, table_name):
     
     return
 
+# # will make a table given a list of columns and their datatype
+def make_specific_table(cursor, column_list, data_type_list, table_name):
+    
+    # insert_command_text = ''
+
+    # i = 0
+
+    # while i < len(column_list):
+    #     column_name = column_list[i]
+    #     data_type = data_type_list[i]
+
+    #     insert_command_text += '"'
+    #     insert_command_text += column_name
+    #     insert_command_text += '"'
+    #     insert_command_text += ' '
+    #     insert_command_text += data_type
+
+    #     if i != len(column_list) - 1:
+    #         insert_command_text += ','
+        
+    #     i += 1
+
+    # Create comma-separated column definitions with quotes
+    column_definitions = []
+    for i in range(len(column_list)):
+        column_definitions.append(f"{column_list[i]} {data_type_list[i]}")
+
+    # Join column definitions with commas
+    insert_command_text = ",".join(column_definitions)
+
+    # Execute the CREATE TABLE statement with parameter substitution
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table_name}(
+            {insert_command_text}
+        )
+    """)
+    
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+    table_exists = cursor.fetchone() is not None
+    
+    # if table_exists:
+    #     print(f"Table '{table_name}' created successfully.")
+    # else:
+    #     print(f"Table '{table_name}' creation might have failed. Please investigate.")
+
+    return
+
 # # makes a table in our database for strictly our snapshot data point
 def make_snapshot_table(cursor):
     # user_address,token_address,tx_hash,timestamp,time_difference,embers,amount_cumulative,ember_balance,total_ember_balance
@@ -87,11 +134,11 @@ def select_star_count(cursor, table_name):
 
     return rows
 
-def select_star(cursor, table_name):
+def select_star(table_name):
+    cursor = connection.cursor()
     cursor.execute(f"""
         SELECT *
         FROM {table_name}
-        LIMIT 2
         """)
     
     rows = cursor.fetchall()
@@ -157,9 +204,11 @@ def drop_duplicates_from_database(cursor):
 
     return
 
-def write_to_db(cursor, df):
+def write_to_db(df, column_list, table_name):
 
-    old_length = select_star_count(cursor, 'persons')
+    cursor = connection.cursor()
+
+    old_length = select_star_count(cursor, table_name)
     old_length = old_length[0]
     old_length = int(old_length[0])
 
@@ -168,15 +217,31 @@ def write_to_db(cursor, df):
     # Get DataFrame as a list of tuples
     data_tuples = df.to_records(index=False)  # Avoids inserting the index as a column
 
+    print(data_tuples)
 
-    cursor.executemany("""
-        INSERT INTO persons (from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    value_string = ''
+    column_string = ''
+
+    i = 0
+
+    while i < len(column_list):
+        value_string += '?'
+        column_string += column_list[i]
+
+        if i != len(column_list) - 1:
+            value_string += ','
+            column_string += ','
+        
+        i += 1
+
+    cursor.executemany(f"""
+        INSERT INTO {table_name} ({column_string})
+        VALUES ({value_string})
     """, data_tuples)
 
     connection.commit()
 
-    new_length = select_star_count(cursor, 'persons')
+    new_length = select_star_count(cursor, table_name)
     new_length = new_length[0]
     new_length = int(new_length[0])
 
@@ -195,7 +260,7 @@ def test_write_loop(cursor):
         i += 1
 
 # # sees if our given value exists in our database
-def sql_value_exists(cursor, value, column_name):
+def sql_value_exists(cursor, value, column_name, column_list, table_name):
     
     df = pd.DataFrame()
 
@@ -209,7 +274,7 @@ def sql_value_exists(cursor, value, column_name):
     # Construct the query with placeholders for values
     query = f"""
     SELECT *
-    FROM persons
+    FROM {table_name}
     WHERE {column_name} IN ({', '.join('?' * len(values_to_check))})
     LIMIT 1
     """
@@ -234,13 +299,15 @@ def sql_value_exists(cursor, value, column_name):
     
 
     if exists == True:
-        df = pd.DataFrame(results, columns=['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number'])
+        df = pd.DataFrame(results, columns=column_list)
 
 
     return df
 
 # # generalized exists function that will help us reduce rpc calls
 def value_exists(df, input_value, column_name):
+
+    print(df)
 
     input_value = str(input_value)
 
@@ -252,19 +319,23 @@ def value_exists(df, input_value, column_name):
     
     return df
 
-def already_part_of_database(cursor, event, wait_time):
+def already_part_of_database(event, wait_time, column_list, data_type_list, table_name):
+
+    cursor = connection.cursor()
+    
+    # # will make a table if our table doesn't already exist
+    make_specific_table(cursor, column_list, data_type_list, table_name)
 
     all_exist = False
     tx_hash = ''
     log_index = -1
     tx_index = -1
-    token_amount = -1
     wait_time = wait_time / 3
     token_address = ''
 
     tx_hash = event['transactionHash'].hex()
 
-    df = sql_value_exists(cursor, tx_hash, 'tx_hash')
+    df = sql_value_exists(cursor, tx_hash, 'tx_hash', column_list, table_name)
 
     time.sleep(wait_time)
 
@@ -286,7 +357,7 @@ def already_part_of_database(cursor, event, wait_time):
     if len(df) > 0:
         all_exist = True
 
-    response_list = [tx_hash, log_index, tx_index, token_amount, token_address, all_exist]
+    response_list = [tx_hash, log_index, tx_index, token_address, all_exist]
 
     return response_list
 
@@ -304,8 +375,9 @@ def select_next_batch_of_ember_accumulators(cursor, column_list):
     return rows
 
 # # drops our specified table
-def drop_table(cursor, table_name):
-    
+def drop_table(table_name):
+    cursor = connection.cursor()
+
     cursor.execute(f"DROP TABLE {table_name}")
     print('table_dropped')
     
@@ -395,10 +467,8 @@ def get_transaction_data_df(all_data_table_name):
 
     return df
 
-# snapshot_df = pd.read_csv('./test/current_user_tvl_embers.csv')
-# # make_snapshot_table(cursor)
-# # insert_data_into_snapshot_table(cursor, snapshot_df)
+table_name = 'persons'
 
-# rows = select_star(cursor)
-# print(rows)
-# connection.close()
+df = get_transaction_data_df(table_name)
+
+print(df['block_number'].max())

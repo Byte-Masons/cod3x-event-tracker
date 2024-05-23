@@ -45,7 +45,7 @@ def make_approval_data(events, web3, from_block, to_block, wait_time, table_name
     tx_hash_list = []
     block_number_list = []
     
-    leverager_address = '0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA'
+    leverager_address = lph.get_lp_config_value('leverager_address', index)
 
     user = ''
 
@@ -110,7 +110,6 @@ def make_approval_data(events, web3, from_block, to_block, wait_time, table_name
 
                 spender = event['args']['spender']
                 time.sleep(wait_time)
-                leverager_address = '0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA'
 
                 if token_amount > 0 and spender == leverager_address:
                     
@@ -157,8 +156,9 @@ def get_current_approvals(column_list, index):
     leverager_address = lph.get_lp_config_value('leverager_address', index)
     wait_time = lph.get_lp_config_value('wait_time', index)
     wait_time = wait_time / 3
+    table_name = lph.get_lp_config_value('table_name', index)
 
-    table_name = 'approvals'
+    # table_name = 'approvals'
     rows = sql.select_star(table_name)
     df = sql.get_sql_df(rows, column_list)
     
@@ -220,8 +220,18 @@ def get_current_approvals(column_list, index):
     return df
 
 
-def get_current_balances():
+def get_current_balances(index):
     df = pd.read_csv('allowance_wallet_tokens.csv')
 
+    df = lph.get_final_pricing(df, index)
 
-    return
+    df['amount_at_risk'] = df['current_balance'] - df['approval_amount']
+
+    df.loc[df['amount_at_risk'] < 0, 'amount_at_risk'] = df['current_balance_usd']
+
+    total_at_risk = df['amount_at_risk'].sum()
+    df['total_user_funds_at_risk_usd'] = total_at_risk
+
+    df.to_csv('funds_at_risk.csv', index=False)
+
+    return df

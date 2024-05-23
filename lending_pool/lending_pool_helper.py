@@ -22,7 +22,10 @@ def get_lp_config_value(column_name, index):
 
     config_list = df[column_name].tolist()
 
-    config_value = config_list[index]
+    try:
+        config_value = config_list[index]
+    except:
+        config_value = config_list[0]
 
     return config_value
 
@@ -419,7 +422,7 @@ def get_reverse_from_block(index):
 # # subtracts the interval from our from block to help account for the script quitting on one of the 4 deposit,withdraw,repay,borrow event sets before iterating to the next set of blocks
 def get_smart_latest_block(web3, index):
 
-    latest_block = tf.get_latest_block(web3)
+    latest_block = get_latest_block(web3)
 
     interval = get_lp_config_value('interval', index)
 
@@ -471,6 +474,56 @@ def get_latest_block(web3):
 
     return latest_block
 
+# # correctly updates our price at the end
+def get_final_pricing(df, index):
+    rpc_url = get_lp_config_value('rpc_url', index)
+
+    web3 = get_web_3(rpc_url)
+
+    config_df = get_token_config_df()
+
+    reserve_address_list = config_df['underlying_address'].tolist()
+    token_address_list = config_df['token_address'].tolist()
+
+    contract_address = get_lp_config_value('aave_oracle_address', index)
+    contract_abi = get_aave_oracle_abi()
+    contract = get_contract(contract_address, contract_abi, web3)
+
+    df['current_balance'] = df['current_balance'].astype(float)
+    df['approval_amount'] = df['approval_amount'].astype(float)
+
+    df_list = []
+
+    i = 0
+    while i < len(reserve_address_list):
+        reserve_address = reserve_address_list[i]
+        token_address = token_address_list[i]
+        
+        value_usd = contract.functions.getAssetPrice(reserve_address).call()
+        time.sleep(0.1)
+
+        value_usd = value_usd / 1e8
+
+        decimals = get_token_config_value('decimals', reserve_address, index)
+
+        temp_df = df.loc[df['token_address'] == token_address]
+
+        if len(temp_df) > 0:
+
+            temp_df['asset_price'] = value_usd
+            temp_df['current_balance_raw'] = temp_df['current_balance']
+            temp_df['approval_amount_raw'] = temp_df['approval_amount']
+            temp_df['approval_amount'] /= decimals
+            temp_df['current_balance'] = temp_df['current_balance'] / decimals
+            temp_df['current_balance_usd'] = temp_df['current_balance'] * value_usd
+
+            df_list.append(temp_df)
+        
+        i += 1
+    
+    df = pd.concat(df_list)
+
+    return df
 
 # # runs all our looks
 # # updates our csv
