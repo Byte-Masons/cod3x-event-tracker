@@ -9,9 +9,10 @@ from sql_interfacer import sql
 from cloud_storage import cloud_storage
 
 def set_unique_users(cursor):
+    table_name = 'persons'
     column_list = ['to_address']
 
-    rows = sql.select_specific_columns(cursor, column_list)
+    rows = sql.select_specific_columns(cursor, column_list, table_name)
 
     df = sql.get_sql_df(rows, column_list)
 
@@ -589,8 +590,30 @@ def drop_blacklisted_addresses(df):
 
     return df
 
+# # makes our dataframe we can use for our API response
+def make_one_line_tvl_embers_response(df):
+
+    df[['total_ember_balance', 'amount_cumulative']] = df[['total_ember_balance', 'amount_cumulative']].astype(float)
+
+    # Calculate median embers per wallet address using groupby and median
+    median_embers_per_address = df.groupby('user_address')['total_ember_balance'].median()
+    total_tvl = df.groupby('user_address')['amount_cumulative'].sum()
+    
+    median_embers_per_address = median_embers_per_address * .65
+
+    df = df.join(median_embers_per_address.to_frame(name='total_embers'), on='user_address')
+    df = df.join(total_tvl.to_frame(name='total_tvl'), on='user_address')
+
+    df = df[['user_address', 'total_embers', 'total_tvl']]
+
+    df = df.drop_duplicates(subset=['user_address'])
+    
+    return df
+
 # # updates embers from our database
 def set_embers_database(index):
+
+    table_name = 'persons'
 
     connection = sqlite3.connect("turtle.db")
 
@@ -598,14 +621,19 @@ def set_embers_database(index):
 
     column_list = ['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash']
 
-    rows = sql.select_specific_columns(cursor, column_list)
+    rows = sql.select_specific_columns(cursor, column_list, table_name)
 
     df = sql.get_sql_df(rows, column_list)
     df['token_volume'] = df['token_volume'].astype(float)
 
     df = set_token_flows(df, cursor, index)
     print('set_token_flows complete')
+
+    df['user_address'] = df['user_address'].astype(str)
     
+    # df_2 = df.loc[df['user_address'] == '0x515F4055395db22C06DA6FbDD7Cac92A08a01EEa']
+    # df = df_2
+
     df = drop_blacklisted_addresses(df)
 
     df = set_rolling_balance(df)
@@ -677,6 +705,14 @@ def set_embers_database(index):
     df = accrue_latest_embers(df)
     print('accrue_latest_embers complete')
 
+    df = make_one_line_tvl_embers_response(df)
+    print('Make one line df completed')
+
+    try:
+        cloud_storage.df_write_to_cloud_storage(df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+    except:
+        print("Couldn't write to bucket")
+
     # sql.make_new_snapshot_table(cursor, 'snapshot', df)
 
     # rows = sql.select_star(cursor, 'snapshot')
@@ -693,10 +729,10 @@ def set_embers_database(index):
 #     total_ember_balance=('total_ember_balance', 'last')  # Assuming the latest total_embers is desired
 # ).reset_index()
 
-    try:
-        cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
-    except:
-        print("Couldn't write to bucket")
+    # try:
+    #     cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
+    # except:
+    #     print("Couldn't write to bucket")
 
 
     return df

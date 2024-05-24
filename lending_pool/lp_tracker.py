@@ -418,6 +418,11 @@ def user_data(events, web3, from_block, to_block, index):
 
     user = ''
 
+    # # inputs to our sql function
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+    data_type_list = ['TEXT' for x in column_list]
+    table_name = get_lp_config_value('table_name', index)
+
     # reduces wait time by 50%
     wait_time = get_lp_config_value('wait_time', index)
     wait_time = wait_time/3
@@ -430,14 +435,14 @@ def user_data(events, web3, from_block, to_block, index):
         i+=1
             
         # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
-        exists_list = sql.already_part_of_database(cursor, event, wait_time)
+        exists_list = sql.already_part_of_database(event, wait_time, column_list, data_type_list, table_name)
 
         tx_hash = exists_list[0]
         log_index = exists_list[1]
         tx_index = exists_list[2]
-        token_amount = exists_list[3]
-        token_address = exists_list[4]
-        exists = exists_list[5]
+        token_address = exists_list[3]
+        exists = exists_list[4]
+        token_amount = -1
 
         if exists == False:
             try:
@@ -612,6 +617,12 @@ def find_all_lp_transactions(index):
 
     receipt_token_list = token_config_df['token_address'].tolist()
 
+    # # inputs to our sql function
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+    data_type_list = ['TEXT' for x in column_list]
+    table_name = get_lp_config_value('table_name', index)
+
+
     while to_block < latest_block:
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
@@ -636,7 +647,7 @@ def find_all_lp_transactions(index):
                 # # print(contract_df)
                 if len(contract_df) > 0:
                     time.sleep(wait_time)
-                    sql.write_to_db(cursor, contract_df)
+                    sql.write_to_db(contract_df, column_list, table_name)
                     # sql.drop_duplicates_from_database(cursor)
                     # make_user_data_csv(contract_df, index)
             else:
@@ -985,29 +996,32 @@ def get_final_pricing(df, index):
 
     return df
 
-# # runs everything on a loop
 def run_all(index_list):
 
     index_counter = 0
     for index in index_list:
 
-        df = sql.get_transaction_data_df('persons')
-        df = fix_reserve_address(df)
-        df = get_final_pricing(df, index)
-        cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
-    
         try:
             find_all_lp_transactions(index)
+            df = sql.get_transaction_data_df('persons')
+            df = df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'token_address', 'token_volume'])
+            df = fix_reserve_address(df)
+            df = get_final_pricing(df, index)
+            cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
+            bp.set_embers_database(index)
+            print('Index Completed: ' , index)
+
         except:
             print(index, ' :failed')
             time.sleep(65)
             run_all(index_list)
-        
+
         index_counter += 1
         if index_counter == len(index_list):
             print('Run it Back Turbo')
-            time.sleep(65)
+            time.sleep(3600)
             run_all(index_list)
+
 
 # print('Hello World')
 # bp.set_embers_smart()

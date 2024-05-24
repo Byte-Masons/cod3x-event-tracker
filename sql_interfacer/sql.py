@@ -146,11 +146,11 @@ def select_star(table_name):
     return rows
 
 # # selects specific columns from our database
-def select_specific_columns(cursor, column_list):
+def select_specific_columns(cursor, column_list, table_name):
     
     columns_string = ', '.join(column_list)
 
-    query = f"SELECT DISTINCT {columns_string} FROM persons"
+    query = f"SELECT DISTINCT {columns_string} FROM {table_name}"
 
     cursor.execute(query)
 
