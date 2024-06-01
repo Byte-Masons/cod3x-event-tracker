@@ -467,8 +467,15 @@ def get_transaction_data_df(all_data_table_name):
 
     return df
 
-table_name = 'persons'
+# # takes in a custom query and returns the df associated with it
+def get_custom_query(query, column_list):
 
-df = get_transaction_data_df(table_name)
+    cursor = connection.cursor()
 
-print(df['block_number'].max())
+    cursor.execute(query)
+    
+    rows = cursor.fetchall()
+
+    df = get_sql_df(rows, column_list)
+
+    return df 

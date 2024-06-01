@@ -186,6 +186,13 @@ def get_approval_events(contract, from_block, to_block):
     
     return events
 
+# # gets the current balances of a user given a contract address and a wallet address
+def get_balance_of(contract, wallet_address):
+    
+    balance = contract.functions.balanceOf(wallet_address).call()
+
+    return balance
+
 #handles our weth_gateway events and returns the accurate user_address
 def handle_weth_gateway(event, enum_name, index):
 
