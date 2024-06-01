@@ -481,6 +481,25 @@ def get_latest_block(web3):
 
     return latest_block
 
+# # will divide by our token decimals to get us a more human readable amount
+def clean_up_df_decimals(df, amount_column_name, index):
+
+    config_df = get_token_config_df()
+
+    config_df = config_df.loc[config_df['chain_index'] == index]
+
+    unique_token_list = config_df.token_address.unique()
+
+    for unique_token_address in unique_token_list:
+        decimals = get_token_config_value('decimals', unique_token_address, index)
+
+        df.loc[df['token_address'] == unique_token_address, amount_column_name] /= decimals
+
+        # df.loc[df['token_address'] == token_address, 'reserve_address'] = reserve_address
+
+    
+    return df
+
 # # correctly updates our price at the end
 def get_final_pricing(df, index):
     rpc_url = get_lp_config_value('rpc_url', index)
