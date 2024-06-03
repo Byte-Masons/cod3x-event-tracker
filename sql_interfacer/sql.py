@@ -97,6 +97,32 @@ def make_snapshot_table(cursor):
     
     return
 
+
+# # given a create query, will create our table in our database
+def create_custom_table(query):
+    cursor = connection.cursor()
+    
+    cursor.execute(query)
+
+    connection.commit()
+
+    return
+
+# # will write to our custom table
+def write_to_custom_table(query, df):
+    cursor = connection.cursor()
+
+    df = df.astype(str)
+    
+    # Get DataFrame as a list of tuples
+    data_tuples = df.to_records(index=False)  # Avoids inserting the index as a column
+
+    cursor.executemany(query, data_tuples)
+
+    connection.commit()
+
+    return
+
 # # inserts our snapshot dataframe data into our snapshot database
 def insert_data_into_snapshot_table(cursor, snapshot_df):
 
@@ -260,8 +286,10 @@ def test_write_loop(cursor):
         i += 1
 
 # # sees if our given value exists in our database
-def sql_value_exists(cursor, value, column_name, column_list, table_name):
+def sql_value_exists(value, column_name, column_list, table_name):
     
+    cursor = connection.cursor()
+
     df = pd.DataFrame()
 
     exists = False
@@ -304,6 +332,51 @@ def sql_value_exists(cursor, value, column_name, column_list, table_name):
 
     return df
 
+# # will see if all of our values exist in the sql table
+def sql_multiple_values_exist(value_list, column_list, table_name):
+
+    cursor = connection.cursor()
+
+    exists = False
+
+    # # casts all of values to str for the purpose of querying our fully str database
+    value_list = [str(item) for item in value_list]
+    column_list = [str(item) for item in column_list]
+
+    i = 0
+
+    # # constructs our WHERE and AND statements
+    while i < len(value_list):
+        if i == 0:
+            where_and_statement_string = " WHERE " + column_list[i] + " IN " + "(" + value_list[i] + ")"
+        else:
+            where_and_statement_string += " AND " + column_list[i] + " IN " + "(" + value_list[i] + ")"
+
+        i += 1
+
+    query = f"""
+    SELECT *
+    FROM {table_name}
+    {where_and_statement_string}
+    LIMIT 1
+    """
+
+    cursor.execute(query)
+
+    # Fetch results (optional)
+    results = cursor.fetchall()
+    
+    # Analyze results:
+    if results:
+        # print("Matching values found in the database.")
+        exists = True
+        # You can process the results further (e.g., print specific columns)
+    else:
+        exists = False
+        # print("No matching values found in the database.")
+
+    return exists
+
 # # generalized exists function that will help us reduce rpc calls
 def value_exists(df, input_value, column_name):
 
@@ -335,7 +408,7 @@ def already_part_of_database(event, wait_time, column_list, data_type_list, tabl
 
     tx_hash = event['transactionHash'].hex()
 
-    df = sql_value_exists(cursor, tx_hash, 'tx_hash', column_list, table_name)
+    df = sql_value_exists(tx_hash, 'tx_hash', column_list, table_name)
 
     time.sleep(wait_time)
 
