@@ -340,26 +340,23 @@ def sql_multiple_values_exist(value_list, column_list, table_name):
     exists = False
 
     # # casts all of values to str for the purpose of querying our fully str database
-    value_list = [str(item) for item in value_list]
+    value_list = [str(item)[2:] for item in value_list]
     column_list = [str(item) for item in column_list]
 
     i = 0
 
+    # where_and_statement_string = f" WHERE {column_list[i]} LIKE '%{value_list[i]}%'"
+
     # # constructs our WHERE and AND statements
     while i < len(value_list):
         if i == 0:
-            where_and_statement_string = " WHERE " + column_list[i] + " IN " + "(" + value_list[i] + ")"
+            where_and_statement_string = f"WHERE {column_list[i]} LIKE '%{value_list[i]}%'"
         else:
-            where_and_statement_string += " AND " + column_list[i] + " IN " + "(" + value_list[i] + ")"
+            where_and_statement_string += f" AND {column_list[i]} LIKE '%{value_list[i]}%'"
 
         i += 1
 
-    query = f"""
-    SELECT *
-    FROM {table_name}
-    {where_and_statement_string}
-    LIMIT 1
-    """
+    query = f"""SELECT * FROM {table_name} {where_and_statement_string} LIMIT 1"""
 
     cursor.execute(query)
 

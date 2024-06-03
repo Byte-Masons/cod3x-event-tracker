@@ -14,6 +14,7 @@ import threading
 import sqlite3
 from lending_pool import approval_tracker
 from lending_pool import lending_pool_helper as lph
+from lending_pool import current_balance_tracker as cbt
 
 app = Flask(__name__)
 
@@ -161,21 +162,12 @@ def get_all_users():
 
     return jsonify(response), 200
 
-# if __name__ =='__main__':
-#     app.run()
+df = cbt.get_user_token_combos()
 
-event_function = approval_tracker.get_approval_events
-data_function = approval_tracker.make_approval_data
+df = cbt.find_all_token_balances(df, 0)
 
-column_list = ['owner', 'spender', 'token_address', 'value', 'log_index', 'transaction_index', 'tx_hash', 'block_number']
-index_list = [1]
-for index in index_list:
-    # lph.find_all_transactions(event_function, data_function, column_list, index)
+print(df)
 
-    # df = approval_tracker.get_current_approvals(column_list, index)
-    # print(df)
+# rows = sql.select_star('current_balance')
 
-    df = approval_tracker.get_current_balances(index)
-    print(df)
-
-# sql.drop_table('approvals')
+# print(rows)

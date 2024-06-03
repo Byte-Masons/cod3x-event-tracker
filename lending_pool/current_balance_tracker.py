@@ -15,6 +15,33 @@ def get_user_token_combos():
 
     return df
 
+# # creates our balance table if it doesn't already exist
+def create_balance_table():
+    query = f"""
+            CREATE TABLE IF NOT EXISTS current_balance(
+                user_address TEXT,
+                token_address TEXT,
+                current_balance TEXT
+                )
+            """
+    
+    sql.create_custom_table(query)
+
+    return
+
+# # will write our balance entries to our balance table
+def write_to_balance_table(df):
+
+    query = """
+    INSERT INTO current_balance (user_address,token_address,current_balance)
+    VALUES (?, ?, ?)
+    """
+
+    sql.write_to_custom_table(query, df)
+
+    return
+
+
 # # will find the raw amount of tokens that each user has
 def find_all_token_balances(df, index):
     rpc_url = lph.get_lp_config_value('rpc_url', index)
@@ -25,11 +52,16 @@ def find_all_token_balances(df, index):
     wait_time = 0.1
 
     unique_token_list = df.token_address.unique()
+    column_list = ['user_address', 'token_address', 'current_balance']
+    table_name = 'current_balance'
     
     # # these lists will be populated with our wallet_token balance informations
     wallet_list = []
     token_list = []
     balance_list = []
+
+    # # makes our balance_table if it doesn't already exist
+    create_balance_table()
 
     i = 0
 
@@ -44,23 +76,45 @@ def find_all_token_balances(df, index):
         # # iterates through each wallet in the token_df that has had a transfer with that token
         for wallet_address in temp_unique_wallet_address_list:
 
-            token_balance = lph.get_balance_of(token_contract, wallet_address)
+            value_list = [wallet_address, token_address]
+            temp_column_list = column_list[:2]
 
-            wallet_list.append(wallet_address)
-            token_list.append(token_address)
-            balance_list.append(token_balance)
+            values_exist = sql.sql_multiple_values_exist(value_list, temp_column_list, table_name)
 
-            print(wallet_address, token_address, token_balance)
+            # # if our values already exist, then we will get the current balance and write to the database
+            if values_exist == False:
+                token_balance = lph.get_balance_of(token_contract, wallet_address)
 
-            time.sleep(wait_time)
+                wallet_list.append(wallet_address)
+                token_list.append(token_address)
+                balance_list.append(token_balance)
 
-            print('Function Calls Remaining: ', str(i) + '/' + str(len(df)), str(len(df) - i))
+                time.sleep(wait_time)
+
+                # # will write our entry to our sql database
+                temp_write_df = pd.DataFrame()
+                temp_write_df['user_address'] = [wallet_address]
+                temp_write_df['token_address'] = [token_address]
+                temp_write_df['current_balance'] = [token_balance]
+
+                write_to_balance_table(temp_write_df)
+
+            print('Function Calls Remaining: ', str(len(df) - i), str(i) + '/' + str(len(df)))
+
             i += 1
+
 
     balance_df = pd.DataFrame()
     
-    df['wallet_address'] = wallet_list
+    df['user_address'] = wallet_list
     df['token_address'] = token_list
     df['current_balance'] = balance_list
+
+    # # will delete our current_balance_table to save on memory
+    # try:
+    #     sql.drop_table('current_balance')
+    # except:
+    #     print('Current Balance table does not already exist')
+    
 
     return balance_df
