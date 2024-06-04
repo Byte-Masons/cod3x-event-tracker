@@ -167,7 +167,11 @@ def get_all_users():
 # df = cbt.find_all_token_balances(df, 0)
 
 
-df = cbt.add_token_metadata(0)
+# df = cbt.add_token_metadata(0)
+
+# df = sql.get_transaction_data_df('persons')
+
+df = bp.set_embers_database_v2(0)
 
 print(df)
 

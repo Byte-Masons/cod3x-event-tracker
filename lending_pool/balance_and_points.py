@@ -7,6 +7,7 @@ import datetime
 import sqlite3
 from sql_interfacer import sql
 from cloud_storage import cloud_storage
+from lending_pool import current_balance_tracker as cbt
 
 def set_unique_users(cursor):
     table_name = 'persons'
@@ -734,6 +735,60 @@ def set_embers_database(index):
     # except:
     #     print("Couldn't write to bucket")
 
+
+    return df
+
+# # takes in our amount_cumulative df, and will make the newest entry for each wallet_token combo = our current_balance
+def update_amount_cumulative_to_current_balance(df, index):
+
+    df_2 = cbt.add_token_metadata(index)
+
+    df_2['tx_hash'] = 'N/A'
+    df_2['token_volume'] = 0
+    df_2['timestamp'] = 0
+    df_2['amount_cumulative'] = df_2['current_balance']
+
+    df = df[['user_address', 'tx_hash', 'token_address', 'token_volume', 'timestamp', 'amount_cumulative']]
+    df_2 = df_2[['user_address', 'tx_hash', 'token_address', 'token_volume', 'timestamp', 'amount_cumulative']]
+
+    unique_token_address_list = df_2['token_address'].drop_duplicates().tolist()
+    unique_wallet_address_list = df_2['user_address'].drop_duplicates().tolist()
+
+    for token_address in unique_token_address_list:
+        temp_df = df_2.loc[df_2['token_address'] == token_address]
+
+        for wallet_address in unique_wallet_address_list:
+            wallet_token_df = temp_df.loc[temp_df['user_address'] == wallet_address]
+
+    return
+
+# # will set embers using old tx data with the newest entry per wallet being the current_balance
+def set_embers_database_v2(index):
+    
+    table_name = 'persons'
+
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    column_list = ['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash']
+
+    rows = sql.select_specific_columns(cursor, column_list, table_name)
+
+    df = sql.get_sql_df(rows, column_list)
+    df['token_volume'] = df['token_volume'].astype(float)
+
+    df = set_token_flows(df, cursor, index)
+    print('set_token_flows complete')
+
+    df['user_address'] = df['user_address'].astype(str)
+
+    df = drop_blacklisted_addresses(df)
+
+    df = set_rolling_balance(df)
+    print('set_rolling_balances complete')
+
+    df = update_amount_cumulative_to_current_balance(df, index)
 
     return df
 
