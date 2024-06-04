@@ -38,9 +38,9 @@ def get_token_config_value(column_name, token_address, index):
     temp_df = df.loc[df['token_address'] == token_address]
 
     if len(temp_df) < 1:
-        df = df.loc[df['underlying_address'] == token_address]
+        temp_df = df.loc[df['underlying_address'] == token_address]
 
-    config_list = df[column_name].tolist()
+    config_list = temp_df[column_name].tolist()
 
     config_value = config_list[0]
 
@@ -498,6 +498,52 @@ def clean_up_df_decimals(df, amount_column_name, index):
         # df.loc[df['token_address'] == token_address, 'reserve_address'] = reserve_address
 
     
+    return df
+
+# # will add our reserve_address column to our dataframe
+def add_df_reserve_address(df, index):
+    
+    config_df = get_token_config_df()
+
+    config_df = config_df.loc[config_df['chain_index'] == index]
+
+    unique_token_list = config_df.token_address.unique()
+
+    # # placeholder initialization of the reserve_address column so we can assign it values
+    df['reserve_address'] = 'N/A'
+
+    for unique_token_address in unique_token_list:
+        reserve_address = get_token_config_value('underlying_address', unique_token_address, index)
+
+        df.loc[df['token_address'] == unique_token_address, 'reserve_address'] = reserve_address
+
+    return df
+
+# # will add our asset price column to our dataframe
+def add_df_asset_prices(df, index):
+    
+    rpc_url = get_lp_config_value('rpc_url', index)
+
+    web3 = get_web_3(rpc_url)
+
+    config_df = get_token_config_df()
+
+    reserve_address_list = config_df['underlying_address'].tolist()
+    token_address_list = config_df['token_address'].tolist()
+
+    contract_address = get_lp_config_value('aave_oracle_address', index)
+    contract_abi = get_aave_oracle_abi()
+    contract = get_contract(contract_address, contract_abi, web3)
+
+    for reserve_address in reserve_address_list:
+        value_usd = contract.functions.getAssetPrice(reserve_address).call()
+        
+        time.sleep(0.1)
+
+        value_usd = value_usd / 1e8
+
+        df.loc[df['reserve_address'] == reserve_address, 'asset_price'] = value_usd
+
     return df
 
 # # correctly updates our price at the end

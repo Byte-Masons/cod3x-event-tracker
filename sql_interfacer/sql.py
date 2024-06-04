@@ -377,8 +377,6 @@ def sql_multiple_values_exist(value_list, column_list, table_name):
 # # generalized exists function that will help us reduce rpc calls
 def value_exists(df, input_value, column_name):
 
-    print(df)
-
     input_value = str(input_value)
 
     if (df[column_name] == input_value).any():

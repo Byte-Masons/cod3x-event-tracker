@@ -41,6 +41,22 @@ def write_to_balance_table(df):
 
     return
 
+# # will read from our sql database and return the current_balance_table as a dataframe
+def get_current_balance_df():
+    
+    column_list = ['user_address', 'token_address', 'current_balance']
+
+    query = f"""
+    SELECT *
+    FROM current_balance
+    """
+
+    balance_df = sql.get_custom_query(query, column_list)
+
+    balance_df = balance_df.drop_duplicates(subset=['user_address', 'token_address'])
+
+    return balance_df
+
 
 # # will find the raw amount of tokens that each user has
 def find_all_token_balances(df, index):
@@ -103,18 +119,24 @@ def find_all_token_balances(df, index):
 
             i += 1
 
-
-    balance_df = pd.DataFrame()
-    
-    df['user_address'] = wallet_list
-    df['token_address'] = token_list
-    df['current_balance'] = balance_list
-
-    # # will delete our current_balance_table to save on memory
-    # try:
-    #     sql.drop_table('current_balance')
-    # except:
-    #     print('Current Balance table does not already exist')
-    
+    balance_df = get_current_balance_df()
 
     return balance_df
+
+
+# # adds decimals and pricing and such
+def add_token_metadata(index):
+
+    df = get_current_balance_df()
+
+    amount_column = 'current_balance'
+
+    df[amount_column] = df[amount_column].astype(float)
+
+    df = lph.clean_up_df_decimals(df, amount_column, index)
+
+    df = lph.add_df_reserve_address(df, index)
+
+    df = lph.add_df_asset_prices(df, index)
+
+    return df
