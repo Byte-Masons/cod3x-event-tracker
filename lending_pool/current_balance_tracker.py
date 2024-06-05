@@ -2,6 +2,7 @@ import pandas as pd
 from lending_pool import lending_pool_helper as lph
 from sql_interfacer import sql
 import time
+from cloud_storage import cloud_storage
 
 # # will return a dataframe with all users and the tokens they have interacted with on Ironclad
 def get_user_token_combos():
@@ -139,4 +140,39 @@ def add_token_metadata(index):
 
     df = lph.add_df_asset_prices(df, index)
 
+    df['amount_cumulative'] = df['current_balance'] * df['asset_price']
+
     return df
+
+# # will merge our two dataframes and return our updated snapshot_df
+def merge_current_balance_snapshot_df(df, snapshot_df):
+
+    snapshot_df = snapshot_df[['user_address', 'total_embers']]
+    df = df[['user_address', 'total_tvl']]
+
+    merged_df = pd.merge(snapshot_df, df, how='inner', on='user_address')
+
+    merged_df = merged_df.drop_duplicates(subset=['user_address'])
+
+    return merged_df
+
+
+# # will update our cloud_storage bucket
+def update_snapshot_bucket(df):
+
+    # # will turn our current_balance df tvl into total_tvl per user_address
+    # # also reduces columns to two and drops any duplicates
+    df = lph.make_one_line_tvl(df)
+    df = df[['user_address', 'total_tvl']]
+    df = df.drop_duplicates(subset=['user_address'])
+
+    # # reads existing tvl_and_embers data from the cloud
+    # # and drops any duplicates just to be safe
+    snapshot_df = cloud_storage.read_from_cloud_storage('snapshot_user_tvl_embers.csv', 'cooldowns2')
+    snapshot_df = snapshot_df.drop_duplicates(subset=['user_address'])
+
+    snapshot_df = merge_current_balance_snapshot_df(df, snapshot_df)
+
+    cloud_storage.df_write_to_cloud_storage(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+
+    return snapshot_df

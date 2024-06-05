@@ -162,16 +162,14 @@ def get_all_users():
 
     return jsonify(response), 200
 
-# df = cbt.get_user_token_combos()
+df = cbt.get_user_token_combos()
 
-# df = cbt.find_all_token_balances(df, 0)
+df = cbt.find_all_token_balances(df, 0)
 
 
 # df = cbt.add_token_metadata(0)
 
-# df = sql.get_transaction_data_df('persons')
-
-df = bp.set_embers_database_v2(0)
+# df = cbt.update_snapshot_bucket(df)
 
 print(df)
 

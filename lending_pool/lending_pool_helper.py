@@ -519,6 +519,18 @@ def add_df_reserve_address(df, index):
 
     return df
 
+# # will make a one line of a users tvl accross their tokens
+def make_one_line_tvl(df):
+    df['amount_cumulative'] = df['amount_cumulative'].astype(float)
+
+    total_tvl = df.groupby('user_address')['amount_cumulative'].sum()
+    
+    df = df.join(total_tvl.to_frame(name='total_tvl'), on='user_address')
+
+    df = df.drop_duplicates(subset=['user_address'])
+
+    return df
+
 # # will add our asset price column to our dataframe
 def add_df_asset_prices(df, index):
     
