@@ -752,15 +752,34 @@ def update_amount_cumulative_to_current_balance(df, index):
     df_2 = df_2[['user_address', 'tx_hash', 'token_address', 'token_volume', 'timestamp', 'amount_cumulative']]
 
     unique_token_address_list = df_2['token_address'].drop_duplicates().tolist()
-    unique_wallet_address_list = df_2['user_address'].drop_duplicates().tolist()
 
+    iterations = 1
     for token_address in unique_token_address_list:
-        temp_df = df_2.loc[df_2['token_address'] == token_address]
+
+        token_df = df.loc[df['token_address'] == token_address]
+        unique_wallet_address_list = token_df['user_address'].drop_duplicates().tolist()
 
         for wallet_address in unique_wallet_address_list:
-            wallet_token_df = temp_df.loc[temp_df['user_address'] == wallet_address]
 
-    return
+            # # gets our max existing timestamp from our tx data
+            temp_df = df.loc[(df['token_address'] == token_address) & (df['user_address'] == wallet_address)]
+
+            if len(temp_df) > 0:
+                max_timestamp = temp_df['timestamp'].max()
+
+                # # finds our current balance for each user,token combination from our current balance data
+                temp_balance_df = df_2.loc[(df_2['token_address'] == token_address) & (df_2['user_address'] == wallet_address)]
+                
+                if len(temp_balance_df) > 0:
+                    current_balance = temp_balance_df['amount_cumulative'].max()
+
+                    # # updates our tx dataframe with its current balance for each user, token combination
+                    df.loc[(df['token_address'] == token_address) & (df['user_address'] == wallet_address) & (df['timestamp'] == max_timestamp), 'amount_cumulative'] = current_balance
+
+            print(len(df_2) - iterations, iterations, '/', len(df_2))
+            iterations += 1
+
+    return df
 
 # # will set embers using old tx data with the newest entry per wallet being the current_balance
 def set_embers_database_v2(index):
