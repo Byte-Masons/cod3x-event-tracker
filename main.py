@@ -23,6 +23,11 @@ def run_all():
         try:
             cbt.loop_through_current_balances(index)
         except:
+            pass
+        
+        try:
+            lp_tracker.run_all(index_list)
+        except:
             time.sleep(60)
     
     run_all()

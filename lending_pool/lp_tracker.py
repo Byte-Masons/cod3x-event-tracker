@@ -653,7 +653,8 @@ def find_all_lp_transactions(index):
             else:
                 time.sleep(wait_time)
 
-        config_df['last_block'] = from_block
+        config_df.loc[config_df['index'] == index, 'last_block'] = from_block
+        # config_df['last_block'] = from_block
         config_df.to_csv('./config/lp_config.csv', index=False)
 
         from_block += interval
