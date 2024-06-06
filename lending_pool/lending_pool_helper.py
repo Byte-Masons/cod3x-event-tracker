@@ -17,6 +17,12 @@ def get_token_config_df():
 
     return token_config_df
 
+# # returns our trasury_config_df
+def get_treasury_config_df():
+    treasury_config_df = pd.read_csv('./config/treasury_config.csv')
+
+    return treasury_config_df
+
 # # returns the relevant value from our config csv
 def get_lp_config_value(column_name, index):
     df = get_lp_config_df()
@@ -44,6 +50,19 @@ def get_token_config_value(column_name, token_address, index):
     config_list = temp_df[column_name].tolist()
 
     config_value = config_list[0]
+
+    return config_value
+
+# # returns the relevant value from our treasury_config csv
+def get_treasury_config_value(column_name, index):
+    df = get_treasury_config_df()
+
+    config_list = df[column_name].tolist()
+
+    try:
+        config_value = config_list[index]
+    except:
+        config_value = config_list[0]
 
     return config_value
 
@@ -609,6 +628,38 @@ def get_final_pricing(df, index):
     df = pd.concat(df_list)
 
     return df
+
+# # will return a list of only a_tokens
+def get_a_token_list(index):
+
+    token_config_df = get_token_config_df()
+
+    token_config_df = token_config_df.loc[token_config_df['chain_index'] == index]
+
+    token_list = token_config_df['token_name'].tolist()
+    a_token_list = [x for x in token_list if x.lower()[0] != 'v']
+
+    token_config_df = token_config_df.loc[token_config_df['token_name'].isin(a_token_list)]
+
+    a_token_list = token_config_df['token_address'].tolist()
+
+    return a_token_list
+
+# # will return a list of only variable_debt tokens
+def get_v_token_list(index):
+    
+    token_config_df = get_token_config_df()
+
+    token_config_df = token_config_df.loc[token_config_df['chain_index'] == index]
+
+    token_list = token_config_df['token_name'].tolist()
+    v_token_list = [x for x in token_list if x.lower()[0] == 'v']
+
+    token_config_df = token_config_df.loc[token_config_df['token_name'].isin(v_token_list)]
+
+    v_token_list = token_config_df['token_address'].tolist()
+
+    return v_token_list
 
 # # runs all our looks
 # # updates our csv

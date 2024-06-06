@@ -3,7 +3,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import pandas as pd
 import json
-from functools import cache
+# from functools import cache
 import threading 
 import queue
 import time
@@ -26,7 +26,7 @@ HOME_DIR = os.path.expanduser('~')
 PATH = os.path.join(HOME_DIR, 'fast-web-419215-35d284e06546.json')
 STORAGE_CLIENT = storage.Client.from_service_account_json(PATH)
 
-@cache
+# @cache
 def read_from_cloud_storage(filename, bucketname):
     # storage_client = storage.Client(PATH)
     bucket = STORAGE_CLIENT.get_bucket(bucketname)
