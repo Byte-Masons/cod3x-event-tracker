@@ -27,6 +27,7 @@ def run_all():
     
     run_all()
 
-# sql.drop_table('current_balance')
 run_all()
+
+
     

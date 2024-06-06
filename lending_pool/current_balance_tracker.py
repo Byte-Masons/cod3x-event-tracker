@@ -66,7 +66,7 @@ def find_all_token_balances(df, index):
 
     wait_time = lph.get_lp_config_value('wait_time', index)
 
-    wait_time = 0.1
+    wait_time = 0.2
 
     unique_token_list = df.token_address.unique()
     column_list = ['user_address', 'token_address', 'current_balance']
@@ -150,7 +150,16 @@ def merge_current_balance_snapshot_df(df, snapshot_df):
     snapshot_df = snapshot_df[['user_address', 'total_embers']]
     df = df[['user_address', 'total_tvl']]
 
-    merged_df = pd.merge(snapshot_df, df, how='inner', on='user_address')
+    merged_df = pd.merge(snapshot_df, df, how='left', on='user_address')
+
+    merged_df['total_tvl'] = pd.to_numeric(merged_df['total_tvl'], errors='coerce')
+    merged_df['total_embers'] = pd.to_numeric(merged_df['total_embers'], errors='coerce')
+
+    merged_df['total_tvl'] = merged_df['total_tvl'].fillna(0)
+    merged_df['total_embers'] = merged_df['total_embers'].fillna(0)
+    
+    merged_df.loc[merged_df['total_tvl'] < 0, 'total_tvl'] = 0
+    merged_df.loc[merged_df['total_embers'] < 0, 'total_embers'] = 0
 
     merged_df = merged_df.drop_duplicates(subset=['user_address'])
 
@@ -159,9 +168,6 @@ def merge_current_balance_snapshot_df(df, snapshot_df):
 
 # # will update our cloud_storage bucket
 def update_snapshot_bucket(df):
-
-    # # will hopefully stop us from accidentally deleting good records
-    minimum_records = 31000
 
     # # will turn our current_balance df tvl into total_tvl per user_address
     # # also reduces columns to two and drops any duplicates
@@ -176,10 +182,7 @@ def update_snapshot_bucket(df):
 
     snapshot_df = merge_current_balance_snapshot_df(df, snapshot_df)
 
-
-    if len(snapshot_df) >= minimum_records:
-
-        cloud_storage.df_write_to_cloud_storage(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+    cloud_storage.df_write_to_cloud_storage(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
 
     return snapshot_df
 
@@ -189,7 +192,6 @@ def loop_through_current_balances(index):
     df = get_user_token_combos()
 
     df = find_all_token_balances(df, index)
-
 
     df = add_token_metadata(0)
 

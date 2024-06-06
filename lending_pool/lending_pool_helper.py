@@ -1,6 +1,7 @@
 import pandas as pd
 from web3 import Web3
 from web3.middleware import geth_poa_middleware 
+from cloud_storage import cloud_storage as cs
 import time
 from sql_interfacer import sql
 
@@ -697,3 +698,33 @@ def find_all_transactions(event_function, data_function, column_list, index):
     # bp.set_embers_database(index)
 
     return
+
+# # can use our final points breakdown from the app to update our cloud bucket
+def finalize_points():
+    df = pd.read_csv('ironclad_point_totals.csv')
+    current_balance_df = cs.read_from_cloud_storage('snapshot_user_tvl_embers.csv', 'cooldowns2')
+
+    current_balance_df = current_balance_df[['user_address', 'total_tvl']]
+
+    df = df.loc[df['pointsBalance'] > 0]
+
+    df['user_address'] = df['walletId']
+    df['total_embers'] = df['pointsBalance']
+
+    df = df[['user_address', 'total_embers']]
+
+    merged_df = pd.merge(df, current_balance_df, how='left', on='user_address')
+
+    merged_df['total_tvl'] = pd.to_numeric(merged_df['total_tvl'], errors='coerce')
+    merged_df['total_embers'] = pd.to_numeric(merged_df['total_embers'], errors='coerce')
+
+    # Replace NaN values with 0
+    merged_df['total_tvl'] = merged_df['total_tvl'].fillna(0)
+    merged_df['total_embers'] = merged_df['total_embers'].fillna(0)
+
+    merged_df.loc[merged_df['total_tvl'] < 0, 'total_tvl'] = 0
+    merged_df.loc[merged_df['total_embers'] < 0, 'total_embers'] = 0
+
+    # cs.df_write_to_cloud_storage(merged_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+    
+    return merged_df
