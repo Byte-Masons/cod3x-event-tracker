@@ -160,6 +160,9 @@ def merge_current_balance_snapshot_df(df, snapshot_df):
 # # will update our cloud_storage bucket
 def update_snapshot_bucket(df):
 
+    # # will hopefully stop us from accidentally deleting good records
+    minimum_records = 31000
+
     # # will turn our current_balance df tvl into total_tvl per user_address
     # # also reduces columns to two and drops any duplicates
     df = lph.make_one_line_tvl(df)
@@ -173,6 +176,25 @@ def update_snapshot_bucket(df):
 
     snapshot_df = merge_current_balance_snapshot_df(df, snapshot_df)
 
-    cloud_storage.df_write_to_cloud_storage(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+
+    if len(snapshot_df) >= minimum_records:
+
+        cloud_storage.df_write_to_cloud_storage(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
 
     return snapshot_df
+
+# # our aggregate function that will do all of our looping
+def loop_through_current_balances(index):
+    
+    df = get_user_token_combos()
+
+    df = find_all_token_balances(df, index)
+
+
+    df = add_token_metadata(0)
+
+    df = update_snapshot_bucket(df)
+
+    sql.drop_table('current_balance')
+
+    print(df)
