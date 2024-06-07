@@ -6,9 +6,11 @@ import sys
 import sqlite3
 # sys.path.append("..")  # Add the root directory to the search path
 from lending_pool import transaction_finder as tf
-from sql_interfacer import sql
 from lending_pool import balance_and_points as bp
+from lending_pool import lending_pool_helper as lph
+from sql_interfacer import sql
 from cloud_storage import cloud_storage as cs
+
 
 connection = sqlite3.connect("turtle.db")
 
@@ -193,7 +195,7 @@ def handle_weth_gateway(event, enum_name, index):
     payload_address = event['args']['user']
 
     if payload_address.lower() == gateway_address.lower():
-        print('Already part of the dataframe')
+        # print('Already part of the dataframe')
         # print(event)
         # if enum_name == 'LEND' or enum_name == 'BORROW':
         #     user = 'onBehalfOf'
@@ -431,7 +433,7 @@ def user_data(events, web3, from_block, to_block, index):
     i = 1
     for event in events:
 
-        print('Batch of Events Processed: ', i, '/', len(events))
+        # print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
         # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
@@ -489,7 +491,7 @@ def user_data(events, web3, from_block, to_block, index):
                 tx_index_list.append(tx_index)
 
         else:
-            print('Already part of the dataframe')
+            # print('Already part of the dataframe')
             # print(event)
             time.sleep(wait_time)
             pass
@@ -617,15 +619,22 @@ def find_all_lp_transactions(index):
 
     receipt_token_list = token_config_df['token_address'].tolist()
 
+    # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
+    cloud_csv_name = 'current_user_tvl_embers.csv'
+    cloud_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    # # drops any stray duplicates
+    tx_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
+
     # # inputs to our sql function
     column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
     data_type_list = ['TEXT' for x in column_list]
     table_name = get_lp_config_value('table_name', index)
 
+    # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
+    create_tx_table(table_name, tx_df)
 
     while to_block < latest_block:
-
-        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
         receipt_counter = 0
 
@@ -635,7 +644,7 @@ def find_all_lp_transactions(index):
             receipt_contract = get_a_token_contract(web3, receipt_token_address)
 
 
-            print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+            # print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
             events = get_transfer_events(receipt_contract, from_block, to_block)
 
@@ -669,7 +678,11 @@ def find_all_lp_transactions(index):
         if to_block >= latest_block:
             to_block = latest_block
         
-    bp.set_embers_database(index)
+        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+    
+    cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+    
+    # bp.set_embers_database(index)
 
     return
 
@@ -997,25 +1010,69 @@ def get_final_pricing(df, index):
 
     return df
 
+# # will load our cloud df information into the sql database
+def insert_bulk_data_into_table(df, table_name):
+    # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
+    
+    query = f"""
+    INSERT INTO {table_name} (from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+    sql.write_to_custom_table(query, df)
+
+    return
+
+def create_tx_table(table_name, df):
+    query = f"""
+            CREATE TABLE IF NOT EXISTS {table_name}(
+                from_address TEXT,
+                to_address TEXT,
+                tx_hash TEXT,
+                timestamp TEXT,
+                token_address TEXT,
+                reserve_address TEXT,
+                token_volume TEXT,
+                asset_price TEXT,
+                usd_token_amount TEXT,
+                log_index TEXT,
+                transaction_index TEXT,
+                block_number TEXT
+                )
+            """
+    
+    # # will only insert data into the sql table if the table doesn't exist
+
+    sql.create_custom_table(query)
+
+    table_length = sql.select_star_count(table_name)[0][0]
+    
+    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
+    if table_length < len(df):
+        sql.drop_table(table_name)
+        sql.create_custom_table(query)
+        insert_bulk_data_into_table(df, table_name)
+
+    return
+
 def run_all(index_list):
 
     index_counter = 0
     for index in index_list:
+        
+        find_all_lp_transactions(index)
+        cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
 
-        try:
-            find_all_lp_transactions(index)
-            df = sql.get_transaction_data_df('persons')
-            df = df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'token_address', 'token_volume'])
-            df = fix_reserve_address(df)
-            df = get_final_pricing(df, index)
-            cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
-            bp.set_embers_database(index)
-            print('Index Completed: ' , index)
 
-        except:
-            print(index, ' :failed')
-            time.sleep(65)
-            run_all(index_list)
+        df = sql.get_transaction_data_df('persons')
+        # df = df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'token_address', 'token_volume'])
+        # df = fix_reserve_address(df)
+        # df = get_final_pricing(df, index)
+        cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
+        bp.set_embers_database(index)
+        print('Index Completed: ' , index)
+
+        run_all(index_list)
 
         index_counter += 1
         if index_counter == len(index_list):

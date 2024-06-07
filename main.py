@@ -17,36 +17,59 @@ from lending_pool import lending_pool_helper as lph
 from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 
-# def run_all():
-#     index_list = [0]
+# # will try to run the function it it fails for whatever reason
+def run_robust_function(function, input):
 
-#     for index in index_list:
-#         try:
-#             cbt.loop_through_current_balances(index)
-#         except:
-#             pass
-        
-#         try:
-#             lp_tracker.run_all(index_list)
-#         except:
-#             time.sleep(60)
+    try:
+        function(input)
+    except:
+        run_robust_function(function, input)
     
-#     run_all()
+    return
 
-# run_all()
+def loop_all_functions():
+    index_list = [0]
+
+    run_robust_function(lp_tracker.run_all, index_list)
+
+    for index in index_list:
+        run_robust_function(cbt.loop_through_current_balances, index)
+
+    loop_all_functions()
+
+def loop_all_functions_2():
+    index_list = [0]
+
+    lp_tracker.run_all(index_list)
+
+    for index in index_list:
+        cbt.loop_through_current_balances(index)
+
+
+    loop_all_functions_2()
 
 def run_all_treasury():
     index_list = [0]
 
     for index in index_list:
-        try:
-            tt.find_all_revenue_transactions(index)
-        except:
-            pass
+        run_robust_function(tt.find_all_revenue_transactions, index)
     
-    print('Run it back')
+    print('Run it back Turbo')
     time.sleep(250)
 
     run_all_treasury()
 
-run_all_treasury()
+def run_all_treasury_2():
+    index_list = [0]
+
+    for index in index_list:
+        tt.find_all_revenue_transactions(index)
+    
+    print('Run it back Turbo')
+    time.sleep(250)
+
+    run_all_treasury()
+
+# run_all_treasury()
+
+loop_all_functions_2()

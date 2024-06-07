@@ -225,7 +225,6 @@ def find_all_revenue_transactions(index):
     create_treasury_table(table_name, last_treasury_df)
 
     while to_block < latest_block:
-        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
         receipt_counter = 0
 
@@ -266,6 +265,8 @@ def find_all_revenue_transactions(index):
         if to_block >= latest_block:
             to_block = latest_block    
 
+        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+        
     cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
 
     try:
