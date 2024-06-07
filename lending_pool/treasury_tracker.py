@@ -16,7 +16,7 @@ connection = sqlite3.connect("turtle.db")
 cursor = connection.cursor()
 
 # # will loop through our events and make the relevant output df
-def get_revenue_data(events, web3, from_block, to_block, index):
+def get_revenue_data(events, web3, index):
     
     df = pd.DataFrame()
 
@@ -50,7 +50,7 @@ def get_revenue_data(events, web3, from_block, to_block, index):
     i = 1
     for event in events:
 
-        print('Batch of Events Processed: ', i, '/', len(events))
+        # print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
 
         to_address = event['args']['to']
@@ -139,7 +139,7 @@ def get_revenue_data(events, web3, from_block, to_block, index):
 def create_treasury_table(table_name, df):
 
     query = f"""
-            CREATE TABLE {table_name}(
+            CREATE TABLE IF NOT EXISTS {table_name}(
                 from_address TEXT,
                 to_address TEXT,
                 tx_hash TEXT,
@@ -156,14 +156,16 @@ def create_treasury_table(table_name, df):
             """
     
     # # will only insert data into the sql table if the table doesn't exist
-    try:
-        sql.create_custom_table(query)
-    except:
-        print('Table Already Exists')
+
+    sql.create_custom_table(query)
+
+    table_length = sql.select_star_count(table_name)[0][0]
+    
+    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
+    if table_length < len(df):
         sql.drop_table(table_name)
         sql.create_custom_table(query)
-    
-    insert_bulk_data_into_table(df, table_name)
+        insert_bulk_data_into_table(df, table_name)
 
     return
 
@@ -216,6 +218,8 @@ def find_all_revenue_transactions(index):
     cloud_csv_name = lph.get_lp_config_value('treasury_filename', index)
     cloud_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
     last_treasury_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    # # drops any stray duplicates
+    last_treasury_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
 
     # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
     create_treasury_table(table_name, last_treasury_df)
@@ -230,20 +234,18 @@ def find_all_revenue_transactions(index):
 
             receipt_contract = lph.get_a_token_contract(web3, receipt_token_address)
 
-            print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+            # print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
 
             events = lph.get_transfer_events(receipt_contract, from_block, to_block)
 
             receipt_counter += 1
 
             if len(events) > 0:
-                contract_df = get_revenue_data(events, web3, from_block, to_block, index)
+                contract_df = get_revenue_data(events, web3, index)
 
                 if len(contract_df) > 0:
                     time.sleep(wait_time)
                     sql.write_to_db(contract_df, column_list, table_name)
-                    print(contract_df)
-                    time.sleep(15)
 
             else:
                 time.sleep(wait_time)
@@ -263,6 +265,8 @@ def find_all_revenue_transactions(index):
         
         if to_block >= latest_block:
             to_block = latest_block    
+
+    cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
 
     try:
         sql.drop_table(table_name)

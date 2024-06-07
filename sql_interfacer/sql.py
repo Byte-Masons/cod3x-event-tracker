@@ -150,7 +150,10 @@ def make_dummy_data(cursor):
             """)
     return
 
-def select_star_count(cursor, table_name):
+def select_star_count(table_name):
+    
+    cursor = connection.cursor()
+
     cursor.execute(f"""
             SELECT COUNT(*)
             FROM {table_name}
@@ -234,7 +237,7 @@ def write_to_db(df, column_list, table_name):
 
     cursor = connection.cursor()
 
-    old_length = select_star_count(cursor, table_name)
+    old_length = select_star_count(table_name)
     old_length = old_length[0]
     old_length = int(old_length[0])
 
@@ -242,8 +245,6 @@ def write_to_db(df, column_list, table_name):
 
     # Get DataFrame as a list of tuples
     data_tuples = df.to_records(index=False)  # Avoids inserting the index as a column
-
-    print(data_tuples)
 
     value_string = ''
     column_string = ''
@@ -267,7 +268,7 @@ def write_to_db(df, column_list, table_name):
 
     connection.commit()
 
-    new_length = select_star_count(cursor, table_name)
+    new_length = select_star_count(table_name)
     new_length = new_length[0]
     new_length = int(new_length[0])
 
