@@ -169,7 +169,6 @@ def get_transfer_events(contract, from_block, to_block):
     to_block = int(to_block)
     
     events = contract.events.Transfer.get_logs(fromBlock=from_block, toBlock=to_block)
-
     
     return events
 
@@ -701,6 +700,17 @@ def find_all_transactions(event_function, data_function, column_list, index):
 
     receipt_token_list = token_config_df['token_address'].tolist()
 
+
+    # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
+    cloud_csv_name = get_lp_config_value('treasury_filename', index)
+    cloud_bucket_name = get_lp_config_value('treasury_bucket_name', index)
+    cloud_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    # # drops any stray duplicates
+    cloud_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
+
+    # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
+    create_tx_data_table(table_name, cloud_df)
+
     while to_block < latest_block:
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
@@ -898,3 +908,50 @@ def get_specified_users_transactions(user_list, events, web3, index):
 
     # print('User Data Event Looping done in: ', time.time() - start_time)
     return df        
+
+# # will load our cloud df information into the sql database
+def insert_bulk_data_into_table(df, table_name):
+    # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
+    
+    query = f"""
+    INSERT INTO {table_name} (from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+    sql.write_to_custom_table(query, df)
+
+    return
+
+# # creates our balance table if it doesn't already exist
+def create_tx_data_table(table_name, df):
+
+    query = f"""
+            CREATE TABLE IF NOT EXISTS {table_name}(
+                from_address TEXT,
+                to_address TEXT,
+                tx_hash TEXT,
+                timestamp TEXT,
+                token_address TEXT,
+                reserve_address TEXT,
+                token_volume TEXT,
+                asset_price TEXT,
+                usd_token_amount TEXT,
+                log_index TEXT,
+                transaction_index TEXT,
+                block_number TEXT
+                )
+            """
+    
+    # # will only insert data into the sql table if the table doesn't exist
+
+    sql.create_custom_table(query)
+
+    table_length = sql.select_star_count(table_name)[0][0]
+    
+    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
+    if table_length < len(df):
+        sql.drop_table(table_name)
+        sql.create_custom_table(query)
+        insert_bulk_data_into_table(df, table_name)
+
+    return

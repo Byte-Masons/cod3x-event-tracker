@@ -379,3 +379,53 @@ def find_all_user_transactions(index):
     #         print(table_name, ' failed to drop')
 
     return
+
+# # returns a tx_hash list of transactions that classify as revenue transactions
+def set_unique_revenue_tx_list(df, index):
+    
+    treasury_address = lph.get_lp_config_value('treasury_address', index)
+
+    a_token_list = lph.get_a_token_list(index)
+
+    revenue_df = df.loc[df['token_address'].isin(a_token_list)]
+    revenue_df = df.loc[df['to_address'] == treasury_address]
+
+    revenue_df = revenue_df.drop_duplicates(subset=['tx_hash'])
+
+    tx_hash_list = revenue_df['tx_hash'].tolist()
+
+    return tx_hash_list
+
+# # will make revenue specific data *
+def set_revenue_data(index):
+
+    null_address = '0x0000000000000000000000000000000000000000'
+
+    table_name = lph.get_lp_config_value('table_name', index)
+    treasury_filename = lph.get_lp_config_value('treasury_filename', index)
+    treasury_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+
+    df = sql.get_transaction_data_df(table_name)
+    revenue_df = cs.read_from_cloud_storage(treasury_filename, treasury_bucket_name)
+    
+    # tx_hash_list = set_unique_revenue_tx_list(df, index)
+
+    merged_df = pd.merge(df, revenue_df, how='inner')
+
+    merged_df = merged_df.loc[df['from_address'] != null_address]
+
+    return merged_df
+
+def find_revenue_user_tx_data(index):
+
+    treasury_filename = lph.get_lp_config_value('treasury_filename', index)
+    treasury_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+
+    revenue_df = cs.read_from_cloud_storage(treasury_filename, treasury_bucket_name)
+
+    revenue_df = revenue_df.drop_duplicates(subset=['block_number'])
+
+    block_number_list = revenue_df['block_number'].tolist()
+
+    
+    return
