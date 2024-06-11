@@ -680,6 +680,7 @@ def find_all_lp_transactions(index):
         
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
     
+    contract_df = sql.get_transaction_data_df(table_name)
     cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
     
     # bp.set_embers_database(index)

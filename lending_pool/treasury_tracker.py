@@ -266,12 +266,116 @@ def find_all_revenue_transactions(index):
             to_block = latest_block    
 
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
-        
-    cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+    
+    contract_df = sql.get_transaction_data_df(table_name)
+    
+    if len(contract_df) > 0:
+        cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
 
-    try:
-        sql.drop_table(table_name)
-    except:
-        print(table_name, ' failed to drop')
+        try:
+            sql.drop_table(table_name)
+        except:
+            print(table_name, ' failed to drop')
+
+    return
+
+ # will find all revenue transactions
+def find_all_user_transactions(index):
+
+    config_df = lph.get_lp_config_df()
+    config_df = config_df.loc[config_df['index'] == index]
+
+    rpc_url = lph.get_lp_config_value('rpc_url', index)
+
+    web3 = tf.get_web_3(rpc_url)
+
+    from_block = lph.get_from_block(index)
+
+    latest_block = lph.get_latest_block(web3)
+    
+    token_config_df = lph.get_token_config_df()
+
+    interval = lph.get_lp_config_value('interval', index)
+
+    wait_time = lph.get_lp_config_value('wait_time', index)
+
+    to_block = from_block + interval
+
+    token_config_df = lph.get_token_config_df()
+    
+    token_config_df = token_config_df.loc[token_config_df['chain_index'] == index]
+
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+
+    # table_name = lph.get_lp_config_value('table_name', index)
+
+    table_name = 'mersons'
+
+    receipt_token_list = token_config_df['token_address'].tolist()
+
+    # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
+    cloud_csv_name = lph.get_lp_config_value('treasury_filename', index)
+    cloud_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    last_treasury_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    # # drops any stray duplicates
+    last_treasury_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
+
+    # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
+    create_treasury_table(table_name, last_treasury_df)
+
+    user_list = ['0x7D56e162A044A6B327332D3e6Ce4F68470440373']
+
+    while to_block < latest_block:
+
+        receipt_counter = 0
+
+        while receipt_counter < len(receipt_token_list):
+            receipt_token_address = receipt_token_list[receipt_counter]
+
+            receipt_contract = lph.get_a_token_contract(web3, receipt_token_address)
+
+            # print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+
+            events = lph.get_transfer_events(receipt_contract, from_block, to_block)
+
+            receipt_counter += 1
+
+            if len(events) > 0:
+                contract_df = lph.get_specified_users_transactions(user_list, events, web3, index)
+
+                if len(contract_df) > 0:
+                    time.sleep(wait_time)
+                    sql.write_to_db(contract_df, column_list, table_name)
+
+            else:
+                time.sleep(wait_time)
+        
+        config_df.loc[config_df['index'] == index, 'last_block'] = from_block
+        # config_df['last_block'] = from_block
+        config_df.to_csv('./config/lp_config.csv', index=False)
+
+        from_block += interval
+        to_block += interval
+
+        # print(deposit_events)
+
+
+        if from_block >= latest_block:
+            from_block = latest_block - 1
+        
+        if to_block >= latest_block:
+            to_block = latest_block    
+
+        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+    
+    contract_df = sql.get_transaction_data_df(table_name)
+    
+    # if len(contract_df) > 0:
+    #     cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+
+    #     try:
+    #         sql.drop_table(table_name)
+    #     except:
+    #         print(table_name, ' failed to drop')
 
     return

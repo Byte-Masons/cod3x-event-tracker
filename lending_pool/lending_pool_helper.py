@@ -731,7 +731,8 @@ def find_all_transactions(event_function, data_function, column_list, index):
             else:
                 time.sleep(wait_time)
 
-        config_df['last_block'] = from_block
+        config_df.loc[config_df['index'] == index, 'last_block'] = from_block
+        
         config_df.to_csv('./config/lp_config.csv', index=False)
 
         from_block += interval
@@ -748,7 +749,7 @@ def find_all_transactions(event_function, data_function, column_list, index):
         
     # bp.set_embers_database(index)
 
-    return
+    return 
 
 # # can use our final points breakdown from the app to update our cloud bucket
 def finalize_points():
@@ -779,3 +780,121 @@ def finalize_points():
     # cs.df_write_to_cloud_storage(merged_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
     
     return merged_df
+
+def get_specified_users_transactions(user_list, events, web3, index):
+
+    df = pd.DataFrame()
+
+    to_address_list = []
+    from_address_list = []
+    tx_hash_list = []
+    timestamp_list = []
+    token_address_list = []
+    reserve_address_list = []
+    token_volume_list = []
+    asset_price_list = []
+    token_usd_amount_list = []
+    log_index_list = []
+    tx_index_list = []
+    block_list = []
+
+    user = ''
+
+    treasury_address = get_lp_config_value('treasury_address', index)
+
+    # # inputs to our sql function
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+    data_type_list = ['TEXT' for x in column_list]
+    table_name = get_lp_config_value('table_name', index)
+
+    # reduces wait time by 50%
+    wait_time = get_lp_config_value('wait_time', index)
+    wait_time = wait_time/3
+
+    start_time = time.time()
+    i = 1
+    for event in events:
+
+        # print('Batch of Events Processed: ', i, '/', len(events))
+        i+=1
+
+        to_address = event['args']['to']
+        time.sleep(wait_time)
+        from_address = event['args']['from']
+
+        # # will only add data to the dataframe if tokens are going to or from an address in our user_list
+        if to_address in user_list or from_address in user_list:
+            exists_list = sql.already_part_of_database(event, wait_time, column_list, data_type_list, table_name)
+
+            tx_hash = exists_list[0]
+            log_index = exists_list[1]
+            tx_index = exists_list[2]
+            token_address = exists_list[3]
+            exists = exists_list[4]
+            token_amount = -1
+            
+            if exists == False:
+                try:
+                    block = web3.eth.get_block(event['blockNumber'])
+                    block_number = int(block['number'])
+                except:
+                    block_number = int(event['blockNumber'])
+
+                time.sleep(wait_time)
+                if log_index < 0:
+                    log_index = event['logIndex']
+                
+                time.sleep(wait_time)
+                if tx_index < 0:
+                    tx_index = event['transactionIndex']
+
+                time.sleep(wait_time)
+                if token_amount < 0:
+                    token_amount = event['args']['value']
+                
+                if len(token_address) < 1:
+                    token_address = event['address']
+                
+                log_index = event['logIndex']
+                time.sleep(wait_time)
+
+                if token_amount > 0:
+                    
+                    block_list.append(block_number)
+                    from_address_list.append(from_address)
+                    to_address_list.append(to_address)
+                    tx_hash_list.append(tx_hash)
+                    timestamp_list.append(block['timestamp'])
+                    time.sleep(wait_time)
+                    # token_address = event['address']
+                    token_address_list.append(token_address)
+                    reserve_address = get_token_config_value('underlying_address', token_address, index)
+                    reserve_address_list.append(reserve_address)
+                    token_volume_list.append(token_amount)
+                    log_index_list.append(log_index)
+                    tx_index_list.append(tx_index)
+                else:
+                    # print('Already part of the dataframe')
+                    # print(event)
+                    time.sleep(wait_time)
+                    pass
+
+    if len(from_address_list) > 0:
+        time.sleep(wait_time)
+
+
+        df['from_address'] = from_address_list
+        df['to_address'] = to_address_list
+        df['tx_hash'] = tx_hash_list
+        df['timestamp'] = timestamp_list
+        df['token_address'] = token_address_list
+        df['reserve_address'] = reserve_address_list
+        df['token_volume'] = token_volume_list
+        df = update_batch_pricing(df, web3, index)
+        df['log_index'] = log_index_list
+        df['transaction_index'] = tx_index_list
+        df['block_number'] = block_list
+
+
+    # print('User Data Event Looping done in: ', time.time() - start_time)
+    return df        
