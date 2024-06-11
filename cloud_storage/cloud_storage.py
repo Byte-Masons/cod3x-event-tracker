@@ -36,7 +36,8 @@ def read_from_cloud_storage(filename, bucketname):
                  bucket.blob(blob_name = filename).download_as_string() 
               ) ,
                  encoding='UTF-8',
-                 sep=',')
+                 sep=',',
+                 dtype=str)
     
     return df
 
