@@ -52,7 +52,10 @@ def get_token_config_value(column_name, token_address, index):
 
     config_list = df[column_name].tolist()
 
-    config_value = config_list[0]
+    try:
+        config_value = config_list[0]
+    except:
+        print('WOWOWOW')
 
     return config_value
 
@@ -439,6 +442,7 @@ def user_data(events, web3, from_block, to_block, index):
         # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
         exists_list = sql.already_part_of_database(event, wait_time, column_list, table_name)
 
+
         tx_hash = exists_list[0]
         token_amount = exists_list[1]
         token_address = exists_list[2]
@@ -466,7 +470,17 @@ def user_data(events, web3, from_block, to_block, index):
             time.sleep(wait_time)
             if len(token_address) < 1:
                 token_address = event['address']
-    
+
+            if token_address == '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF':
+                print('WHAT')
+
+            time.sleep(wait_time)
+            if len(from_address) < 1:
+                from_address = event['args']['from']
+            
+            time.sleep(wait_time)
+            if len(to_address) < 1:
+                to_address = event['args']['to']
 
             if token_amount > 0:
 

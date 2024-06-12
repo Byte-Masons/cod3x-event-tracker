@@ -67,11 +67,6 @@ def make_specific_table(cursor, column_list, data_type_list, table_name):
     
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
     table_exists = cursor.fetchone() is not None
-    
-    # if table_exists:
-    #     print(f"Table '{table_name}' created successfully.")
-    # else:
-    #     print(f"Table '{table_name}' creation might have failed. Please investigate.")
 
     return
 
@@ -286,6 +281,7 @@ def test_write_loop(cursor):
         print("Data inserted successfully!")
         i += 1
 
+# # columns and datatypes **
 # # sees if our given value exists in our database
 def sql_value_exists(value, column_name, column_list, table_name):
     
@@ -388,45 +384,78 @@ def value_exists(df, input_value, column_name):
     
     return df
 
-def already_part_of_database(event, wait_time, column_list, data_type_list, table_name):
-
-    cursor = connection.cursor()
+def already_part_of_database(event, wait_time, column_list, table_name):
     
     # # will make a table if our table doesn't already exist
-    make_specific_table(cursor, column_list, data_type_list, table_name)
+    # make_specific_table(cursor, column_list, data_type_list, table_name)
 
     all_exist = False
-    tx_hash = ''
-    log_index = -1
-    tx_index = -1
+    temp_exists = False
     wait_time = wait_time / 3
+
+    tx_hash = ''
+    token_amount = -1
     token_address = ''
+    from_address = ''
+    to_address = ''
+
 
     tx_hash = event['transactionHash'].hex()
 
     df = sql_value_exists(tx_hash, 'tx_hash', column_list, table_name)
 
+    value_list = []
+    column_list = []
+
+    value_list.append(tx_hash)
+    column_list.append('tx_hash')
     time.sleep(wait_time)
 
     if len(df) > 0:
-        tx_index = event['transactionIndex']
+        token_amount = event['args']['value']
         time.sleep(wait_time)
-        df = value_exists(df, tx_index, 'transaction_index')
-        if len(df) > 0:
-            log_index = event['logIndex']
 
-            df = value_exists(df, log_index, 'log_index')
+        value_list.append(token_amount)
+        column_list.append('token_volume')
 
-            if len(df) > 0:
-                token_address = event['address']
+        temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+        
+        # df = value_exists(df, tx_index, 'transaction_index')
+        if temp_exists == True:
+            token_address = event['address']
+            time.sleep(wait_time)
 
-                df = value_exists(df, token_address, 'token_address')
+            value_list.append(token_address)
+            column_list.append('token_address')
+
+            temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+
+            if temp_exists == True:
+            
+                from_address = event['args']['from']
+                time.sleep(wait_time)
+
+                value_list.append(from_address)
+                column_list.append('from_address')
+
+                temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+
+            if temp_exists == True:
+
+                to_address = event['args']['to']
+                time.sleep(wait_time)
+
+                value_list.append(to_address)
+                column_list.append('to_address')
+                
+                temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+
     
     # sets our all_exists variable to whether we have found these 3 values before or not
-    if len(df) > 0:
+    if temp_exists == True:
         all_exist = True
 
-    response_list = [tx_hash, log_index, tx_index, token_address, all_exist]
+    response_list = [tx_hash, token_amount, token_address, from_address, to_address, all_exist]
 
     return response_list
 

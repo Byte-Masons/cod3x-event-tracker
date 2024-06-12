@@ -24,7 +24,7 @@ def run_robust_function(function, input):
         function(input)
     except:
         run_robust_function(function, input)
-    
+
     return
 
 def loop_all_functions():
@@ -53,8 +53,7 @@ def run_all_treasury():
 
     for index in index_list:
         run_robust_function(tt.find_all_revenue_transactions, index)
-        # run_robust_function(tt.find_all_user_transactions, index)
-    
+
     print('Run it back Turbo')
     time.sleep(250)
 
@@ -65,14 +64,10 @@ def run_all_treasury_2():
 
     for index in index_list:
         tt.find_all_revenue_transactions(index)
-        # tt.find_all_user_transactions(index)
-    
+
     print('Run it back Turbo')
     time.sleep(250)
 
     run_all_treasury()
 
-# run_all_treasury_2()
-
-index = 0
-lp_tracker.find_all_lp_transactions(index)
+loop_all_functions()
