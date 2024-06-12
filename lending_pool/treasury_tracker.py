@@ -416,6 +416,7 @@ def set_revenue_data(index):
 
     return merged_df
 
+# # here
 def find_revenue_user_tx_data(index):
 
     treasury_filename = lph.get_lp_config_value('treasury_filename', index)
@@ -427,5 +428,4 @@ def find_revenue_user_tx_data(index):
 
     block_number_list = revenue_df['block_number'].tolist()
 
-    
     return

@@ -437,14 +437,14 @@ def user_data(events, web3, from_block, to_block, index):
         i+=1
             
         # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
-        exists_list = sql.already_part_of_database(event, wait_time, column_list, data_type_list, table_name)
+        exists_list = sql.already_part_of_database(event, wait_time, column_list, table_name)
 
         tx_hash = exists_list[0]
-        log_index = exists_list[1]
-        tx_index = exists_list[2]
-        token_address = exists_list[3]
-        exists = exists_list[4]
-        token_amount = -1
+        token_amount = exists_list[1]
+        token_address = exists_list[2]
+        from_address = exists_list[3]
+        to_address = exists_list[4]
+        exists = exists_list[5]
 
         if exists == False:
             try:
@@ -454,29 +454,23 @@ def user_data(events, web3, from_block, to_block, index):
                 block_number = int(event['blockNumber'])
 
             time.sleep(wait_time)
-            if log_index < 0:
-                log_index = event['logIndex']
+            log_index = event['logIndex']
             
             time.sleep(wait_time)
-            if tx_index < 0:
-                tx_index = event['transactionIndex']
+            tx_index = event['transactionIndex']
 
             time.sleep(wait_time)
             if token_amount < 0:
                 token_amount = event['args']['value']
             
+            time.sleep(wait_time)
             if len(token_address) < 1:
                 token_address = event['address']
-            
-            log_index = event['logIndex']
-            time.sleep(wait_time)
+    
 
             if token_amount > 0:
 
                 block_list.append(block_number)
-                from_address = event['args']['from']
-                time.sleep(wait_time)
-                to_address = event['args']['to']
                 from_address_list.append(from_address)
                 to_address_list.append(to_address)
                 tx_hash_list.append(tx_hash)
