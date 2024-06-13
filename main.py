@@ -28,22 +28,22 @@ def run_robust_function(function, input):
     return
 
 def loop_all_functions():
-    index_list = [0]
+    index_list = [1]
 
     run_robust_function(lp_tracker.run_all, index_list)
 
-    for index in index_list:
-        run_robust_function(cbt.loop_through_current_balances, index)
+    # for index in index_list:
+    #     run_robust_function(cbt.loop_through_current_balances, index)
 
     loop_all_functions()
 
 def loop_all_functions_2():
-    index_list = [0]
+    index_list = [1]
 
     lp_tracker.run_all(index_list)
 
-    for index in index_list:
-        cbt.loop_through_current_balances(index)
+    # for index in index_list:
+    #     cbt.loop_through_current_balances(index)
 
 
     loop_all_functions_2()
@@ -70,4 +70,9 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions()
+loop_all_functions_2()
+
+# df = sql.get_transaction_data_df('aurelius_events')
+
+# sql.drop_table('aurelius_events')
+# print(df)

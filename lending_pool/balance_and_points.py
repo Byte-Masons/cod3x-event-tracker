@@ -8,9 +8,10 @@ import sqlite3
 from sql_interfacer import sql
 from cloud_storage import cloud_storage
 from lending_pool import current_balance_tracker as cbt
+from lending_pool import lending_pool_helper as lph
 
-def set_unique_users(cursor):
-    table_name = 'persons'
+def set_unique_users(cursor, index):
+    table_name = lph.get_lp_config_value('table_name', index)
     column_list = ['to_address']
 
     rows = sql.select_specific_columns(cursor, column_list, table_name)
@@ -614,7 +615,7 @@ def make_one_line_tvl_embers_response(df):
 # # updates embers from our database
 def set_embers_database(index):
 
-    table_name = 'persons'
+    table_name = lph.get_lp_config_value('table_name', index)
 
     connection = sqlite3.connect("turtle.db")
 
@@ -709,32 +710,13 @@ def set_embers_database(index):
     df = make_one_line_tvl_embers_response(df)
     print('Make one line df completed')
 
+    cloud_file_name = lph.get_lp_config_value('cloud_file_name', index)
+    cloud_table_name = lph.get_lp_config_value('cloud_bucket_name', index)
+
     try:
-        cloud_storage.df_write_to_cloud_storage(df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+        cloud_storage.df_write_to_cloud_storage(df, cloud_file_name, cloud_table_name)
     except:
         print("Couldn't write to bucket")
-
-    # sql.make_new_snapshot_table(cursor, 'snapshot', df)
-
-    # rows = sql.select_star(cursor, 'snapshot')
-
-    # column_list = ['user_address','token_address','tx_hash','timestamp','time_difference','embers','amount_cumulative','ember_balance','total_ember_balance','token_cumulative']
-    
-    # df = sql.get_sql_df(rows, column_list)
-
-    # user_sum_df = df.groupby('user_address')['amount_cumulative'].sum().reset_index()
-
-    # # makes a 1 item summary of our user with their total_tvl + total_ember_balance
-#     user_summary_df = df.groupby('user_address').agg(
-#     amount_cumulative=('amount_cumulative', sum),
-#     total_ember_balance=('total_ember_balance', 'last')  # Assuming the latest total_embers is desired
-# ).reset_index()
-
-    # try:
-    #     cloud_storage.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
-    # except:
-    #     print("Couldn't write to bucket")
-
 
     return df
 
@@ -784,7 +766,7 @@ def update_amount_cumulative_to_current_balance(df, index):
 # # will set embers using old tx data with the newest entry per wallet being the current_balance
 def set_embers_database_v2(index):
     
-    table_name = 'persons'
+    table_name = lph.get_lp_config_value('table_name', index)
 
     connection = sqlite3.connect("turtle.db")
 

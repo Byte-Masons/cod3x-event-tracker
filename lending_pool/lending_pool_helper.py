@@ -702,8 +702,8 @@ def find_all_transactions(event_function, data_function, column_list, index):
 
 
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = get_lp_config_value('treasury_filename', index)
-    cloud_bucket_name = get_lp_config_value('treasury_bucket_name', index)
+    cloud_csv_name = get_lp_config_value('cloud_filename', index)
+    cloud_bucket_name = get_lp_config_value('cloud_bucket_name', index)
     cloud_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     cloud_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])

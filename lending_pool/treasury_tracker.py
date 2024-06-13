@@ -215,8 +215,8 @@ def find_all_revenue_transactions(index):
     a_token_list = lph.get_a_token_list(index)
 
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = lph.get_lp_config_value('treasury_filename', index)
-    cloud_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
+    cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
     last_treasury_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     last_treasury_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
@@ -314,8 +314,8 @@ def find_all_user_transactions(index):
     receipt_token_list = token_config_df['token_address'].tolist()
 
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = lph.get_lp_config_value('treasury_filename', index)
-    cloud_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
+    cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
     last_treasury_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     last_treasury_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
@@ -402,8 +402,8 @@ def set_revenue_data(index):
     null_address = '0x0000000000000000000000000000000000000000'
 
     table_name = lph.get_lp_config_value('table_name', index)
-    treasury_filename = lph.get_lp_config_value('treasury_filename', index)
-    treasury_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    treasury_filename = lph.get_lp_config_value('cloud_filename', index)
+    treasury_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
     df = sql.get_transaction_data_df(table_name)
     revenue_df = cs.read_from_cloud_storage(treasury_filename, treasury_bucket_name)
@@ -419,8 +419,8 @@ def set_revenue_data(index):
 # # here
 def find_revenue_user_tx_data(index):
 
-    treasury_filename = lph.get_lp_config_value('treasury_filename', index)
-    treasury_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    treasury_filename = lph.get_lp_config_value('cloud_filename', index)
+    treasury_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
     revenue_df = cs.read_from_cloud_storage(treasury_filename, treasury_bucket_name)
 

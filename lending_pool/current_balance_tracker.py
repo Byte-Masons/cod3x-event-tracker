@@ -5,10 +5,11 @@ import time
 from cloud_storage import cloud_storage
 
 # # will return a dataframe with all users and the tokens they have interacted with on Ironclad
-def get_user_token_combos():
-    query = """
+def get_user_token_combos(index):
+    table_name = lph.get_lp_config_value('table_name', index)
+    query = f"""
     SELECT DISTINCT to_address, token_address
-    FROM persons
+    FROM {table_name}
 """
     column_list = ['to_address', 'token_address']
     

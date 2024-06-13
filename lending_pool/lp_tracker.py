@@ -628,8 +628,8 @@ def find_all_lp_transactions(index):
     receipt_token_list = token_config_df['token_address'].tolist()
 
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = 'current_user_tvl_embers.csv'
-    cloud_bucket_name = lph.get_lp_config_value('treasury_bucket_name', index)
+    cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
+    cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
     tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     tx_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
@@ -670,9 +670,11 @@ def find_all_lp_transactions(index):
             else:
                 time.sleep(wait_time)
 
-        config_df.loc[config_df['index'] == index, 'last_block'] = from_block
+        # # will make sure not overwrite other chains' data in the config file
+        temp_config_df = get_lp_config_df()
+        temp_config_df.loc[temp_config_df['index'] == index, 'last_block'] = from_block
         # config_df['last_block'] = from_block
-        config_df.to_csv('./config/lp_config.csv', index=False)
+        temp_config_df.to_csv('./config/lp_config.csv', index=False)
 
         from_block += interval
         to_block += interval
@@ -1070,14 +1072,18 @@ def run_all(index_list):
     for index in index_list:
         
         find_all_lp_transactions(index)
-        cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
+        
+        cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
+        cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
+        cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
 
-        df = sql.get_transaction_data_df('persons')
+        table_name = lph.get_lp_config_value('table_name', index)
+        df = sql.get_transaction_data_df(table_name)
         # df = df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'token_address', 'token_volume'])
         # df = fix_reserve_address(df)
         # df = get_final_pricing(df, index)
-        cs.df_write_to_cloud_storage(df, 'current_user_tvl_embers.csv', 'cooldowns2')
+        cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
         bp.set_embers_database(index)
         print('Index Completed: ' , index)
 
