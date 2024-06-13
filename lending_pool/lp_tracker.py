@@ -457,11 +457,13 @@ def user_data(events, web3, from_block, to_block, index):
             except:
                 block_number = int(event['blockNumber'])
 
-            time.sleep(wait_time)
-            log_index = event['logIndex']
+            # time.sleep(wait_time)
+            # log_index = event['logIndex']
+            log_index = 0
             
-            time.sleep(wait_time)
-            tx_index = event['transactionIndex']
+            # time.sleep(wait_time)
+            # tx_index = event['transactionIndex']
+            tx_index = 0
 
             time.sleep(wait_time)
             if token_amount < 0:

@@ -28,7 +28,7 @@ def run_robust_function(function, input):
     return
 
 def loop_all_functions():
-    index_list = [2]
+    index_list = [0]
 
     run_robust_function(lp_tracker.run_all, index_list)
 
@@ -38,7 +38,7 @@ def loop_all_functions():
     loop_all_functions()
 
 def loop_all_functions_2():
-    index_list = [2]
+    index_list = [0]
 
     lp_tracker.run_all(index_list)
 
@@ -71,8 +71,3 @@ def run_all_treasury_2():
     run_all_treasury()
 
 loop_all_functions()
-
-# df = sql.get_transaction_data_df('aurelius_events')
-
-# sql.drop_table('aurelius_events')
-# print(df)
