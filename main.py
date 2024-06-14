@@ -28,7 +28,7 @@ def run_robust_function(function, input):
     return
 
 def loop_all_functions():
-    index_list = [0]
+    index_list = [1]
 
     run_robust_function(lp_tracker.run_all, index_list)
 
@@ -38,7 +38,7 @@ def loop_all_functions():
     loop_all_functions()
 
 def loop_all_functions_2():
-    index_list = [0]
+    index_list = [1]
 
     lp_tracker.run_all(index_list)
 
@@ -70,4 +70,17 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions()
+# loop_all_functions()
+
+# df = sql.get_transaction_data_df('metis_events')
+# print(df)
+
+# cloud_df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
+
+# df_list = [df, cloud_df]
+
+# new_df = pd.concat(df_list)
+
+# new_df = df.drop_duplicates(subset=['tx_hash', 'token_address', 'token_volume', 'from_address', 'to_address'])
+
+# cs.df_write_to_cloud_storage(new_df, 'metis_events.csv', 'cooldowns2')
