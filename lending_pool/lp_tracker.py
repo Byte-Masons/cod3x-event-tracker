@@ -634,7 +634,7 @@ def find_all_lp_transactions(index):
     cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
     tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
-    tx_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
+    tx_df.drop_duplicates(subset=['tx_hash', 'token_address', 'token_volume', 'from_address', 'to_address'])
 
     # # inputs to our sql function
     column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
