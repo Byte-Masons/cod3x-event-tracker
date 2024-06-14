@@ -1,7 +1,6 @@
-# Granary Finance - TVL by User
+# Cod3x Lend <> Cod3x CDP Event Tracker
 
-In this repo you will find the code responsible to calculate the TVL by users.
-The main scripts is generating an outputData.csv file AND an outputData.json file.
+In this repo you will find the code responsible to calculate and track the Cod3x Lend and Cod3x CDP event data.
 ## Requirements
 ```
 have python3 installed on your machine
@@ -12,5 +11,3 @@ have python3 installed on your machine
 pip install -r requirements.txt
 python 3 main.py
 ```
-
-Now you can see the outputData.csv file. That's it.
