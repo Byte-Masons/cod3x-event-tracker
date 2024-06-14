@@ -1,6 +1,6 @@
 # Granary Finance - TVL by User
 
-In this repo you will find the code responsible to calculate and track the Cod3x Lend, Cod3x CDP event data.
+In this repo you will find the code responsible to calculate and track the Cod3x Lend and Cod3x CDP event data.
 ## Requirements
 ```
 have python3 installed on your machine
