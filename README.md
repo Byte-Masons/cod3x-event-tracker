@@ -1,4 +1,4 @@
-# Granary Finance - TVL by User
+# Cod3x Lend <> Cod3x CDP Event Tracker
 
 In this repo you will find the code responsible to calculate and track the Cod3x Lend and Cod3x CDP event data.
 ## Requirements
