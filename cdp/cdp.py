@@ -16,8 +16,8 @@ def insert_bulk_data_into_table(df, table_name):
     # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
     
     query = f"""
-    INSERT INTO {table_name} (borrower_address, tx_hash, collateral_address, mint_fee, block_number)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO {table_name} (borrower_address, tx_hash, collateral_address, mint_fee, block_number, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?)
     """
 
     sql.write_to_custom_table(query, df)
@@ -32,6 +32,7 @@ def create_tx_table(table_name, df):
                 collateral_address TEXT,
                 mint_fee TEXT,
                 block_number TEXT,
+                timestamp TEXT
                 )
             """
     
@@ -63,14 +64,15 @@ def user_data(events, web3, index):
     mint_fee_list = []
     block_list = []
     timestamp_list = []
+    reserve_address_list = []
 
     # # inputs to our sql function
-    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number']
+    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number', 'timestamp']
     data_type_list = ['TEXT' for x in column_list]
     table_name = lph.get_cdp_config_value('table_name', index)
 
     # reduces wait time by 50%
-    wait_time = lph.get_cdp_config_df('wait_time', index)
+    wait_time = lph.get_cdp_config_value('wait_time', index)
     wait_time = wait_time/3
 
     i = 1
@@ -80,7 +82,7 @@ def user_data(events, web3, index):
         i+=1
             
         # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
-        exists_list = sql.already_part_of_database(event, wait_time, column_list, table_name)
+        exists_list = sql.cdp_fee_already_part_of_database(event, wait_time, column_list, table_name)
 
         tx_hash = exists_list[0]
         borrower_address = exists_list[1]
@@ -98,6 +100,7 @@ def user_data(events, web3, index):
             time.sleep(wait_time)
             if mint_fee < 0:
                 mint_fee = event['args']['_LUSDFee']
+                mint_fee /= 1e18
             
             time.sleep(wait_time)
             if len(borrower_address) < 1:
@@ -121,15 +124,8 @@ def user_data(events, web3, index):
                 collateral_address_list.append(collateral_address)
                 tx_hash_list.append(tx_hash)
                 timestamp_list.append(block['timestamp'])
-                time.sleep(wait_time)
                 # token_address = event['address']
                 mint_fee_list.append(mint_fee)
-                
-                reserve_address = get_token_config_value('underlying_address', token_address, index)
-                reserve_address_list.append(reserve_address)
-                token_volume_list.append(token_amount)
-                log_index_list.append(log_index)
-                tx_index_list.append(tx_index)
 
         else:
             # print('Already part of the dataframe')
@@ -137,21 +133,16 @@ def user_data(events, web3, index):
             time.sleep(wait_time)
             pass
     
-    if len(from_address_list) > 0:
+    if len(borrower_address_list) > 0:
         time.sleep(wait_time)
 
     
-        df['from_address'] = from_address_list
-        df['to_address'] = to_address_list
+        df['borrower_address'] = borrower_address_list
         df['tx_hash'] = tx_hash_list
-        df['timestamp'] = timestamp_list
-        df['token_address'] = token_address_list
-        df['reserve_address'] = reserve_address_list
-        df['token_volume'] = token_volume_list
-        df = update_batch_pricing(df, web3, index)
-        df['log_index'] = log_index_list
-        df['transaction_index'] = tx_index_list
+        df['collateral_address'] = collateral_address_list
+        df['mint_fee'] = mint_fee_list
         df['block_number'] = block_list
+        df['timestamp'] = timestamp_list
     
 
     # print('User Data Event Looping done in: ', time.time() - start_time)
@@ -168,13 +159,14 @@ def find_all_mint_fee_transactions(index):
     
     web3 = tf.get_web_3(rpc_url)
 
-    from_block = lph.get_cdp_config_value('from_block', index)
+    from_block = lph.get_cdp_config_value('last_block', index)
 
     latest_block = lph.get_latest_block(web3) 
 
     interval = lph.get_cdp_config_value('interval', index)
 
     wait_time = lph.get_cdp_config_value('wait_time', index)
+    from_block -= interval
 
     to_block = from_block + interval
 
@@ -183,15 +175,15 @@ def find_all_mint_fee_transactions(index):
     borrower_operations_contract = lph.get_borrower_operations_contract(web3, borrower_operations_address)
 
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
-    cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
+    cloud_csv_name = lph.get_cdp_config_value('cloud_filename', index)
+    cloud_bucket_name = lph.get_cdp_config_value('cloud_bucket_name', index)
     tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     
     # # drops any stray duplicates
     tx_df.drop_duplicates(subset=['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee'])
 
     # # inputs to our sql function
-    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number']
+    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number', 'timestamp']
 
     table_name = lph.get_cdp_config_value('table_name', index)
 
@@ -204,10 +196,8 @@ def find_all_mint_fee_transactions(index):
         events = lph.get_mint_fee_events(borrower_operations_contract, from_block, to_block)
         
         if len(events) > 0:
-            contract_df = user_data(events, web3, from_block, to_block, index)
-            # # print(contract_df)
+            contract_df = user_data(events, web3, index)
             if len(contract_df) > 0:
-                time.sleep(wait_time)
                 sql.write_to_db(contract_df, column_list, table_name)
                 # sql.drop_duplicates_from_database(cursor)
                 # make_user_data_csv(contract_df, index)
@@ -215,10 +205,10 @@ def find_all_mint_fee_transactions(index):
             time.sleep(wait_time)
 
         # # will make sure not overwrite other chains' data in the config file
-        temp_config_df = get_lp_config_df()
-        temp_config_df.loc[temp_config_df['index'] == index, 'last_block'] = from_block
+        temp_config_df = lph.get_cdp_config_df()
+        temp_config_df.loc[temp_config_df['index'] == index, 'last_block'] = to_block
         # config_df['last_block'] = from_block
-        temp_config_df.to_csv('./config/lp_config.csv', index=False)
+        temp_config_df.to_csv('./config/cdp_config.csv', index=False)
 
         from_block += interval
         to_block += interval

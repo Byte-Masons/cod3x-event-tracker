@@ -628,6 +628,27 @@ def get_transaction_data_df(all_data_table_name):
 
     return df
 
+# # makes a dataframe of our transaction table data
+def get_transaction_data_df(all_data_table_name, column_list):
+    
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    query = f"""
+        SELECT *
+        FROM {all_data_table_name}
+    """
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+    
+    df = get_sql_df(rows, column_list)
+    
+
+    return df
+
 # # takes in a custom query and returns the df associated with it
 def get_custom_query(query, column_list):
 

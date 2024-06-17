@@ -479,6 +479,25 @@ def get_from_block(index):
 
     return from_block
 
+# # finds our contract launch_block
+# # subtracts the interval from our from block to help account for the script quitting on one of the 4 deposit,withdraw,repay,borrow event sets before iterating to the next set of blocks
+def get_from_block_2(value_function, index):
+
+    interval = value_function('interval', index)
+
+    from_block = value_function('from_block', index)
+
+
+    last_block_checked = value_function('last_block', index)
+
+    if last_block_checked > from_block:
+        from_block = last_block_checked
+        from_block = from_block - interval
+
+    from_block = int(from_block)
+
+    return from_block
+
 # # gets the from_block for our reverse search
 def get_reverse_from_block(index):
 
