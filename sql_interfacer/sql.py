@@ -522,6 +522,81 @@ def cdp_fee_already_part_of_database(event, wait_time, column_list, table_name):
 
     return response_list
 
+def cdp_trove_update_already_part_of_database(event, wait_time, column_list, table_name):
+    
+    # # will make a table if our table doesn't already exist
+    # make_specific_table(cursor, column_list, data_type_list, table_name)
+
+    all_exist = False
+    temp_exists = False
+    wait_time = wait_time / 3
+
+    borrower_address = ''
+    tx_hash = ''
+    collateral_address = ''
+    collateral_balance = -1
+    debt_balance = -1
+
+    tx_hash = event['transactionHash'].hex()
+
+    df = sql_value_exists(tx_hash, 'tx_hash', column_list, table_name)
+
+    value_list = []
+    column_list = []
+
+    value_list.append(tx_hash)
+    column_list.append('tx_hash')
+    time.sleep(wait_time)
+
+    if len(df) > 0:
+        borrower_address = event['args']['_borrower']
+        time.sleep(wait_time)
+
+        value_list.append(borrower_address)
+        column_list.append('borrower_address')
+        
+        temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+
+        if temp_exists == True:
+        
+            collateral_address = event['args']['_collateral']
+            time.sleep(wait_time)
+
+            value_list.append(collateral_address)
+            column_list.append('collateral_address')
+
+            temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+            
+            if temp_exists == True:
+    
+                collateral_balance = event['args']['_coll']
+                time.sleep(wait_time)
+
+                value_list.append(collateral_balance)
+                column_list.append('collateral_balance')
+
+                temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+                
+                if temp_exists == True:
+    
+                    debt_balance = event['args']['_debt']
+                    time.sleep(wait_time)
+
+                    value_list.append(debt_balance)
+                    column_list.append('debt_balance')
+
+                    temp_exists = sql_multiple_values_exist(value_list, column_list, table_name)
+
+
+    
+    # sets our all_exists variable to whether we have found these 3 values before or not
+    if temp_exists == True:
+        all_exist = True
+
+    response_list = [tx_hash, borrower_address, collateral_address, collateral_balance, debt_balance, all_exist]
+
+    return response_list
+
 # # returns only rows of data that occured since the last snapshot
 def select_next_batch_of_ember_accumulators(cursor, column_list):
     

@@ -29,10 +29,10 @@ def run_robust_function(function, input):
     return
 
 def loop_all_functions():
-    index_list = [0]
+    index_list = [1]
 
     for index in index_list:
-        run_robust_function(cdp.find_all_mint_fee_transactions, index)
+        run_robust_function(cdp.find_all_trove_updated_transactions, index)
 
     # for index in index_list:
     #     run_robust_function(cbt.loop_through_current_balances, index)
@@ -40,9 +40,9 @@ def loop_all_functions():
     loop_all_functions()
 
 def loop_all_functions_2():
-    index_list = [0]
+    index_list = [1]
 
-    cdp.find_all_mint_fee_transactions(index_list[0])
+    cdp.find_all_trove_updated_transactions(1)
 
     # for index in index_list:
     #     cbt.loop_through_current_balances(index)
@@ -72,9 +72,11 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions()
+loop_all_functions()
 
-loop_all_functions_2()
+# loop_all_functions_2()
+
+# cdp.find_all_trove_updated_transactions(1)
 
 # column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number', 'timestamp']
 # df = sql.get_transaction_data_df('aurelius_mint_fees', column_list)

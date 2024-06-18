@@ -534,7 +534,6 @@ def get_from_block(index):
 
     from_block = get_lp_config_value('from_block', index)
 
-
     last_block_checked = get_lp_config_value('last_block', index)
 
     if last_block_checked > from_block:
@@ -665,6 +664,8 @@ def find_all_lp_transactions(index):
                 contract_df = user_data(events, web3, from_block, to_block, index)
                 # # print(contract_df)
                 if len(contract_df) > 0:
+                    # # adds prices to our new event dataframe
+                    contract_df = lph.set_df_prices(contract_df, web3, index)
                     time.sleep(wait_time)
                     sql.write_to_db(contract_df, column_list, table_name)
                     # sql.drop_duplicates_from_database(cursor)

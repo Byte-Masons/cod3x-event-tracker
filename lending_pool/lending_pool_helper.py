@@ -247,6 +247,16 @@ def get_mint_fee_events(contract, from_block, to_block):
 
     return events
 
+# # will get the mint fee paid when someone mints our cdp stablecoin
+def get_trove_updated_events(contract, from_block, to_block):
+    
+    from_block = int(from_block)
+    to_block = int(to_block)
+    
+    events = contract.events.TroveUpdated.get_logs(fromBlock=from_block, toBlock=to_block)
+
+    return events
+
 # # gets the current balances of a user given a contract address and a wallet address
 def get_balance_of(contract, wallet_address):
     
@@ -611,26 +621,25 @@ def make_one_line_tvl(df):
 
     return df
 
-# # will add our asset price column to our dataframe
-def add_df_asset_prices(df, index):
-    
-    rpc_url = get_lp_config_value('rpc_url', index)
+# # will add our asset price column to our dataframe *
+def add_df_asset_prices(df, web3, index):
 
-    web3 = get_web_3(rpc_url)
+    temp_df = df.drop_duplicates(subset=['reserve_address'])
 
-    config_df = get_token_config_df()
-
-    reserve_address_list = config_df['underlying_address'].tolist()
-    token_address_list = config_df['token_address'].tolist()
+    reserve_address_list = temp_df['reserve_address'].tolist()
 
     contract_address = get_lp_config_value('aave_oracle_address', index)
     contract_abi = get_aave_oracle_abi()
     contract = get_contract(contract_address, contract_abi, web3)
 
+    wait_time = get_lp_config_value('wait_time', index)
+
+    wait_time /= 3
+
     for reserve_address in reserve_address_list:
         value_usd = contract.functions.getAssetPrice(reserve_address).call()
         
-        time.sleep(0.1)
+        time.sleep(wait_time)
 
         value_usd = value_usd / 1e8
 
@@ -1010,3 +1019,54 @@ def create_tx_data_table(table_name, df):
         insert_bulk_data_into_table(df, table_name)
 
     return
+
+# # will find the balance of our tokens in human readable form by dividing them by their Decimals
+def get_token_volume_decimals(df, index):
+
+    df['token_volume'] = df['token_volume'].astype(float)
+
+    temp_df = df.drop_duplicates(subset=['token_address'])
+
+    token_list = temp_df['token_address'].tolist()
+
+    for token_address in token_list:
+        decimals = get_token_config_value('decimals', token_address, index)
+
+
+        df.loc[df['token_address'] == token_address, 'decimals'] = decimals
+
+    df['token_volume_decimals'] = df['token_volume'] / df['decimals']
+
+    return df
+
+# # will fix our reserve addresses
+def fix_reserve_addresses(df, index):
+
+    temp_df = df.drop_duplicates(subset=['token_address'])
+
+    token_list = temp_df['token_address'].tolist()
+
+    for token_address in token_list:
+        reserve_address = get_token_config_value('underlying_address', token_address, index)
+
+        df.loc[df['token_address'] == token_address, 'reserve_address'] = reserve_address
+
+    return df
+
+# # users our batches pricing data to update our batches df asset_price and tx_usd_amount
+# # saves contract calls massively
+def set_df_prices(df, web3, index):
+
+    df['token_volume'] = df['token_volume'].astype(float)
+
+    df = fix_reserve_addresses(df, index)
+
+    df = add_df_asset_prices(df, web3, index)
+
+    df = get_token_volume_decimals(df, index)
+
+    df['usd_token_amount'] = df['token_volume_decimals'] * df['asset_price']
+
+    df = df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']]
+    
+    return df
