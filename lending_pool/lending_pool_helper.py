@@ -978,6 +978,27 @@ def insert_bulk_data_into_table(df, table_name):
     # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
     
     query = f"""
+        CREATE TABLE IF NOT EXISTS {table_name}(
+            from_address TEXT,
+            to_address TEXT,
+            tx_hash TEXT,
+            timestamp TEXT,
+            token_address TEXT,
+            reserve_address TEXT,
+            token_volume TEXT,
+            asset_price TEXT,
+            usd_token_amount TEXT,
+            log_index TEXT,
+            transaction_index TEXT,
+            block_number TEXT
+            )
+        """
+    
+    # # will only insert data into the sql table if the table doesn't exist
+
+    sql.create_custom_table(query)
+
+    query = f"""
     INSERT INTO {table_name} (from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
@@ -1070,3 +1091,101 @@ def set_df_prices(df, web3, index):
     df = df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']]
     
     return df
+
+# # gets the deposit token_config df
+def get_deposit_token_df(index):
+    token_df = get_token_config_df()
+
+    token_df = token_df.loc[token_df['chain_index'] == index]
+
+    token_list = token_df['token_name'].tolist()
+
+    token_list = [token for token in token_list if token[0] != 'v']
+
+    deposit_df = pd.DataFrame()
+
+    deposit_df['token_name'] = token_list
+
+    token_df = token_df.loc[token_df['token_name'].isin(token_list)]
+
+    return token_df
+
+# # gets the borrow token_config df
+def get_borrow_token_df(index):
+    token_df = get_token_config_df()
+
+    token_df = token_df.loc[token_df['chain_index'] == index]
+
+    token_list = token_df['token_name'].tolist()
+
+    token_list = [token for token in token_list if token[0] == 'v']
+
+    borrow_df = pd.DataFrame()
+
+    borrow_df['token_name'] = token_list
+
+    token_df = token_df.loc[token_df['token_name'].isin(token_list)]
+
+    return token_df
+
+# # finds if a transaction adds to or reduces a balance 
+# # (deposit + borrow add to a balance and withdraw + repay reduce a balance)
+def set_token_flows(index):
+    # event_df = pd.read_csv(csv_name, usecols=['from_address','to_address','timestamp','token_address', 'token_volume','tx_hash'], dtype={'from_address': str,'to_address': str,'timestamp' : str,'token_address': str, 'token_volume': float,'tx_hash': str})
+    
+    # # tries to remove the null address to greatly reduce computation needs
+    # event_df = event_df.loc[event_df['to_address'] != '0x0000000000000000000000000000000000000000']
+    
+    table_name = get_lp_config_value('table_name', index)
+
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+    
+    event_df = sql.get_transaction_data_df(table_name, column_list)
+
+    event_df = event_df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
+
+    unique_user_df = sql.set_unique_users(table_name)
+
+    unique_user_list = unique_user_df['to_address'].to_list()
+
+    deposit_token_df = get_deposit_token_df(index)
+    borrow_token_df = get_borrow_token_df(index)
+
+    deposit_token_list = deposit_token_df['token_address'].tolist()
+    borrow_token_list = borrow_token_df['token_address'].tolist()
+
+    i = 1
+
+    combo_df = pd.DataFrame()
+    temp_df = pd.DataFrame()
+
+    # # handles deposits and borrows
+    temp_df = event_df.loc[event_df['to_address'].isin(unique_user_list)]
+    deposit_df = temp_df.loc[temp_df['token_address'].isin(deposit_token_list)]
+    borrow_df = temp_df.loc[temp_df['token_address'].isin(borrow_token_list)]
+
+    # # handles withdrawals and repays
+    temp_df = event_df.loc[event_df['from_address'].isin(unique_user_list)]
+    withdraw_df = temp_df.loc[temp_df['token_address'].isin(deposit_token_list)]
+    repay_df = temp_df.loc[temp_df['token_address'].isin(borrow_token_list)]
+
+    withdraw_df['usd_token_amount'] *= -1
+    repay_df['usd_token_amount'] *= -1
+
+    deposit_df['user_address'] = deposit_df['to_address']
+    borrow_df['user_address'] = borrow_df['to_address']
+    
+    withdraw_df['user_address'] = withdraw_df['from_address']
+    repay_df['user_address'] = repay_df['from_address']
+
+    combo_df = pd.concat([deposit_df, borrow_df, withdraw_df, repay_df])
+    combo_df = combo_df[['user_address', 'tx_hash', 'token_address','usd_token_amount', 'timestamp']]
+
+    combo_df.drop_duplicates(subset=['user_address', 'tx_hash', 'token_address', 'usd_token_amount'])
+    # make_user_data_csv(combo_df, token_flow_csv)
+
+    # # tries to remove the null address to greatly reduce computation needs
+    # combo_df = combo_df.loc[combo_df['user_address'] != '0x0000000000000000000000000000000000000000']
+
+    return combo_df
+

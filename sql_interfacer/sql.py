@@ -736,3 +736,19 @@ def get_custom_query(query, column_list):
     df = get_sql_df(rows, column_list)
 
     return df 
+
+def set_unique_users(table_name):
+    
+    cursor = connection.cursor()
+    
+    column_list = ['to_address']
+
+    rows = select_specific_columns(cursor, column_list, table_name)
+
+    df = get_sql_df(rows, column_list)
+
+    df = df.drop_duplicates(subset=['to_address'])
+
+    # df.to_csv('unique_user_list.csv', index=False)
+
+    return df
