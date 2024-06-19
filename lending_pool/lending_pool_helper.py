@@ -1154,8 +1154,6 @@ def set_token_flows(index):
     deposit_token_list = deposit_token_df['token_address'].tolist()
     borrow_token_list = borrow_token_df['token_address'].tolist()
 
-    i = 1
-
     combo_df = pd.DataFrame()
     temp_df = pd.DataFrame()
 
@@ -1179,9 +1177,9 @@ def set_token_flows(index):
     repay_df['user_address'] = repay_df['from_address']
 
     combo_df = pd.concat([deposit_df, borrow_df, withdraw_df, repay_df])
-    combo_df = combo_df[['user_address', 'tx_hash', 'token_address','usd_token_amount', 'timestamp']]
+    combo_df = combo_df[['user_address', 'tx_hash', 'token_address', 'token_volume', 'usd_token_amount', 'timestamp']]
 
-    combo_df.drop_duplicates(subset=['user_address', 'tx_hash', 'token_address', 'usd_token_amount'])
+    combo_df.drop_duplicates(subset=['user_address', 'tx_hash', 'token_address', 'token_volume'])
     # make_user_data_csv(combo_df, token_flow_csv)
 
     # # tries to remove the null address to greatly reduce computation needs
@@ -1189,3 +1187,20 @@ def set_token_flows(index):
 
     return combo_df
 
+# # sets rolling balances for each of a users tokens
+def set_rolling_balance(df):
+    
+    df['timestamp'] = df['timestamp'].astype(float)
+
+    df.sort_values(by=['timestamp'], ascending=True)
+
+    # Group the DataFrame by 'name' and calculate cumulative sum
+    name_groups = df.groupby(['user_address','token_address'])['usd_token_amount'].transform(pd.Series.cumsum)
+
+    # Print the DataFrame with the new 'amount_cumulative' column
+    df = df.assign(usd_rolling_balance=name_groups)
+
+    df = df.reset_index()
+    # df.to_csv('rolling_balance.csv', index=False)
+
+    return df

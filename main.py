@@ -14,7 +14,7 @@ import threading
 import sqlite3
 from lending_pool import approval_tracker
 from lending_pool import lending_pool_helper as lph
-from lending_pool import current_balance_tracker as cbt
+# from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
 
@@ -31,8 +31,10 @@ def run_robust_function(function, input):
 def loop_all_functions():
     index_list = [1]
 
-    for index in index_list:
-        run_robust_function(cdp.find_all_trove_updated_transactions, index)
+    run_robust_function(lp_tracker.run_all, index_list)
+
+    # for index in index_list:
+    #     run_robust_function(cdp.find_all_trove_updated_transactions, index)
 
     # for index in index_list:
     #     run_robust_function(cbt.loop_through_current_balances, index)
@@ -42,7 +44,10 @@ def loop_all_functions():
 def loop_all_functions_2():
     index_list = [1]
 
-    cdp.find_all_trove_updated_transactions(1)
+    # cdp.find_all_trove_updated_transactions(1)
+
+    lp_tracker.run_all(index_list)
+
 
     # for index in index_list:
     #     cbt.loop_through_current_balances(index)
@@ -72,8 +77,15 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions()
+# loop_all_functions_2()
 
+df = lph.set_token_flows(0)
+df = lph.set_rolling_balance(df)
+df = df.loc[df['token_address'] == '0x9c29a8eC901DBec4fFf165cD57D4f9E03D4838f7']
+print(df)
+
+
+# 0x515F4055395db22C06DA6FbDD7Cac92A08a01EEa
 # loop_all_functions_2()
 
 # cdp.find_all_trove_updated_transactions(1)
@@ -85,7 +97,28 @@ loop_all_functions()
 # df = df.drop_duplicates(subset=['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee'])
 # print(df)
 
+# cooldowns2/metis_events.csv
+
 # cloud_df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
+# cloud_df = cloud_df.loc[cloud_df['token_address'] != '0xe7334Ad0e325139329E747cF2Fc24538dD564987']
+
+# temp_df = cloud_df.drop_duplicates(subset=['token_address'])
+# token_address_list = temp_df['token_address'].tolist()
+
+# print(token_address_list)
+
+# index = 2
+# rpc_url = lph.get_lp_config_value('rpc_url', index)
+# web3 = lph.get_web_3(rpc_url)
+
+# cloud_df = lph.set_df_prices(cloud_df, web3, index)
+
+# print(cloud_df['usd_token_amount'].sum())
+# cloud_df.to_csv('2024_06_18_metis_events.csv', index=False)
+
+# cloud_df = cloud_df.loc[cloud_df['token_address'] == '0xFdD2eBc184b4ff6dF14562715452E970c82Fe49A']
+# print('Minimum Price:', cloud_df['asset_price'].min())
+# print('Maximum Price', cloud_df['asset_price'].max())
 
 # df_list = [df, cloud_df]
 
