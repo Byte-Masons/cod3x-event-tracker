@@ -1138,10 +1138,8 @@ def set_token_flows(index):
     # event_df = event_df.loc[event_df['to_address'] != '0x0000000000000000000000000000000000000000']
     
     table_name = get_lp_config_value('table_name', index)
-
-    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
     
-    event_df = sql.get_transaction_data_df(table_name, column_list)
+    event_df = sql.get_transaction_data_df(table_name)
 
     event_df = event_df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
 
@@ -1204,6 +1202,41 @@ def set_rolling_balance(df):
     df = df.assign(usd_rolling_balance=name_groups)
 
     df = df.reset_index()
-    # df.to_csv('rolling_balance.csv', index=False)
+
+    df = df[['user_address', 'tx_hash', 'token_address', 'token_volume', 'usd_token_amount', 'timestamp', 'usd_rolling_balance']]
+
+    return df
+
+# # uses our timestamp column to make a day column
+def make_day_from_timestamp(df):
+    
+    df['day'] = pd.to_datetime(df['timestamp'], unit='s').dt.strftime('%Y/%m/%d')
+
+    return df
+
+def set_token_sum_per_day(df):
+    daily_token_sum = df.groupby(['day', 'token_address', 'user_address'])['usd_rolling_balance'].sum().reset_index()
+
+    daily_token_sum = daily_token_sum.sort_values(['day', 'token_address', 'user_address'])
+    
+    df = df.merge(daily_token_sum, on=['day', 'token_address', 'user_address'], suffixes=('', '_daily_token_sum'))
+
+    daily_revenue_sum = df.groupby(['day', 'user_address'])['usd_rolling_balance'].sum().reset_index()
+
+    df = df.merge(daily_revenue_sum, on=['day'], suffixes=('', '_daily_total_balance'))
+
+    df.rename(columns = {'usd_rolling_balance_daily_token_sum':'token_day_rolling_balance', 'usd_rolling_balance_daily_total_balance':'total_day_rolling_balance'}, inplace = True)
+
+    df = df.sort_values(by=['day', 'token_address', 'user_address'])
+
+    token_day_diff = df.groupby(['day', 'token_address', 'user_address'])['token_day_rolling_balance'].diff()
+
+    # Handle the first row for each name (no difference)
+    # time_diff.iloc[::2] = pd.NA  # Set difference to NaN for the first row of each name group
+
+    # Calculate difference in seconds (adjust as needed)
+    token_day_diff = token_day_diff.fillna(0)
+
+    df['token_day_diff'] = token_day_diff
 
     return df

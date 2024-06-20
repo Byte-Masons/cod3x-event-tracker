@@ -704,7 +704,7 @@ def get_transaction_data_df(all_data_table_name):
     return df
 
 # # makes a dataframe of our transaction table data
-def get_transaction_data_df(all_data_table_name, column_list):
+def get_transaction_data_df_2(all_data_table_name, column_list):
     
     connection = sqlite3.connect("turtle.db")
 
