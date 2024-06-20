@@ -1052,6 +1052,7 @@ def get_token_volume_decimals(df, index):
 
     for token_address in token_list:
         decimals = get_token_config_value('decimals', token_address, index)
+        decimals = float(decimals)
 
 
         df.loc[df['token_address'] == token_address, 'decimals'] = decimals
@@ -1078,7 +1079,7 @@ def fix_reserve_addresses(df, index):
 # # saves contract calls massively
 def set_df_prices(df, web3, index):
 
-    df['token_volume'] = df['token_volume'].astype(float)
+    df[['usd_token_amount', 'token_volume', 'asset_price']] = df[['usd_token_amount', 'token_volume', 'asset_price']].astype(float)
 
     df = fix_reserve_addresses(df, index)
 
@@ -1143,6 +1144,8 @@ def set_token_flows(index):
     event_df = sql.get_transaction_data_df(table_name, column_list)
 
     event_df = event_df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
+
+    event_df[['usd_token_amount', 'token_volume']] = event_df[['usd_token_amount', 'token_volume']].astype(float)
 
     unique_user_df = sql.set_unique_users(table_name)
 
