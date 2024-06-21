@@ -1071,6 +1071,8 @@ def create_tx_table(table_name, df):
     sql.create_custom_table(query)
     insert_bulk_data_into_table(sanitized_df, table_name)
 
+
+
     return
 
 def run_all(index):
@@ -1089,12 +1091,9 @@ def run_all(index):
     duplicate_column_list = ['tx_hash', 'from_address', 'to_address', 'token_address', 'token_volume']
     df = lph.sanitize_database_and_cloud_df(db_df, cloud_df, duplicate_column_list)
 
-    print(df)
-    df.to_csv('2024_06_21_aurelius_lend_events.csv', index=False)
-
     cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
 
-    print('Index Completed: ' , index)
+    return df
 
 
 # print('Hello World')

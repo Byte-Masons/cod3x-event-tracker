@@ -17,6 +17,7 @@ from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
+from revenue_tracking import cod3x_lend_revenue_tracking
 
 runtime_pause = 60
 
@@ -31,10 +32,14 @@ def run_robust_function(function, input):
     return
 
 def loop_all_functions():
-    index_list = [1]
+    index_list = [2]
 
     for index in index_list:
         run_robust_function(lp_tracker.run_all, index)
+
+        cod3x_lend_revenue_tracking.run_total_revenue_by_day(index)
+
+        print('Index Completed:', index, '/', len(index_list))
 
     # for index in index_list:
     #     run_robust_function(cdp.find_all_trove_updated_transactions, index)
@@ -47,10 +52,15 @@ def loop_all_functions():
     loop_all_functions()
 
 def loop_all_functions_2():
-    index_list = [1]
+    index_list = [2]
 
     for index in index_list:
         lp_tracker.run_all(index)
+
+        df = cod3x_lend_revenue_tracking.run_total_revenue_by_day(index)
+        print(df)
+
+        print('Index Completed:', index, '/', len(index_list))
     
     # cdp.find_all_trove_updated_transactions(1)
 
@@ -83,18 +93,26 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions()
+loop_all_functions_2()
 
 # df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
 
 # lph.insert_bulk_data_into_table(df, 'metis_events')
 
 # index = 2
-
+# df = cod3x_lend_revenue_tracking.update_daily_total_revenue(index)
 # df = sql.get_transaction_data_df('metis_events')
 # df = lph.set_token_flows(2)
 # df = lph.set_rolling_balance(df)
 # df = df.loc[df['user_address'] == '0xCba1A275e2D858EcffaF7a87F606f74B719a8A93']
+# df = df.loc[df['user_address'] == '0xd2abC5d7841d49C40Fd35A1Ec832ee1daCC8D339']
 # df = lph.make_day_from_timestamp(df)
-# df = lph.set_token_sum_per_day(df)
+# df = lph.set_token_and_day_diffs(df)
+# df = lph.set_total_day_diff_1_line(df)
+# df = lph.set_token_wallet_address_diff_1_line(df)
+# df = df.loc[df['day'] == '2024-01-16']
+# print(df[['day', 'token_day_diff', 'day_diff']])
+# print(df)
+
+# df = cod3x_lend_revenue_tracking.update_cloud_total_revenue_by_day(index)
 # print(df)

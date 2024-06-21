@@ -1214,7 +1214,7 @@ def make_day_from_timestamp(df):
 
     return df
 
-def set_token_sum_per_day(df):
+def set_token_and_day_diffs(df):
 
     df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
 
@@ -1243,13 +1243,22 @@ def set_token_sum_per_day(df):
     # Calculate the difference between consecutive non-NaN values (optional)
     df['token_day_diff'] = df['token_day_rolling_balance'].diff().fillna(0)
     df['day_diff'] = df['total_rolling_balance'].diff().fillna(0)
-    
-    # Print the DataFrame (or select specific columns)
-    print(df[['day', 'token_day_rolling_balance', 'token_day_diff', 'day_diff']])  
-
-    # print(df[['token_address', 'day', 'token_day_rolling_balance']])
 
     return df
+
+# # will make our dataframe only have 1 row per day_diff
+def set_total_day_diff_1_line(df):
+
+    daily_total_balance_diff_df = df.groupby(['day', 'user_address', 'total_rolling_balance'])['day_diff'].sum().reset_index()
+    
+    return daily_total_balance_diff_df
+
+# # will make our dataframe only have 1 row per day_diff
+def set_token_wallet_address_diff_1_line(df):
+
+    daily_token_wallet_address_balance_diff = df.groupby(['day', 'user_address', 'token_address'])['token_day_rolling_balance'].sum().reset_index()
+    
+    return daily_token_wallet_address_balance_diff
 
 # # takes in our df from our database, our dataframe from our cloud
 # # concats them together and drops duplicates based off of the column_list provided
