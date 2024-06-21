@@ -1215,6 +1215,9 @@ def make_day_from_timestamp(df):
     return df
 
 def set_token_sum_per_day(df):
+
+    df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
+
     daily_token_sum = df.groupby(['day', 'token_address', 'user_address'])['usd_rolling_balance'].sum().reset_index()
 
     daily_token_sum = daily_token_sum.sort_values(['day', 'token_address', 'user_address'])
@@ -1225,19 +1228,26 @@ def set_token_sum_per_day(df):
 
     df = df.merge(daily_revenue_sum, on=['day'], suffixes=('', '_daily_total_balance'))
 
-    df.rename(columns = {'usd_rolling_balance_daily_token_sum':'token_day_rolling_balance', 'usd_rolling_balance_daily_total_balance':'total_day_rolling_balance'}, inplace = True)
+    df.rename(columns = {'usd_rolling_balance_daily_token_sum':'token_day_rolling_balance', 'usd_rolling_balance_daily_total_balance':'total_rolling_balance'}, inplace = True)
+
+    # # casts our day to a datetime
+    df['day'] = pd.to_datetime(df['day'], format='%Y-%m-%d')
+    # df['day'] = df['day'].astype(str)
+    df[['total_rolling_balance_change', 'token_day_rolling_balance']] = df[['total_rolling_balance', 'token_day_rolling_balance']].astype(float)
 
     df = df.sort_values(by=['day', 'token_address', 'user_address'])
 
-    token_day_diff = df.groupby(['day', 'token_address', 'user_address'])['token_day_rolling_balance'].diff()
+    df['token_day_rolling_balance'] = df.groupby(['token_address', 'user_address', 'day'])['token_day_rolling_balance'].fillna(method='ffill')
+    df['total_rolling_balance'] = df.groupby(['token_address', 'user_address', 'day'])['total_rolling_balance'].fillna(method='ffill')
 
-    # Handle the first row for each name (no difference)
-    # time_diff.iloc[::2] = pd.NA  # Set difference to NaN for the first row of each name group
+    # Calculate the difference between consecutive non-NaN values (optional)
+    df['token_day_diff'] = df['token_day_rolling_balance'].diff().fillna(0)
+    df['day_diff'] = df['total_rolling_balance'].diff().fillna(0)
+    
+    # Print the DataFrame (or select specific columns)
+    print(df[['day', 'token_day_rolling_balance', 'token_day_diff', 'day_diff']])  
 
-    # Calculate difference in seconds (adjust as needed)
-    token_day_diff = token_day_diff.fillna(0)
-
-    df['token_day_diff'] = token_day_diff
+    # print(df[['token_address', 'day', 'token_day_rolling_balance']])
 
     return df
 
