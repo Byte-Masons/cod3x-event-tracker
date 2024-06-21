@@ -83,9 +83,12 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+loop_all_functions()
 
-<<<<<<< HEAD
+# df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
+
+# lph.insert_bulk_data_into_table(df, 'metis_events')
+
 # index = 2
 
 # df = sql.get_transaction_data_df('metis_events')
@@ -94,18 +97,4 @@ loop_all_functions_2()
 # df = df.loc[df['user_address'] == '0xCba1A275e2D858EcffaF7a87F606f74B719a8A93']
 # df = lph.make_day_from_timestamp(df)
 # df = lph.set_token_sum_per_day(df)
-=======
-# df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
-
-# lph.insert_bulk_data_into_table(df, 'metis_events')
-
-index = 2
-
-df = sql.get_transaction_data_df('metis_events')
-df = lph.set_token_flows(2)
-df = lph.set_rolling_balance(df)
-df = df.loc[df['user_address'] == '0xCba1A275e2D858EcffaF7a87F606f74B719a8A93']
-df = lph.make_day_from_timestamp(df)
-df = lph.set_token_sum_per_day(df)
->>>>>>> fe5a98c76dac1d898a152eb14fa7c47656bbe344
 # print(df)
