@@ -18,6 +18,8 @@ from lending_pool import lending_pool_helper as lph
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
 
+runtime_pause = 60
+
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
 
@@ -31,7 +33,8 @@ def run_robust_function(function, input):
 def loop_all_functions():
     index_list = [1]
 
-    run_robust_function(lp_tracker.run_all, index_list)
+    for index in index_list:
+        run_robust_function(lp_tracker.run_all, index)
 
     # for index in index_list:
     #     run_robust_function(cdp.find_all_trove_updated_transactions, index)
@@ -39,20 +42,23 @@ def loop_all_functions():
     # for index in index_list:
     #     run_robust_function(cbt.loop_through_current_balances, index)
 
+    time.sleep(runtime_pause)
+
     loop_all_functions()
 
 def loop_all_functions_2():
     index_list = [1]
 
+    for index in index_list:
+        lp_tracker.run_all(index)
+    
     # cdp.find_all_trove_updated_transactions(1)
-
-    lp_tracker.run_all(index_list)
-
 
     # for index in index_list:
     #     cbt.loop_through_current_balances(index)
 
-
+    time.sleep(runtime_pause)
+    
     loop_all_functions_2()
 
 def run_all_treasury():
@@ -77,14 +83,14 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions_2()
+loop_all_functions_2()
 
-index = 2
+# index = 2
 
-df = sql.get_transaction_data_df('metis_events')
-df = lph.set_token_flows(2)
-df = lph.set_rolling_balance(df)
-df = df.loc[df['user_address'] == '0xCba1A275e2D858EcffaF7a87F606f74B719a8A93']
-df = lph.make_day_from_timestamp(df)
-df = lph.set_token_sum_per_day(df)
-print(df)
+# df = sql.get_transaction_data_df('metis_events')
+# df = lph.set_token_flows(2)
+# df = lph.set_rolling_balance(df)
+# df = df.loc[df['user_address'] == '0xCba1A275e2D858EcffaF7a87F606f74B719a8A93']
+# df = lph.make_day_from_timestamp(df)
+# df = lph.set_token_sum_per_day(df)
+# print(df)

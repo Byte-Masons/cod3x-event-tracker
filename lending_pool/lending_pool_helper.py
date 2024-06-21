@@ -1240,3 +1240,16 @@ def set_token_sum_per_day(df):
     df['token_day_diff'] = token_day_diff
 
     return df
+
+# # takes in our df from our database, our dataframe from our cloud
+# # concats them together and drops duplicates based off of the column_list provided
+# # returns a sanitized df
+def sanitize_database_and_cloud_df(db_df, cloud_df, column_list):
+
+    df_list = [db_df, cloud_df]
+
+    combined_df = pd.concat(df_list)
+
+    sanitized_df = combined_df.drop_duplicates(subset=column_list)
+
+    return sanitized_df

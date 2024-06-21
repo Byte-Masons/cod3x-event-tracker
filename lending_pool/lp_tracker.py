@@ -1058,45 +1058,43 @@ def create_tx_table(table_name, df):
     # # will only insert data into the sql table if the table doesn't exist
 
     sql.create_custom_table(query)
-
-    table_length = sql.select_star_count(table_name)[0][0]
     
-    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
-    if table_length < len(df):
-        sql.drop_table(table_name)
-        sql.create_custom_table(query)
-        insert_bulk_data_into_table(df, table_name)
+    db_df = sql.get_transaction_data_df(table_name)
+
+    # # makes a combined local and cloud dataframe and drops any duplicates from the dataframe
+    # # drops our old database table
+    # # then writes the updated sanitized dataframe to our local database table
+    duplicate_column_list = ['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume']
+    sanitized_df = lph.sanitize_database_and_cloud_df(db_df, df, duplicate_column_list)
+
+    sql.drop_table(table_name)
+    sql.create_custom_table(query)
+    insert_bulk_data_into_table(sanitized_df, table_name)
 
     return
 
-def run_all(index_list):
+def run_all(index):
 
-    index_counter = 0
-    for index in index_list:
         
-        find_all_lp_transactions(index)
-        
-        cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
-        cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
+    find_all_lp_transactions(index)
+    
+    cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
+    cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
-        cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
+    table_name = lph.get_lp_config_value('table_name', index)
+    
+    db_df = sql.get_transaction_data_df(table_name)
+    cloud_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
 
-        table_name = lph.get_lp_config_value('table_name', index)
-        df = sql.get_transaction_data_df(table_name)
-        # df = df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'token_address', 'token_volume'])
-        # df = fix_reserve_address(df)
-        # df = get_final_pricing(df, index)
-        cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
-        bp.set_embers_database(index)
-        print('Index Completed: ' , index)
+    duplicate_column_list = ['tx_hash', 'from_address', 'to_address', 'token_address', 'token_volume']
+    df = lph.sanitize_database_and_cloud_df(db_df, cloud_df, duplicate_column_list)
 
-        run_all(index_list)
+    print(df)
+    df.to_csv('2024_06_21_aurelius_lend_events.csv', index=False)
 
-        index_counter += 1
-        if index_counter == len(index_list):
-            print('Run it Back Turbo')
-            time.sleep(3600)
-            run_all(index_list)
+    cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
+
+    print('Index Completed: ' , index)
 
 
 # print('Hello World')
