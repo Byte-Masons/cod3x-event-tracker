@@ -36,7 +36,7 @@ def get_revenue_by_day_cloud_name(index):
     revenue_cloud_name = blockchain_name + '_total_lend_revenue_by_day.csv'
 
     return revenue_cloud_name
-
+ 
 # # our runner function which reads our event df from the cloud
 # # calculates the revenue per day and balance of our deployment's treasury
 # # writes to a cloud csv file to save the data

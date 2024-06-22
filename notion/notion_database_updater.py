@@ -13,6 +13,9 @@ import os
 NOTION_API_KEY = os.getenv('NOTION_API_KEY')
 NOTION_DATABASE_ID = os.getenv('NOTION_DATABASE_ID')
 
+NOTION_API_KEY = str(NOTION_API_KEY)
+NOTION_DATABASE_ID = str(NOTION_DATABASE_ID)
+
 headers = {
     "Authorization": "Bearer " + NOTION_API_KEY,
     "Content-Type": "application/json",
@@ -65,7 +68,7 @@ def update_page(page_id: str, data: dict):
 # df[['total_rolling_balance', 'daily_revenue']] = df[['total_rolling_balance', 'daily_revenue']].astype(float)
 
 # treasury_address = df['treasury_address'].tolist()[0]
-# day = df['day'].tolist()[0]
+# day = df['day'].tolist()[0].isoformat()
 # balance = df['total_rolling_balance'].tolist()[0]
 # daily_revenue = df['daily_revenue'].tolist()[0]
 
