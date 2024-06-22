@@ -95,6 +95,30 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
+index = 2
+cloud_filename = cod3x.get_revenue_by_day_cloud_name(index)
+cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
+df = cs.read_from_cloud_storage(cloud_filename, cloud_bucket_name)
+df = df[:1]
+df['day'] = pd.to_datetime(df['day'], format='%Y-%m-%d')
+df[['total_rolling_balance', 'day_diff']] = df[['total_rolling_balance', 'day_diff']].astype(float)
+
+treasury_address = df['user_address'].tolist()[0]
+day = df['day'].tolist()[0].isoformat()
+balance = df['total_rolling_balance'].tolist()[0]
+daily_revenue = df['day_diff'].tolist()[0]
+
+data = {
+    "treasury_address": {"title": [{"text": {"content": treasury_address}}]},
+    "day": {"date": {"start": day, "end": None}},
+    "balance": {"number": balance},
+    "daily_revenue": {"number": daily_revenue}
+}
+
+ndu.create_database_entry(data)
+
+
+
 # loop_all_functions_2()
 
 # df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
