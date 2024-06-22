@@ -17,7 +17,9 @@ from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
-from revenue_tracking import cod3x_lend_revenue_tracking
+from revenue_tracking import cod3x_lend_revenue_tracking as cod3x
+from notion import notion_database_updater as ndu
+from datetime import datetime, timezone
 
 runtime_pause = 60
 
@@ -93,7 +95,7 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
 
 # df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
 
