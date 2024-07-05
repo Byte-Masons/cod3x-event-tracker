@@ -34,12 +34,12 @@ def run_robust_function(function, input):
     return
 
 def loop_all_functions():
-    index_list = [2]
+    index_list = [0,1,2]
 
     for index in index_list:
         run_robust_function(lp_tracker.run_all, index)
 
-        cod3x_lend_revenue_tracking.run_total_revenue_by_day(index)
+        cod3x.run_total_revenue_by_day(index)
 
         print('Index Completed:', index, '/', len(index_list))
 
@@ -54,12 +54,12 @@ def loop_all_functions():
     loop_all_functions()
 
 def loop_all_functions_2():
-    index_list = [2]
+    index_list = [0,1,2]
 
     for index in index_list:
         lp_tracker.run_all(index)
 
-        df = cod3x_lend_revenue_tracking.run_total_revenue_by_day(index)
+        df = cod3x.run_total_revenue_by_day(index)
         print(df)
 
         print('Index Completed:', index, '/', len(index_list))
@@ -95,50 +95,16 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-index = 2
-cloud_filename = cod3x.get_revenue_by_day_cloud_name(index)
-cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-df = cs.read_from_cloud_storage(cloud_filename, cloud_bucket_name)
-df = df[:1]
-df['day'] = pd.to_datetime(df['day'], format='%Y-%m-%d')
-df[['total_rolling_balance', 'day_diff']] = df[['total_rolling_balance', 'day_diff']].astype(float)
+loop_all_functions()
 
-treasury_address = df['user_address'].tolist()[0]
-day = df['day'].tolist()[0].isoformat()
-balance = df['total_rolling_balance'].tolist()[0]
-daily_revenue = df['day_diff'].tolist()[0]
+# filename = 'metis_lend_events.csv'
+# table_name = 'metis_events'
 
-data = {
-    "treasury_address": {"title": [{"text": {"content": treasury_address}}]},
-    "day": {"date": {"start": day, "end": None}},
-    "balance": {"number": balance},
-    "daily_revenue": {"number": daily_revenue}
-}
+# cloud_df = cs.read_from_cloud_storage(filename, 'cooldowns2')
+# lp_tracker.create_tx_table(table_name, cloud_df)
 
-ndu.create_database_entry(data)
-
-
-
-# loop_all_functions_2()
-
-# df = cs.read_from_cloud_storage('metis_events.csv', 'cooldowns2')
-
-# lph.insert_bulk_data_into_table(df, 'metis_events')
-
-# index = 2
-# df = cod3x_lend_revenue_tracking.update_daily_total_revenue(index)
-# df = sql.get_transaction_data_df('metis_events')
-# df = lph.set_token_flows(2)
-# df = lph.set_rolling_balance(df)
-# df = df.loc[df['user_address'] == '0xCba1A275e2D858EcffaF7a87F606f74B719a8A93']
-# df = df.loc[df['user_address'] == '0xd2abC5d7841d49C40Fd35A1Ec832ee1daCC8D339']
-# df = lph.make_day_from_timestamp(df)
-# df = lph.set_token_and_day_diffs(df)
-# df = lph.set_total_day_diff_1_line(df)
-# df = lph.set_token_wallet_address_diff_1_line(df)
-# df = df.loc[df['day'] == '2024-01-16']
-# print(df[['day', 'token_day_diff', 'day_diff']])
+# df = sql.get_transaction_data_df(table_name)
+# df = df.dropna()
 # print(df)
 
-# df = cod3x_lend_revenue_tracking.update_cloud_total_revenue_by_day(index)
-# print(df)
+# cs.df_write_to_cloud_storage_as_zip(df, 'metis_lend_events.zip', 'cooldowns2')

@@ -102,7 +102,7 @@ def df_write_to_cloud_storage_as_zip(df, filename, bucketname):
     bucket = STORAGE_CLIENT.get_bucket(bucketname)
 
     # Create a new blob and upload the zip file's content
-    zip_filename = f"{filename}.zip"
+    zip_filename = f"{filename}"
     blob = bucket.blob(zip_filename)
     blob.upload_from_file(zip_buffer, content_type='application/zip')
 
