@@ -16,6 +16,7 @@ import os
 import sys
 import io
 from io import BytesIO
+import zipfile
 
 # PATH = os.path.join(os.getcwd(), 'fast-web-419215-35d284e06546.json')
 
@@ -39,11 +40,15 @@ def read_from_cloud_storage(filename, bucketname):
                  sep=',',
                  dtype=str)
     
+    df = df.dropna()
+
     return df
 
 # # writes our dataframe to our desired filename
 def df_write_to_cloud_storage(df, filename, bucketname):
 
+    df = df.dropna()
+    
     # storage_client = storage.Client(PATH)
     bucket = STORAGE_CLIENT.get_bucket(bucketname)
 
@@ -52,3 +57,56 @@ def df_write_to_cloud_storage(df, filename, bucketname):
     blob.upload_from_string(csv_string)
 
     return
+
+def read_zip_csv_from_cloud_storage(filename, bucketname):
+    # storage_client = storage.Client(PATH)
+    bucket = STORAGE_CLIENT.get_bucket(bucketname)
+    
+    # Download the zip file content
+    zip_content = bucket.blob(blob_name=filename).download_as_bytes()
+    
+    # Create a BytesIO object from the zip content
+    zip_buffer = io.BytesIO(zip_content)
+    
+    # Open the zip file
+    with zipfile.ZipFile(zip_buffer, 'r') as zip_ref:
+        # Assume there's only one CSV file in the zip
+        csv_filename = zip_ref.namelist()[0]
+        
+        # Read the CSV file from the zip
+        with zip_ref.open(csv_filename) as csv_file:
+            df = pd.read_csv(
+                csv_file,
+                encoding='UTF-8',
+                sep=',',
+                dtype=str
+            )
+    
+    df = df.dropna()
+
+    return df
+
+def df_write_to_cloud_storage_as_zip(df, filename, bucketname):
+    
+    df = df.dropna()
+
+    # Create a CSV string from the dataframe
+    csv_string = df.to_csv(index=False)
+
+    # Create a zip file in memory
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(f"{filename}.csv", csv_string)
+    
+    # Move the buffer's pointer to the beginning
+    zip_buffer.seek(0)
+
+    # Get the bucket
+    bucket = STORAGE_CLIENT.get_bucket(bucketname)
+
+    # Create a new blob and upload the zip file's content
+    zip_filename = f"{filename}.zip"
+    blob = bucket.blob(zip_filename)
+    blob.upload_from_file(zip_buffer, content_type='application/zip')
+
+    return f"Uploaded {zip_filename} to {bucketname}"
