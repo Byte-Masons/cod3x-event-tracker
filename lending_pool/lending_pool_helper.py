@@ -768,7 +768,7 @@ def find_all_transactions(event_function, data_function, column_list, index):
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
     cloud_csv_name = get_lp_config_value('cloud_filename', index)
     cloud_bucket_name = get_lp_config_value('cloud_bucket_name', index)
-    cloud_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    cloud_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     cloud_df.drop_duplicates(subset=['tx_hash', 'token_address', 'token_volume', 'from_address', 'to_address'])
 
@@ -828,7 +828,7 @@ def find_all_transactions(event_function, data_function, column_list, index):
 # # can use our final points breakdown from the app to update our cloud bucket
 def finalize_points():
     df = pd.read_csv('ironclad_point_totals.csv')
-    current_balance_df = cs.read_from_cloud_storage('snapshot_user_tvl_embers.csv', 'cooldowns2')
+    current_balance_df = cs.read_zip_csv_from_cloud_storage('snapshot_user_tvl_embers.csv', 'cooldowns2')
 
     current_balance_df = current_balance_df[['user_address', 'total_tvl']]
 
@@ -851,7 +851,7 @@ def finalize_points():
     merged_df.loc[merged_df['total_tvl'] < 0, 'total_tvl'] = 0
     merged_df.loc[merged_df['total_embers'] < 0, 'total_embers'] = 0
 
-    # cs.df_write_to_cloud_storage(merged_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+    # cs.df_write_to_cloud_storage_as_zip(merged_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
     
     return merged_df
 

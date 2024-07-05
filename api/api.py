@@ -27,7 +27,7 @@ def get_user_tvl_and_embers(user_address):
     data = []
     index = 0
     
-    df = cs.read_from_cloud_storage('current_user_tvl_embers.csv', 'cooldowns2')
+    df = cs.read_zip_csv_from_cloud_storage('current_user_tvl_embers.csv', 'cooldowns2')
     
     user_address = Web3.to_checksum_address(user_address)
 

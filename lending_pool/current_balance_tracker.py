@@ -178,12 +178,12 @@ def update_snapshot_bucket(df):
 
     # # reads existing tvl_and_embers data from the cloud
     # # and drops any duplicates just to be safe
-    snapshot_df = cloud_storage.read_from_cloud_storage('snapshot_user_tvl_embers.csv', 'cooldowns2')
+    snapshot_df = cloud_storage.read_zip_csv_from_cloud_storage('snapshot_user_tvl_embers.csv', 'cooldowns2')
     snapshot_df = snapshot_df.drop_duplicates(subset=['user_address'])
 
     snapshot_df = merge_current_balance_snapshot_df(df, snapshot_df)
 
-    cloud_storage.df_write_to_cloud_storage(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
+    cloud_storage.df_write_to_cloud_storage_as_zip(snapshot_df, 'snapshot_user_tvl_embers.csv', 'cooldowns2')
 
     return snapshot_df
 

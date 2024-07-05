@@ -714,7 +714,7 @@ def set_embers_database(index):
     cloud_table_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
     try:
-        cloud_storage.df_write_to_cloud_storage(df, cloud_file_name, cloud_table_name)
+        cloud_storage.df_write_to_cloud_storage_as_zip(df, cloud_file_name, cloud_table_name)
     except:
         print("Couldn't write to bucket")
 

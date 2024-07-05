@@ -631,7 +631,7 @@ def find_all_lp_transactions(index):
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
     cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
     cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-    tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    tx_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     tx_df.drop_duplicates(subset=['tx_hash', 'token_address', 'token_volume', 'from_address', 'to_address'])
 
@@ -694,7 +694,7 @@ def find_all_lp_transactions(index):
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
     
     contract_df = sql.get_transaction_data_df(table_name)
-    cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+    cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
     
     # bp.set_embers_database(index)
 
@@ -1086,12 +1086,12 @@ def run_all(index):
     table_name = lph.get_lp_config_value('table_name', index)
     
     db_df = sql.get_transaction_data_df(table_name)
-    cloud_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    cloud_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
 
     duplicate_column_list = ['tx_hash', 'from_address', 'to_address', 'token_address', 'token_volume']
     df = lph.sanitize_database_and_cloud_df(db_df, cloud_df, duplicate_column_list)
 
-    cs.df_write_to_cloud_storage(df, cloud_csv_name, cloud_bucket_name)
+    cs.df_write_to_cloud_storage_as_zip(df, cloud_csv_name, cloud_bucket_name)
 
     return df
 

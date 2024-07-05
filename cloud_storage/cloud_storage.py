@@ -28,7 +28,7 @@ PATH = os.path.join(HOME_DIR, 'fast-web-419215-35d284e06546.json')
 STORAGE_CLIENT = storage.Client.from_service_account_json(PATH)
 
 # @cache
-def read_from_cloud_storage(filename, bucketname):
+def read_zip_csv_from_cloud_storage(filename, bucketname):
     # storage_client = storage.Client(PATH)
     bucket = STORAGE_CLIENT.get_bucket(bucketname)
 
@@ -45,7 +45,7 @@ def read_from_cloud_storage(filename, bucketname):
     return df
 
 # # writes our dataframe to our desired filename
-def df_write_to_cloud_storage(df, filename, bucketname):
+def df_write_to_cloud_storage_as_zip(df, filename, bucketname):
 
     df = df.dropna()
     
@@ -86,7 +86,7 @@ def read_zip_csv_from_cloud_storage(filename, bucketname):
 
     return df
 
-def df_write_to_cloud_storage_as_zip(df, filename, bucketname):
+def df_write_to_cloud_storage_as_zip_as_zip(df, filename, bucketname):
     
     df = df.dropna()
 

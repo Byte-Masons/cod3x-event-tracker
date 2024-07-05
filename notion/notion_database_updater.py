@@ -62,7 +62,7 @@ def update_page(page_id: str, data: dict):
 # index = 2
 # cloud_filename = cod3x.get_revenue_by_day_cloud_name(index)
 # cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-# df = cs.read_from_cloud_storage('metis', cloud_bucket_name)
+# df = cs.read_zip_csv_from_cloud_storage('metis', cloud_bucket_name)
 # df = df[:1]
 # df['day'] = pd.to_datetime(df['day'], format='%Y-%m-%d')
 # df[['total_rolling_balance', 'daily_revenue']] = df[['total_rolling_balance', 'daily_revenue']].astype(float)
@@ -103,7 +103,7 @@ def create_database_entry(data: dict):
 # # Your DataFrame
 # cloud_filename = cod3x.get_revenue_by_day_cloud_name(index)
 # cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-# df = cs.read_from_cloud_storage('metis', cloud_bucket_name)
+# df = cs.read_zip_csv_from_cloud_storage('metis', cloud_bucket_name)
 
 # # df = pd.DataFrame({
 # #     'Name': ['John', 'Jane', 'Bob'],

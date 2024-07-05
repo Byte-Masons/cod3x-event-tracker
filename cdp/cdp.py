@@ -342,7 +342,7 @@ def find_all_mint_fee_transactions(index):
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
     cloud_csv_name = lph.get_cdp_config_value('cloud_filename', index)
     cloud_bucket_name = lph.get_cdp_config_value('cloud_bucket_name', index)
-    tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    tx_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     
     # # drops any stray duplicates
     tx_df.drop_duplicates(subset=['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee'])
@@ -390,7 +390,7 @@ def find_all_mint_fee_transactions(index):
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
     
     contract_df = sql.get_transaction_data_df(table_name, column_list)
-    cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+    cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
     
     # bp.set_embers_database(index)
 
@@ -425,7 +425,7 @@ def find_all_trove_updated_transactions(index):
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
     cloud_csv_name = lph.get_cdp_config_value('cloud_filename', index)
     cloud_bucket_name = lph.get_cdp_config_value('cloud_bucket_name', index)
-    tx_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    tx_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     
     # # drops any stray duplicates
     tx_df.drop_duplicates(subset=['borrower_address', 'tx_hash', 'collateral_address', 'debt_balance', 'collateral_balance', 'operation'])
@@ -470,7 +470,7 @@ def find_all_trove_updated_transactions(index):
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
     
     contract_df = sql.get_transaction_data_df(table_name)
-    cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+    cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
     
     # bp.set_embers_database(index)
 

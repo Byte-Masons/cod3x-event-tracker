@@ -8,7 +8,7 @@ def update_daily_total_revenue(index):
     cloud_filename = lph.get_lp_config_value('cloud_filename', index)
     cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
-    df = cs.read_from_cloud_storage(cloud_filename, cloud_bucket_name)
+    df = cs.read_zip_csv_from_cloud_storage(cloud_filename, cloud_bucket_name)
 
     treasury_address = lph.get_lp_config_value('treasury_address', index)
 
@@ -48,6 +48,6 @@ def run_total_revenue_by_day(index):
     revenue_filename = get_revenue_by_day_cloud_name(index)
 
     cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-    cs.df_write_to_cloud_storage(df, revenue_filename, cloud_bucket_name)
+    cs.df_write_to_cloud_storage_as_zip(df, revenue_filename, cloud_bucket_name)
 
     return df

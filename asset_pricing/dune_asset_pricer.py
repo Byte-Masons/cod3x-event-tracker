@@ -138,7 +138,7 @@ async def get_populated_results(response, execution_id):
 
 # # reads a csv from our GCP
 # # filename = name of the file we want
-def read_from_cloud_storage(filename):
+def read_zip_csv_from_cloud_storage(filename):
     
     storage_client = storage.Client(PATH)
     bucket = storage_client.get_bucket('cooldowns')
@@ -168,7 +168,7 @@ def read_from_cloud_storage(filename):
     
     return df
 
-def df_write_to_cloud_storage(df, filename):
+def df_write_to_cloud_storage_as_zip(df, filename):
 
     # storage_client = storage.Client(PATH)
     bucket = STORAGE_CLIENT.get_bucket('cooldowns')

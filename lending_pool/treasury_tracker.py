@@ -217,7 +217,7 @@ def find_all_revenue_transactions(index):
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
     cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
     cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-    last_treasury_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    last_treasury_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     last_treasury_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
 
@@ -270,7 +270,7 @@ def find_all_revenue_transactions(index):
     contract_df = sql.get_transaction_data_df(table_name)
     
     if len(contract_df) > 0:
-        cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+        cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
 
         try:
             sql.drop_table(table_name)
@@ -316,7 +316,7 @@ def find_all_user_transactions(index):
     # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
     cloud_csv_name = lph.get_lp_config_value('cloud_filename', index)
     cloud_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
-    last_treasury_df = cs.read_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
+    last_treasury_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
     # # drops any stray duplicates
     last_treasury_df.drop_duplicates(subset=['from_address', 'to_address', 'tx_hash', 'log_index', 'transaction_index'])
 
@@ -371,7 +371,7 @@ def find_all_user_transactions(index):
     contract_df = sql.get_transaction_data_df(table_name)
     
     # if len(contract_df) > 0:
-    #     cs.df_write_to_cloud_storage(contract_df, cloud_csv_name, cloud_bucket_name)
+    #     cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
 
     #     try:
     #         sql.drop_table(table_name)
@@ -406,7 +406,7 @@ def set_revenue_data(index):
     treasury_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
     df = sql.get_transaction_data_df(table_name)
-    revenue_df = cs.read_from_cloud_storage(treasury_filename, treasury_bucket_name)
+    revenue_df = cs.read_zip_csv_from_cloud_storage(treasury_filename, treasury_bucket_name)
     
     # tx_hash_list = set_unique_revenue_tx_list(df, index)
 
@@ -422,7 +422,7 @@ def find_revenue_user_tx_data(index):
     treasury_filename = lph.get_lp_config_value('cloud_filename', index)
     treasury_bucket_name = lph.get_lp_config_value('cloud_bucket_name', index)
 
-    revenue_df = cs.read_from_cloud_storage(treasury_filename, treasury_bucket_name)
+    revenue_df = cs.read_zip_csv_from_cloud_storage(treasury_filename, treasury_bucket_name)
 
     revenue_df = revenue_df.drop_duplicates(subset=['block_number'])
 
