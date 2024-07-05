@@ -291,11 +291,9 @@ def already_part_of_df(event, wait_time, from_block, to_block, index):
         tx_hash = tx_hash
 
         new_df = value_exists(df, tx_hash, 'tx_hash')
-        time.sleep(wait_time)
 
         if len(new_df) > 0:
             tx_index = event['transactionIndex']
-            time.sleep(wait_time)
 
             new_df = value_exists(new_df, tx_index, 'transaction_index')
 
@@ -324,6 +322,7 @@ def get_event_type_enum(to_address, from_address, index):
 def get_tx_usd_amount(reserve_address, token_amount, web3, index):
 
     asset_price_tx_usd_value_list = []
+    wait_time = lph.get_lp_config_value('wait_time', index)
 
     contract_address = get_lp_config_value('aave_oracle_address', index)
     contract_abi = get_aave_oracle_abi()
@@ -331,7 +330,7 @@ def get_tx_usd_amount(reserve_address, token_amount, web3, index):
     contract = get_contract(contract_address, contract_abi, web3)
 
     value_usd = contract.functions.getAssetPrice(reserve_address).call()
-    time.sleep(0.1)
+    time.sleep(wait_time)
     decimals = get_token_config_value('decimals', reserve_address, index)
     usd_amount = (value_usd/1e8)*(token_amount/decimals)
     # print(usd_amount)
@@ -404,7 +403,7 @@ def update_batch_pricing(batch_df, web3, index):
     return batch_df
 
 #makes our dataframe
-def user_data(events, web3, from_block, to_block, index):
+def user_data(events, web3, index):
     
     df = pd.DataFrame()
 
@@ -421,27 +420,21 @@ def user_data(events, web3, from_block, to_block, index):
     tx_index_list = []
     block_list = []
 
-    user = ''
+    wait_time = lph.get_lp_config_value('wait_time', index)
 
     # # inputs to our sql function
     column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
     data_type_list = ['TEXT' for x in column_list]
     table_name = get_lp_config_value('table_name', index)
 
-    # reduces wait time by 50%
-    wait_time = get_lp_config_value('wait_time', index)
-    wait_time = wait_time/3
-
     start_time = time.time()
     i = 1
     for event in events:
-
         # print('Batch of Events Processed: ', i, '/', len(events))
         i+=1
             
         # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
-        exists_list = sql.already_part_of_database(event, wait_time, column_list, table_name)
-
+        exists_list = sql.already_part_of_database(event, column_list, table_name)
 
         tx_hash = exists_list[0]
         token_amount = exists_list[1]
@@ -457,30 +450,24 @@ def user_data(events, web3, from_block, to_block, index):
             except:
                 block_number = int(event['blockNumber'])
 
-            # time.sleep(wait_time)
             # log_index = event['logIndex']
             log_index = 0
             
-            # time.sleep(wait_time)
             # tx_index = event['transactionIndex']
             tx_index = 0
 
-            time.sleep(wait_time)
             if token_amount < 0:
                 token_amount = event['args']['value']
             
-            time.sleep(wait_time)
             if len(token_address) < 1:
                 token_address = event['address']
 
             if token_address == '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF':
                 print('WHAT')
 
-            time.sleep(wait_time)
             if len(from_address) < 1:
                 from_address = event['args']['from']
             
-            time.sleep(wait_time)
             if len(to_address) < 1:
                 to_address = event['args']['to']
 
@@ -491,7 +478,6 @@ def user_data(events, web3, from_block, to_block, index):
                 to_address_list.append(to_address)
                 tx_hash_list.append(tx_hash)
                 timestamp_list.append(block['timestamp'])
-                time.sleep(wait_time)
                 # token_address = event['address']
                 token_address_list.append(token_address)
                 reserve_address = get_token_config_value('underlying_address', token_address, index)
@@ -503,11 +489,12 @@ def user_data(events, web3, from_block, to_block, index):
         else:
             # print('Already part of the dataframe')
             # print(event)
-            time.sleep(wait_time)
             pass
-    
-    if len(from_address_list) > 0:
+        
+        # # time buffer
         time.sleep(wait_time)
+
+    if len(from_address_list) > 0:
 
     
         df['from_address'] = from_address_list
@@ -595,22 +582,12 @@ def find_all_lp_transactions(index):
     config_df = config_df.loc[config_df['index'] == index]
 
     rpc_url = get_lp_config_value('rpc_url', index)
-    contract_address = get_lp_config_value('contract_address', index)
-    contract_abi = get_lending_pool_abi()
     
     web3 = tf.get_web_3(rpc_url)
-
-    # contract = tf.get_contract(contract_address, contract_abi, web3)
 
     from_block = get_from_block(index)
 
     latest_block = tf.get_latest_block(web3) 
-
-    # latest_block = 6849655
-
-    # latest_block = 6298662
-
-    event_csv = get_lp_config_value('event_csv_name', index)
 
     token_config_df = get_token_config_df()
 
@@ -619,8 +596,6 @@ def find_all_lp_transactions(index):
     wait_time = get_lp_config_value('wait_time', index)
 
     to_block = from_block + interval
-
-    contract_list = get_token_contract_list(web3, index)
 
     token_config_df = get_token_config_df()
 
@@ -637,7 +612,7 @@ def find_all_lp_transactions(index):
 
     # # inputs to our sql function
     column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
-    data_type_list = ['TEXT' for x in column_list]
+    # data_type_list = ['TEXT' for x in column_list]
     table_name = get_lp_config_value('table_name', index)
 
     # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
@@ -661,17 +636,12 @@ def find_all_lp_transactions(index):
             
 
             if len(events) > 0:
-                contract_df = user_data(events, web3, from_block, to_block, index)
+                contract_df = user_data(events, web3, index)
                 # # print(contract_df)
                 if len(contract_df) > 0:
                     # # adds prices to our new event dataframe
-                    contract_df = lph.set_df_prices(contract_df, web3, index)
-                    time.sleep(wait_time)
+                    # contract_df = lph.set_df_prices(contract_df, web3, index)
                     sql.write_to_db(contract_df, column_list, table_name)
-                    # sql.drop_duplicates_from_database(cursor)
-                    # make_user_data_csv(contract_df, index)
-            else:
-                time.sleep(wait_time)
 
         # # will make sure not overwrite other chains' data in the config file
         temp_config_df = get_lp_config_df()
@@ -692,6 +662,7 @@ def find_all_lp_transactions(index):
             to_block = latest_block
         
         print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+        time.sleep(wait_time)
     
     contract_df = sql.get_transaction_data_df(table_name)
     cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
@@ -756,13 +727,8 @@ def find_reverse_lp_transactions(index):
 
             if len(events) > 0:
                 contract_df = user_data(events, web3, index)
-                # # print(contract_df)
                 if len(contract_df) > 0:
-                    time.sleep(wait_time)
                     sql.write_to_db(cursor, contract_df)
-                    # make_user_data_csv(contract_df, index)
-            else:
-                time.sleep(wait_time)
 
         config_df['last_block'] = temp_to_block
         config_df.to_csv('lp_config.csv', index=False)
@@ -772,6 +738,7 @@ def find_reverse_lp_transactions(index):
 
         latest_block -= interval
 
+        time.sleep(wait_time)
         # print(deposit_events)
     
     return
@@ -834,8 +801,6 @@ def get_all_gateway_transactions():
         df['number_of_tokens'] = value_list
         df['block_number'] = block_number_list
         df['last_block_number'] = last_block_number
-
-    # make_user_data_csv(df)
 
 # # makes deposits and borrows positive numbers
 # # makes withdrawals and repays as negative numbers
@@ -929,6 +894,8 @@ def get_final_user_tvl(df, cursor, index):
 
     unique_user_list = set_unique_users(cursor)
 
+    wait_time = lph.get_lp_config_value('wait_time', 0)
+
     i = 0
     # # iterates through all of our tokens
     while i < len(token_address_list):
@@ -954,7 +921,7 @@ def get_final_user_tvl(df, cursor, index):
                 temp_df['token_volume'] = token_volume
                 print(temp_df)
 
-                time.sleep(0.1)
+                time.sleep(wait_time)
 
     return df
 
@@ -991,6 +958,7 @@ def get_final_pricing(df, index):
     contract_address = get_lp_config_value('aave_oracle_address', index)
     contract_abi = get_aave_oracle_abi()
     contract = get_contract(contract_address, contract_abi, web3)
+    wait_time = lph.get_lp_config_value('wait_time', index)
 
     df['usd_token_amount'] = df['usd_token_amount'].astype(float)
 
@@ -1002,7 +970,7 @@ def get_final_pricing(df, index):
         token_address = token_address_list[i]
         
         value_usd = contract.functions.getAssetPrice(reserve_address).call()
-        time.sleep(0.1)
+        time.sleep(wait_time)
 
         value_usd = value_usd / 1e8
 

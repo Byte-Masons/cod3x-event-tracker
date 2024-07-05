@@ -384,14 +384,13 @@ def value_exists(df, input_value, column_name):
     
     return df
 
-def already_part_of_database(event, wait_time, column_list, table_name):
+def already_part_of_database(event, column_list, table_name):
     
     # # will make a table if our table doesn't already exist
     # make_specific_table(cursor, column_list, data_type_list, table_name)
 
     all_exist = False
     temp_exists = False
-    wait_time = wait_time / 3
 
     tx_hash = ''
     token_amount = -1
@@ -409,11 +408,9 @@ def already_part_of_database(event, wait_time, column_list, table_name):
 
     value_list.append(tx_hash)
     column_list.append('tx_hash')
-    time.sleep(wait_time)
 
     if len(df) > 0:
         token_amount = event['args']['value']
-        time.sleep(wait_time)
 
         value_list.append(token_amount)
         column_list.append('token_volume')
@@ -423,7 +420,6 @@ def already_part_of_database(event, wait_time, column_list, table_name):
         # df = value_exists(df, tx_index, 'transaction_index')
         if temp_exists == True:
             token_address = event['address']
-            time.sleep(wait_time)
 
             value_list.append(token_address)
             column_list.append('token_address')
@@ -433,7 +429,6 @@ def already_part_of_database(event, wait_time, column_list, table_name):
             if temp_exists == True:
             
                 from_address = event['args']['from']
-                time.sleep(wait_time)
 
                 value_list.append(from_address)
                 column_list.append('from_address')
@@ -443,7 +438,6 @@ def already_part_of_database(event, wait_time, column_list, table_name):
             if temp_exists == True:
 
                 to_address = event['args']['to']
-                time.sleep(wait_time)
 
                 value_list.append(to_address)
                 column_list.append('to_address')
@@ -459,14 +453,13 @@ def already_part_of_database(event, wait_time, column_list, table_name):
 
     return response_list
 
-def cdp_fee_already_part_of_database(event, wait_time, column_list, table_name):
+def cdp_fee_already_part_of_database(event, column_list, table_name):
     
     # # will make a table if our table doesn't already exist
     # make_specific_table(cursor, column_list, data_type_list, table_name)
 
     all_exist = False
     temp_exists = False
-    wait_time = wait_time / 3
 
     borrower_address = ''
     tx_hash = ''
@@ -482,11 +475,9 @@ def cdp_fee_already_part_of_database(event, wait_time, column_list, table_name):
 
     value_list.append(tx_hash)
     column_list.append('tx_hash')
-    time.sleep(wait_time)
 
     if len(df) > 0:
         mint_fee = event['args']['_LUSDFee']
-        time.sleep(wait_time)
 
         value_list.append(mint_fee)
         column_list.append('mint_fee')
@@ -496,7 +487,6 @@ def cdp_fee_already_part_of_database(event, wait_time, column_list, table_name):
         # df = value_exists(df, tx_index, 'transaction_index')
         if temp_exists == True:
             borrower_address = event['args']['_borrower']
-            time.sleep(wait_time)
 
             value_list.append(borrower_address)
             column_list.append('borrower_address')
@@ -506,7 +496,6 @@ def cdp_fee_already_part_of_database(event, wait_time, column_list, table_name):
             if temp_exists == True:
             
                 collateral_address = event['args']['_collateral']
-                time.sleep(wait_time)
 
                 value_list.append(collateral_address)
                 column_list.append('collateral_address')
@@ -522,14 +511,13 @@ def cdp_fee_already_part_of_database(event, wait_time, column_list, table_name):
 
     return response_list
 
-def cdp_trove_update_already_part_of_database(event, wait_time, column_list, table_name):
+def cdp_trove_update_already_part_of_database(event, column_list, table_name):
     
     # # will make a table if our table doesn't already exist
     # make_specific_table(cursor, column_list, data_type_list, table_name)
 
     all_exist = False
     temp_exists = False
-    wait_time = wait_time / 3
 
     borrower_address = ''
     tx_hash = ''
@@ -546,11 +534,9 @@ def cdp_trove_update_already_part_of_database(event, wait_time, column_list, tab
 
     value_list.append(tx_hash)
     column_list.append('tx_hash')
-    time.sleep(wait_time)
 
     if len(df) > 0:
         borrower_address = event['args']['_borrower']
-        time.sleep(wait_time)
 
         value_list.append(borrower_address)
         column_list.append('borrower_address')
@@ -560,7 +546,6 @@ def cdp_trove_update_already_part_of_database(event, wait_time, column_list, tab
         if temp_exists == True:
         
             collateral_address = event['args']['_collateral']
-            time.sleep(wait_time)
 
             value_list.append(collateral_address)
             column_list.append('collateral_address')
@@ -570,7 +555,6 @@ def cdp_trove_update_already_part_of_database(event, wait_time, column_list, tab
             if temp_exists == True:
     
                 collateral_balance = event['args']['_coll']
-                time.sleep(wait_time)
 
                 value_list.append(collateral_balance)
                 column_list.append('collateral_balance')
@@ -580,7 +564,6 @@ def cdp_trove_update_already_part_of_database(event, wait_time, column_list, tab
                 if temp_exists == True:
     
                     debt_balance = event['args']['_debt']
-                    time.sleep(wait_time)
 
                     value_list.append(debt_balance)
                     column_list.append('debt_balance')
