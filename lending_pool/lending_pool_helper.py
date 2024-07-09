@@ -45,6 +45,7 @@ def get_cdp_config_value(column_name, index):
 # # returns the relevant value from our config csv
 def get_lp_config_value(column_name, index):
     df = get_lp_config_df()
+    df = df.loc[df['index'] == index]
 
     config_list = df[column_name].tolist()
 
@@ -472,12 +473,9 @@ def update_batch_pricing(batch_df, web3, index):
 
 # # finds our contract launch_block
 # # subtracts the interval from our from block to help account for the script quitting on one of the 4 deposit,withdraw,repay,borrow event sets before iterating to the next set of blocks
-def get_from_block(index):
-
-    interval = get_lp_config_value('interval', index)
+def get_from_block(index, interval):
 
     from_block = get_lp_config_value('from_block', index)
-
 
     last_block_checked = get_lp_config_value('last_block', index)
 

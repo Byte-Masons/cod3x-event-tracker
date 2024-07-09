@@ -2,6 +2,8 @@ import sys
 import os
 import time
 import pandas as pd
+import numpy as np
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lending_pool import lending_pool_helper as lph
@@ -142,6 +144,9 @@ class Protocol_Data_Provider():
     def get_oracle_price(self, reserve_list):
 
         price_oracle_contract = self.get_price_oracle_contract()
+
+        if isinstance(reserve_list, np.ndarray):
+            reserve_list = reserve_list.tolist()
 
         price_list = price_oracle_contract.functions.getAssetsPrices(reserve_list).call()
 

@@ -98,13 +98,18 @@ def run_all_treasury_2():
 
 # loop_all_functions()
 
-treasury_address = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
-protocol_data_provider_address = '0x29563f73De731Ae555093deb795ba4D1E584e42E'
-rpc_url = 'wss://mode.drpc.org'
+treasury_address = '0xCE4975E63b6e737c41C9c0e5aCd248Ef0145B51A'
+protocol_data_provider_address = '0xedB4f24e4b74a6B1e20e2EAf70806EAC19E1FA54'
+rpc_url = 'https://rpc.mantle.xyz'
 index = 'aurelius_lend_events_2'
-interval = 250
+interval = 500
 wait_time = 0.2
 
 ironclad_lending_pool = Lending_Pool.Lending_Pool(protocol_data_provider_address, rpc_url, wait_time, interval, index)
 
 ironclad_lending_pool.run_all()
+
+# reserve_list = ['0xd988097fb8612cc24eeC14542bC03424c656005f', '0xDfc7C877a950e49D2610114102175A06C2e3167a']
+# price_list = ironclad_lending_pool.get_oracle_price(reserve_list)
+
+# print(price_list)

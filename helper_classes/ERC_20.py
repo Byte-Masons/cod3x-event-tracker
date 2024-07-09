@@ -84,16 +84,16 @@ class ERC_20():
     def add_decimals_to_token_df(self, df) -> pd.DataFrame:
         temp_df = df
 
-        temp_df = temp_df.drop_duplicates(subset='underlying_address')
+        temp_df = temp_df.drop_duplicates(subset='reserve_address')
 
-        underlying_address_list = temp_df['underlying_address'].tolist()
+        underlying_address_list = temp_df['reserve_address'].tolist()
 
         erc_20_object_list = [ERC_20(underlying_address, self.rpc_url) for underlying_address in underlying_address_list]
 
         decimal_list = [erc_20.decimals for erc_20 in erc_20_object_list]
 
         for erc_20 in erc_20_object_list:
-            df.loc[df['underlying_address'] == erc_20.token_address, 'decimals'] = erc_20.decimals
+            df.loc[df['reserve_address'] == erc_20.token_address, 'decimals'] = erc_20.decimals
 
         return df
     
@@ -114,7 +114,7 @@ class ERC_20():
             i += 1
 
         df['token_address'] = receipt_token_list
-        df['underlying_address'] = reserve_token_list
+        df['reserve_address'] = reserve_token_list
 
         df = self.add_decimals_to_token_df(df)
 

@@ -89,11 +89,37 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         return exists
     
-    # # will return our batch pricing
-    def update_batch_pricing(self, tx_df, reserve_df) -> pd.DataFrame:
+
+    # # will return our batch df with appropriate asset_price and usd_token_amount
+    def update_batch_pricing(self, batch_df, reserve_df) -> pd.DataFrame:
         # 'asset_price','usd_token_amount'
 
-        return
+        unique_underlying_list = batch_df['reserve_address'].unique()
+
+        batch_pricing_list = self.get_oracle_price(unique_underlying_list)
+
+        i = 0
+        for unique_underlying in unique_underlying_list:
+            temp_reserve_df = reserve_df.loc[reserve_df['reserve_address'] == unique_underlying]
+            temp_decimals = temp_reserve_df['decimals'].tolist()[0]
+            
+            batch_df.loc[batch_df['reserve_address'] == unique_underlying, 'decimals'] = temp_decimals
+            temp_price = batch_pricing_list[i]
+
+            batch_df.loc[batch_df['reserve_address'] == unique_underlying, 'asset_price'] = temp_price
+
+            i += 1
+            
+        batch_df['usd_token_amount'] = batch_df['token_volume'] / batch_df['decimals'] * batch_df['asset_price']
+
+        # print(batch_df.dtypes)
+        # print(batch_df)
+
+        # print(batch_df[['tx_hash', 'reserve_address', 'token_volume', 'asset_price', 'usd_token_amount']])
+        
+        batch_df = batch_df[['from_address', 'to_address', 'tx_hash', 'timestamp', 'token_address', 'reserve_address', 'token_volume', 'asset_price', 'usd_token_amount']]
+
+        return batch_df
 
     # # will process our events
     def process_events(self, events, token_reserve_df):
@@ -125,7 +151,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
                 tx_hash = event['transactionHash'].hex()
                 token_address = event['address']
                 reserve_address = token_reserve_df.loc[token_reserve_df['token_address'] == token_address]
-                reserve_address = reserve_address['underlying_address'].tolist()[0]
+                reserve_address = reserve_address['reserve_address'].tolist()[0]
                 token_volume = event['args']['value']
                 
                 try:
@@ -157,14 +183,18 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
             df['token_address'] = token_address_list
             df['reserve_address'] = reserve_address_list
             df['token_volume'] = token_volume_list
-            df = self.update_batch_pricing(df, self.web3, self.index)
+            df = self.update_batch_pricing(df, token_reserve_df)
             df['block_number'] = block_list
 
-        return
+        return df
+    
     # # will run all of the lending pool transfer event tracking
     def run_all(self):
         
-        from_block = lph.get_from_block(self.index)
+        print(self.index)
+        from_block = lph.get_from_block(self.index, self.interval)
+        print('From Block: ', from_block)
+
         latest_block = lph.get_latest_block(self.web3) 
         interval = self.interval
         wait_time = self.wait_time
@@ -179,11 +209,13 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         cloud_df.drop_duplicates(subset=['tx_hash', 'token_address', 'token_volume', 'from_address', 'to_address'])
 
+        # # inputs to our sql function
+        column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']
+
         self.create_lend_table(cloud_df)
         
         token_reserve_df = self.get_token_and_reserve_df(receipt_contract_list, receipt_token_list)
-        print(token_reserve_df)
-        
+
         while to_block < latest_block:
             i = 0
 
@@ -196,9 +228,9 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
                 if len(events) > 0:
                     contract_df = self.process_events(events, token_reserve_df)
 
+                    if len(contract_df) > 0:
+                        sql.write_to_db(contract_df, column_list, self.table_name)
                 i += 1
-
-                print(i, '/', len(receipt_token_list))
 
             # # will make sure not overwrite other chains' data in the config file
             temp_config_df = lph.get_lp_config_df()
@@ -220,4 +252,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
             
             print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             time.sleep(wait_time)
+    
+        contract_df = sql.get_transaction_data_df(self.table_name)
+        cs.df_write_to_cloud_storage_as_zip(contract_df, self.cloud_file_name, self.cloud_bucket_name)
+
         return
