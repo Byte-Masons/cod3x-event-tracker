@@ -106,28 +106,5 @@ interval = 250
 wait_time = 0.2
 
 ironclad_lending_pool = Lending_Pool.Lending_Pool(protocol_data_provider_address, rpc_url, wait_time, interval, index)
-# ironclad_lending_pool.get_non_stable_receipt_token_list()
-
-# print(ironclad_lending_pool.receipt_list)
 
 ironclad_lending_pool.run_all()
-
-# receipt_token_address_list = ironclad_lending_pool.get_receipt_token_list()
-
-# a_token_list = ironclad_lending_pool.get_a_token_list()
-# v_token_list = ironclad_lending_pool.get_v_token_list()
-# non_stable_receipt_token_list = ironclad_lending_pool.get_non_stable_receipt_token_list()
-
-# print(non_stable_receipt_token_list)
-
-# filename = 'metis_lend_events.csv'
-# table_name = 'metis_events'
-
-# cloud_df = cs.read_from_cloud_storage(filename, 'cooldowns2')
-# lp_tracker.create_tx_table(table_name, cloud_df)
-
-# df = sql.get_transaction_data_df(table_name)
-# df = df.dropna()
-# print(df)
-
-# cs.df_write_to_cloud_storage_as_zip(df, 'metis_lend_events.zip', 'cooldowns2')

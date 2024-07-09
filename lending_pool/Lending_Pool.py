@@ -89,6 +89,12 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         return exists
     
+    # # will return our batch pricing
+    def update_batch_pricing(self, tx_df, reserve_df) -> pd.DataFrame:
+        # 'asset_price','usd_token_amount'
+
+        return
+
     # # will process our events
     def process_events(self, events, token_reserve_df):
 
@@ -176,7 +182,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         self.create_lend_table(cloud_df)
         
         token_reserve_df = self.get_token_and_reserve_df(receipt_contract_list, receipt_token_list)
-
+        print(token_reserve_df)
+        
         while to_block < latest_block:
             i = 0
 
