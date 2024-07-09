@@ -2,6 +2,8 @@ import sys
 import os
 import time
 import pandas as pd
+import sqlite3
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lending_pool import lending_pool_helper as lph
@@ -18,12 +20,12 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         self.interval = interval
         self.index = index
         self.web3 = lph.get_web_3(self.rpc_url)
-        self.cloud_file_name = index + '_events.zip'
+        self.cloud_file_name = index + '.zip'
         self.cloud_bucket_name = 'cooldowns2'
-        self.table_name = self.cloud_file_name
+        self.table_name = self.index
 
     # # will load our cloud df information into the sql database
-    def insert_bulk_data_into_table(df, table_name):
+    def insert_bulk_data_into_table(self, df, table_name):
         # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
         
         query = f"""
@@ -36,7 +38,6 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         return
 
     def create_lend_table(self, cloud_df):
-        
         query = f"""
             CREATE TABLE IF NOT EXISTS {self.table_name}(
                 from_address TEXT,
@@ -51,7 +52,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
                 block_number TEXT
                 )
             """
-        
+
         # # will only insert data into the sql table if the table doesn't exist
         sql.create_custom_table(query)
         
@@ -62,6 +63,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         # # then writes the updated sanitized dataframe to our local database table
         duplicate_column_list = ['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume']
         sanitized_df = lph.sanitize_database_and_cloud_df(db_df, cloud_df, duplicate_column_list)
+
+        sanitized_df = sanitized_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']]
 
         sql.drop_table(self.table_name)
         sql.create_custom_table(query)
@@ -74,7 +77,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         
         column_list = ['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume']
 
-        tx_hash = event['transactionHash'].hex()
+        tx_hash = str(event['transactionHash'].hex())
         to_address = event['args']['to']
         from_address = event['args']['from']
         token_address = event['address']
@@ -82,12 +85,12 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         value_list = [tx_hash, to_address, from_address, token_address, token_volume]
 
-        exists = sql.sql_multiple_values_exist(column_list, value_list, self.table_name)
+        exists = sql.sql_multiple_values_exist(value_list, column_list, self.table_name)
 
         return exists
     
     # # will process our events
-    def process_events(self, events):
+    def process_events(self, events, token_reserve_df):
 
         df = pd.DataFrame()
 
@@ -98,8 +101,6 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         token_address_list = []
         reserve_address_list = []
         token_volume_list = []
-        log_index_list = []
-        tx_index_list = []
         block_list = []
         
         column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']
@@ -109,19 +110,17 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         for event in events:
             i += 1
 
-            lend_event_exists = sql.already_part_of_database(event, column_list, self.table_name)
+            lend_event_exists = self.lend_event_already_exists(event)
 
-            if lend_event_exists == True:
+            if lend_event_exists == False:
                 
                 from_address = event['args']['from']
                 to_address = event['args']['to']
                 tx_hash = event['transactionHash'].hex()
                 token_address = event['address']
-                reserve_address = ''
+                reserve_address = token_reserve_df.loc[token_reserve_df['token_address'] == token_address]
+                reserve_address = reserve_address['underlying_address'].tolist()[0]
                 token_volume = event['args']['value']
-                asset_price = ''
-                usd_token_amount = ''
-
                 
                 try:
                     block = self.web3.eth.get_block(event['blockNumber'])
@@ -131,7 +130,29 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
                 
                 block_timestamp = block['timestamp']
                 
+                block_list.append(block_number)
+                from_address_list.append(from_address)
+                to_address_list.append(to_address)
+                tx_hash_list.append(tx_hash)
+                timestamp_list.append(block_timestamp)
+                token_address_list.append(token_address)
+                reserve_address_list.append(reserve_address)
+                token_volume_list.append(token_volume)
 
+            time.sleep(self.wait_time)
+        
+        if len(from_address_list) > 0:
+
+    
+            df['from_address'] = from_address_list
+            df['to_address'] = to_address_list
+            df['tx_hash'] = tx_hash_list
+            df['timestamp'] = timestamp_list
+            df['token_address'] = token_address_list
+            df['reserve_address'] = reserve_address_list
+            df['token_volume'] = token_volume_list
+            df = self.update_batch_pricing(df, self.web3, self.index)
+            df['block_number'] = block_list
 
         return
     # # will run all of the lending pool transfer event tracking
@@ -146,7 +167,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         receipt_token_list = self.get_non_stable_receipt_token_list()
 
-        receipt_contract_list = [ERC_20.ERC_20(receipt_address, self.rpc_url) for receipt_address in receipt_token_list]
+        receipt_contract_list = [self.get_token_contract(token_address) for token_address in receipt_token_list]
 
         cloud_df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
 
@@ -154,18 +175,42 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         self.create_lend_table(cloud_df)
         
+        token_reserve_df = self.get_token_and_reserve_df(receipt_contract_list, receipt_token_list)
+
         while to_block < latest_block:
             i = 0
 
-        while i < len(receipt_token_list):
+            while i < len(receipt_token_list):
 
-            receipt_contract = receipt_contract_list[i]
+                receipt_contract = receipt_contract_list[i]
 
-            events = self.get_transfer_events(receipt_contract, from_block, to_block)
+                events = self.get_transfer_events(receipt_contract, from_block, to_block)
 
-            i += 1
+                if len(events) > 0:
+                    contract_df = self.process_events(events, token_reserve_df)
 
-            if len(events) > 0:
-                contract_df = self.process_events(events, self.web3, self.index)
+                i += 1
 
+                print(i, '/', len(receipt_token_list))
+
+            # # will make sure not overwrite other chains' data in the config file
+            temp_config_df = lph.get_lp_config_df()
+            temp_config_df.loc[temp_config_df['index'] == self.index, 'last_block'] = from_block
+            # config_df['last_block'] = from_block
+            temp_config_df.to_csv('./config/lp_config.csv', index=False)
+
+            from_block += interval
+            to_block += interval
+
+            # print(deposit_events)
+
+
+            if from_block >= latest_block:
+                from_block = latest_block - 1
+            
+            if to_block >= latest_block:
+                to_block = latest_block
+            
+            print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
+            time.sleep(wait_time)
         return

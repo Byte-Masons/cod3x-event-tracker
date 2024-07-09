@@ -20,6 +20,7 @@ from cdp import cdp
 from revenue_tracking import cod3x_lend_revenue_tracking as cod3x
 from notion import notion_database_updater as ndu
 from datetime import datetime, timezone
+from lending_pool import Lending_Pool
 
 runtime_pause = 60
 
@@ -95,7 +96,29 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions()
+# loop_all_functions()
+
+treasury_address = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
+protocol_data_provider_address = '0x29563f73De731Ae555093deb795ba4D1E584e42E'
+rpc_url = 'wss://mode.drpc.org'
+index = 'aurelius_lend_events_2'
+interval = 250
+wait_time = 0.2
+
+ironclad_lending_pool = Lending_Pool.Lending_Pool(protocol_data_provider_address, rpc_url, wait_time, interval, index)
+# ironclad_lending_pool.get_non_stable_receipt_token_list()
+
+# print(ironclad_lending_pool.receipt_list)
+
+ironclad_lending_pool.run_all()
+
+# receipt_token_address_list = ironclad_lending_pool.get_receipt_token_list()
+
+# a_token_list = ironclad_lending_pool.get_a_token_list()
+# v_token_list = ironclad_lending_pool.get_v_token_list()
+# non_stable_receipt_token_list = ironclad_lending_pool.get_non_stable_receipt_token_list()
+
+# print(non_stable_receipt_token_list)
 
 # filename = 'metis_lend_events.csv'
 # table_name = 'metis_events'

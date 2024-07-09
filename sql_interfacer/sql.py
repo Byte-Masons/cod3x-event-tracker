@@ -95,6 +95,7 @@ def make_snapshot_table(cursor):
 
 # # given a create query, will create our table in our database
 def create_custom_table(query):
+
     cursor = connection.cursor()
     
     cursor.execute(query)
@@ -679,7 +680,7 @@ def get_transaction_data_df(all_data_table_name):
 
     rows = cursor.fetchall()
     
-    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','log_index','transaction_index','block_number']
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']
 
     df = get_sql_df(rows, column_list)
     

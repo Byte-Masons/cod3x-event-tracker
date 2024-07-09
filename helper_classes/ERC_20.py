@@ -32,12 +32,14 @@ class ERC_20():
     
     # # will make our web3 token contract object for our given token_address
     def get_token_contract(self, token_address):
-        token_address = self.token_address
         token_abi = self.get_erc_20_abi()
 
         web3 = self.web3
 
         token_contract = lph.get_contract(token_address, token_abi, web3)
+        time.sleep(0.2)
+
+        self.token_contract = token_contract
 
         return token_contract
 
@@ -76,6 +78,28 @@ class ERC_20():
         events = token_contract.events.Transfer.get_logs(fromBlock=from_block, toBlock=to_block)
 
         return events
+    
+    # # will make a dataframe of our reserve token and receipt token pairs
+    def get_token_and_reserve_df(self, receipt_contract_list, receipt_token_list) -> pd.DataFrame:
+
+        df = pd.DataFrame()
+        reserve_token_list = []
+
+        i = 0
+        while i < len(receipt_token_list):
+            receipt_token = receipt_contract_list[i]
+            
+            reserve_token = receipt_token.functions.UNDERLYING_ASSET_ADDRESS().call()
+            reserve_token_list.append(reserve_token)
+            time.sleep(0.2)
+
+            i += 1
+
+        df['token_address'] = receipt_token_list
+        df['underlying_address'] = reserve_token_list
+
+        return df
+    
     
 # treasury_address = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
 # protocol_data_provider_address = '0x29563f73De731Ae555093deb795ba4D1E584e42E'
