@@ -557,9 +557,9 @@ def get_web_3(rpc_url):
         web3 = Web3(provider)
     else:
         web3 = Web3(Web3.HTTPProvider(rpc_url))
-    time.sleep(2.5)
+    time.sleep(1)
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
-    time.sleep(2.5)
+    time.sleep(1)
     
     return web3
 # # finds the latest block on a given blockchain

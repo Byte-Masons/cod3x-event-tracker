@@ -7,7 +7,7 @@ import sqlite3
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lending_pool import lending_pool_helper as lph
-from helper_classes import ERC_20, Protocol_Data_Provider
+from helper_classes import ERC_20, Protocol_Data_Provider, Sanitize
 from cloud_storage import cloud_storage as cs
 from sql_interfacer import sql
 
@@ -62,9 +62,15 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         # # drops our old database table
         # # then writes the updated sanitized dataframe to our local database table
         duplicate_column_list = ['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume']
-        sanitized_df = lph.sanitize_database_and_cloud_df(db_df, cloud_df, duplicate_column_list)
 
-        sanitized_df = sanitized_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']]
+        combined_df = pd.concat([db_df, cloud_df])
+        combined_df = combined_df.drop_duplicates(subset=duplicate_column_list)
+
+        sanitized_df = combined_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']]
+
+        # # extra decimal sanitation
+        sanitizer = Sanitize.Sanitize(sanitized_df, self.rpc_url)
+        sanitized_df = sanitizer.sanitize_df()
 
         sql.drop_table(self.table_name)
         sql.create_custom_table(query)
@@ -191,9 +197,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
     # # will run all of the lending pool transfer event tracking
     def run_all(self):
         
-        print(self.index)
         from_block = lph.get_from_block(self.index, self.interval)
-        print('From Block: ', from_block)
 
         latest_block = lph.get_latest_block(self.web3) 
         interval = self.interval
@@ -254,6 +258,11 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
             time.sleep(wait_time)
     
         contract_df = sql.get_transaction_data_df(self.table_name)
+        
+        # # extra dataframe sanitation
+        sanitizer = Sanitize.Sanitize(contract_df, self.rpc_url)
+        contract_df = sanitizer.sanitize_df()
+
         cs.df_write_to_cloud_storage_as_zip(contract_df, self.cloud_file_name, self.cloud_bucket_name)
 
         return
