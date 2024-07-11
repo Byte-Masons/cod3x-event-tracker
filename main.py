@@ -135,7 +135,6 @@ aurelius_lend_revenue = cod3x.Cod3x_Lend_Revenue_Tracking(protocol_data_provider
 
 df = aurelius_lend_revenue.update_daily_total_revenue()
 print(df)
-print(df['usd_token_amount'].sum())
 
 df.to_csv('aurelius_lend_revenue.csv', index=False)
 

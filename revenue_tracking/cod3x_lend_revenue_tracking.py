@@ -81,7 +81,7 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         
         df['timestamp'] = df['timestamp'].astype(float)
 
-        df.sort_values(by=['timestamp'], ascending=True)
+        df = df.sort_values(by=['timestamp'], ascending=True)
 
         df['usd_rolling_balance'] = df['usd_token_amount'].cumsum()
 
@@ -89,46 +89,63 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
 
         df = df[['user_address', 'tx_hash', 'token_address', 'token_volume', 'usd_token_amount', 'timestamp', 'usd_rolling_balance']]
 
+        df.sort_values(by=['timestamp'], ascending=True)
+
         return df
+    
     
     def set_token_and_day_diffs(self, df):
 
         df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
 
-        daily_token_sum = df.groupby(['day', 'token_address', 'user_address'])['usd_rolling_balance'].sum().reset_index()
 
-        daily_token_sum = daily_token_sum.sort_values(['day', 'token_address', 'user_address'])
+        print(df.loc[df['tx_hash'] == '0x349e6c3aea1b82db7a0ce7f26ce827fafdbab706b5d01a0de4877f4d73c80a20'])
+
+        daily_max_balance_list = []
+
+        unique_day_list = df['day'].unique()
+
+        day_df = pd.DataFrame()
+        day_df['day'] = unique_day_list
+
+        day_df = day_df.sort_values(by=['day'], ascending=True)
+
+        unique_day_list = day_df['day'].tolist()
+
+        day_list = []
+        max_balance_list = []
+
+        for unique_day in unique_day_list:
+            temp_df = df.loc[df['day'] == unique_day]
+
+            daily_max_balance = temp_df['usd_rolling_balance'].max()
+            
+            df.loc[df['day'] == unique_day, 'daily_max_balance'] = daily_max_balance
+            day_list.append(unique_day)
+            max_balance_list.append(daily_max_balance)
         
-        df = df.merge(daily_token_sum, on=['day', 'token_address', 'user_address'], suffixes=('', '_daily_token_sum'))
+        df = pd.DataFrame()
+        df['day'] = day_list
+        df['total_revenue'] = max_balance_list
 
-        daily_revenue_sum = df.groupby(['day', 'user_address'])['usd_rolling_balance'].sum().reset_index()
+        #     df.loc[(df['day'] == unique_day) & (df['usd_rolling_balance'] == daily_max_balance), 'daily_max_balance'] = daily_max_balance
+        
+        # df = df.dropna()
 
-        df = df.merge(daily_revenue_sum, on=['day'], suffixes=('', '_daily_total_balance'))
+        # print(df)
 
-        df.rename(columns = {'usd_rolling_balance_daily_token_sum':'token_day_rolling_balance', 'usd_rolling_balance_daily_total_balance':'total_rolling_balance'}, inplace = True)
-
-        # # casts our day to a datetime
-        df['day'] = pd.to_datetime(df['day'], format='%Y-%m-%d')
-        # df['day'] = df['day'].astype(str)
-        df[['total_rolling_balance_change', 'token_day_rolling_balance']] = df[['total_rolling_balance', 'token_day_rolling_balance']].astype(float)
-
-        df = df.sort_values(by=['day', 'token_address', 'user_address'])
-
-        df['token_day_rolling_balance'] = df.groupby(['token_address', 'user_address', 'day'])['token_day_rolling_balance'].fillna(method='ffill')
-        df['total_rolling_balance'] = df.groupby(['token_address', 'user_address', 'day'])['total_rolling_balance'].fillna(method='ffill')
-
-        # Calculate the difference between consecutive non-NaN values (optional)
-        df['token_day_diff'] = df['token_day_rolling_balance'].diff().fillna(0)
-        df['day_diff'] = df['total_rolling_balance'].diff().fillna(0)
+        # # Calculate the difference between consecutive non-NaN values (optional)
+        df['daily_revenue'] = df['total_revenue'].diff().fillna(0)
 
         return df
     
-    # # will make our dataframe only have 1 row per day_diff
-    def set_total_day_diff_1_line(self, df):
+    def set_n_days_avg_revenue(self, df, new_column_name, lookback_days):
 
-        daily_total_balance_diff_df = df.groupby(['day', 'user_address', 'total_rolling_balance'])['day_diff'].max().reset_index()
-        
-        return daily_total_balance_diff_df
+        df = df.sort_values(by=['day'], ascending=True)
+
+        df[new_column_name] = df['daily_revenue'].rolling(window=lookback_days, min_periods=1).mean()
+
+        return df
 
     def update_daily_total_revenue(self):
         
@@ -140,8 +157,12 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         df = self.set_rolling_balance(df)
         
         df = lph.make_day_from_timestamp(df)
-        # df = self.set_token_and_day_diffs(df)
-        # df = self.set_total_day_diff_1_line(df)
+        df = self.set_token_and_day_diffs(df)
+
+        # # makes our moving average daily revenues
+        df = self.set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
+        df = self.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
+        df = self.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
         
         return df
 

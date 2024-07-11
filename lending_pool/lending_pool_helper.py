@@ -1191,7 +1191,7 @@ def set_rolling_balance(df):
     
     df['timestamp'] = df['timestamp'].astype(float)
 
-    df.sort_values(by=['timestamp'], ascending=True)
+    df = df.sort_values(by=['timestamp'], ascending=True)
 
     # Group the DataFrame by 'name' and calculate cumulative sum
     name_groups = df.groupby(['user_address','token_address'])['usd_token_amount'].transform(pd.Series.cumsum)
@@ -1202,7 +1202,9 @@ def set_rolling_balance(df):
     df = df.reset_index()
 
     df = df[['user_address', 'tx_hash', 'token_address', 'token_volume', 'usd_token_amount', 'timestamp', 'usd_rolling_balance']]
-
+    
+    df = df.sort_values(by=['timestamp'], ascending=True)
+    
     return df
 
 # # uses our timestamp column to make a day column
