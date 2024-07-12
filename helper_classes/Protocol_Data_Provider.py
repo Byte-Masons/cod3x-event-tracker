@@ -154,7 +154,15 @@ class Protocol_Data_Provider():
         price_list = [price / 1e8 for price in price_list]
         
         return price_list
+    
+    # # gets our lending_pool_proxy_address
+    def get_lending_pool_address(self):
+        address_provider_contract = self.get_address_provider_contract()
 
+        lending_pool_address = address_provider_contract.functions.getLendingPool().call()
+
+        return lending_pool_address
+ 
 # treasury_address = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
 # protocol_data_provider_address = '0x29563f73De731Ae555093deb795ba4D1E584e42E'
 # rpc_url = 'wss://mode.drpc.org'
