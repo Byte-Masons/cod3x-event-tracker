@@ -14,8 +14,8 @@ class Optimism(Lending_Pool.Lending_Pool):
     TREASURY_ADDRESS = '0xC01a7AD7Fb8a085a3cc16be8eaA10302c78a1783'
     INDEX = 'optimism_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
-    INTERVAL = 500
-    WAIT_TIME = 0.6
+    INTERVAL = 2500
+    WAIT_TIME = 0.8
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
