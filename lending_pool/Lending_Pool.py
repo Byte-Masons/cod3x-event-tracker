@@ -207,7 +207,12 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         receipt_token_list = self.get_non_stable_receipt_token_list()
 
-        receipt_contract_list = [self.get_token_contract(token_address) for token_address in receipt_token_list]
+        receipt_contract_list = []
+        for token_address in receipt_token_list:
+            token_contract = self.get_token_contract(token_address)
+            receipt_contract_list.append(token_contract)
+
+            time.sleep(wait_time)
 
         cloud_df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
 
@@ -234,6 +239,9 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
                     if len(contract_df) > 0:
                         sql.write_to_db(contract_df, column_list, self.table_name)
+                
+                time.sleep(wait_time)
+                
                 i += 1
 
             # # will make sure not overwrite other chains' data in the config file

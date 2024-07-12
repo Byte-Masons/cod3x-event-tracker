@@ -37,6 +37,7 @@ class Protocol_Data_Provider():
         web3 = self.web3
 
         contract = lph.get_contract(protocol_data_provider_address, contract_abi, web3)
+        time.sleep(0.4)
         
         reserve_list = contract.functions.getAllReservesTokens().call()
 

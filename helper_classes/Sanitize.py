@@ -51,6 +51,8 @@ class Sanitize(ERC_20.ERC_20):
 
         unique_token_address_list = self.df['token_address'].unique()
 
+        time.sleep(self.WAIT_TIME)
+
         i = 0
 
         for unique_token_address in unique_token_address_list:
@@ -61,8 +63,11 @@ class Sanitize(ERC_20.ERC_20):
 
                     df.loc[df['token_address'] == unique_token_address, 'reserve_address'] = reserve_address
 
-                    time.sleep(0.2)
+                    time.sleep(self.WAIT_TIME)
 
+            time.sleep(self.WAIT_TIME)
+
+            i += 1
         self.df = df
 
         return
@@ -81,7 +86,7 @@ class Sanitize(ERC_20.ERC_20):
         for token_address in unique_reserve_address_list:
             erc_20_object = self.make_erc_20(token_address, self.rpc_url)
             reserve_erc_20_object_list.append(erc_20_object)
-            time.sleep(0.2)
+            time.sleep(self.WAIT_TIME)
 
         for reserve_erc_20_object in reserve_erc_20_object_list:
             df = self.df
