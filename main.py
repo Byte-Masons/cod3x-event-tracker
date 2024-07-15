@@ -121,16 +121,19 @@ INDEX = 'arbitrum_lend_events'
 CLOUD_BUCKET_NAME = 'cooldowns2'
 INTERVAL = 5000
 WAIT_TIME = 1.05
+GATEWAY_ADDRESS = '0x3CC0a623f1aFFab5D5514A453965cE8C80B45549'
 
 df = sql.get_transaction_data_df('arbitrum_lend_events')
 
-ironclad_labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, df, INDEX)
+ironclad_labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, df, INDEX, GATEWAY_ADDRESS, TREASURY_ADDRESS)
 
 df = ironclad_labeler.label_events(df)
 print(df[['tx_hash', 'usd_token_amount', 'event_type']])
 
-df['usd_token_amount'] = df['usd_token_amount'].astype(float)
-print(df['usd_token_amount'].sum())
+# df['usd_token_amount'] = df['usd_token_amount'].astype(float)
+# print(df['usd_token_amount'].sum())
+
+df.to_csv('test_test.csv', index=False)
 
 
 
