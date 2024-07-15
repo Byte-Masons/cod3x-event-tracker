@@ -76,3 +76,99 @@ class Transaction_Labeler(Protocol_Data_Provider.Protocol_Data_Provider):
         combo_df = combo_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
 
         return combo_df
+    
+    # # sets our rolling balance for each of our event types
+    def set_rolling_volume(self, df):
+        
+        df[['timestamp', 'usd_token_amount']] = df[['timestamp', 'usd_token_amount']].astype(float)
+
+
+        df = df.sort_values(by=['timestamp'], ascending=True)
+
+        event_list = df['event_type'].unique()
+
+        for event in event_list:
+            new_column_name = event + '_rolling_volume'
+            df.loc[df['event_type'] == event, new_column_name] = df.loc[df['event_type'] == event]['usd_token_amount'].cumsum()
+        
+        return df
+    
+    # # finds the change in volume per day for each event type
+    def set_volume_diffs(self, df):
+
+        unique_event_list = df['event_type'].unique()
+
+        rolling_volume_column_name_list = [event + '_rolling_volume' for event in unique_event_list]
+
+        print(rolling_volume_column_name_list)
+
+        df[rolling_volume_column_name_list] = df[rolling_volume_column_name_list].astype(float)
+
+        df_list = []
+
+        for unique_event_type in unique_event_list:
+            day_list = []
+            max_volume_list = []
+
+            temp_df = df.loc[df['event_type'] == unique_event_type]
+
+            temp_df = temp_df.sort_values(by='day', ascending=True)
+
+            unique_day_list = temp_df['day'].unique()
+
+            day_df = pd.DataFrame()
+            day_df['day'] = unique_day_list
+
+            day_df = day_df.sort_values(by=['day'], ascending=True)
+
+            unique_day_list = day_df['day'].tolist()
+
+            rolling_volume_event_type = unique_event_type + '_rolling_volume'
+
+            max_rolling_volume_column_name = unique_event_type + '_daily_max_volume'
+
+            for unique_day in unique_day_list:
+                temp_day_df = temp_df.loc[temp_df['day'] == unique_day]
+
+                day_column_max_value = temp_day_df[rolling_volume_event_type].max()
+                
+                temp_df.loc[temp_df['day'] == unique_day, max_rolling_volume_column_name] = day_column_max_value
+                day_list.append(unique_day)
+                max_volume_list.append(day_column_max_value)
+            
+            event_type_df = pd.DataFrame()
+            event_type_df['day'] = day_list
+
+            column_total_diff_name = unique_event_type + '_total_volume'
+            column_daily_diff_name = unique_event_type + '_daily_volume'
+
+            event_type_df[column_total_diff_name] = max_volume_list
+
+            event_type_df[column_daily_diff_name] = event_type_df[column_total_diff_name].diff().fillna(0)
+
+            df_list.append(event_type_df)
+
+        # # full outer merges all of our dataframes
+        combo_df = df_list[0]
+        i = 1
+        while i < len(df_list):
+            combo_df = combo_df.merge(df_list[i], on='day', how='outer')
+
+            i += 1
+
+        # # fills NaN columns with 0
+        combo_df = combo_df.fillna(0)
+
+        combo_df = combo_df.sort_values(by='day', ascending=True)
+        
+        return combo_df
+    
+    def run_all(self, df):
+        df = self.label_events(df)
+        df = self.set_rolling_volume(df)
+
+        df = lph.make_day_from_timestamp(df)
+
+        df = self.set_volume_diffs(df)
+
+        return df

@@ -127,14 +127,15 @@ df = sql.get_transaction_data_df('arbitrum_lend_events')
 
 ironclad_labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, df, INDEX, GATEWAY_ADDRESS, TREASURY_ADDRESS)
 
-df = ironclad_labeler.label_events(df)
-print(df[['tx_hash', 'usd_token_amount', 'event_type']])
-
-# df['usd_token_amount'] = df['usd_token_amount'].astype(float)
-# print(df['usd_token_amount'].sum())
+df = ironclad_labeler.run_all(df)
 
 df.to_csv('test_test.csv', index=False)
 
+# df = pd.read_csv('test_test.csv')
+# df = df.loc[df['event_type'] == 'revenue']
+# print(df[['tx_hash', 'timestamp', 'revenue_rolling_balance']])
+
+# print(df['usd_token_amount'].sum())
 
 
 
