@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class Optimism(Lending_Pool.Lending_Pool):
 
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x9546F673eF71Ff666ae66d01Fd6E7C6Dae5a9995'
-    RPC_URL = 'wss://optimism-rpc.publicnode.com'
+    RPC_URL = 'https://optimism.llamarpc.com'
     TREASURY_ADDRESS = '0xC01a7AD7Fb8a085a3cc16be8eaA10302c78a1783'
     INDEX = 'optimism_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'

@@ -17,7 +17,7 @@ from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
-from revenue_tracking import Cod3x_Lend_Revenue_Tracking as cod3x
+from revenue_tracking import Cod3x_Lend_Revenue_Tracking as cod3x, Transaction_Labeler as tl
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis
 import logging
@@ -26,8 +26,9 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 60
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum()]
-
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum()]
+# PROTOCOL_LIST = [Optimism.Optimism()]
+PROTOCOL_LIST = [Arbitrum.Arbitrum()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -111,7 +112,28 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
+
+PROTOCOL_DATA_PROVIDER_ADDRESS = '0x96bCFB86F1bFf315c13e00D850e2FAeA93CcD3e7'
+RPC_URL = 'https://arbitrum.llamarpc.com'
+TREASURY_ADDRESS = '0xb17844F6E50f4eE8f8FeC7d9BA200B0E034b8236'
+INDEX = 'arbitrum_lend_events'
+CLOUD_BUCKET_NAME = 'cooldowns2'
+INTERVAL = 5000
+WAIT_TIME = 1.05
+
+df = sql.get_transaction_data_df('arbitrum_lend_events')
+
+ironclad_labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, df, INDEX)
+
+df = ironclad_labeler.label_events(df)
+print(df[['tx_hash', 'usd_token_amount', 'event_type']])
+
+df['usd_token_amount'] = df['usd_token_amount'].astype(float)
+print(df['usd_token_amount'].sum())
+
+
+
 
 # treasury_address = '0xb17844F6E50f4eE8f8FeC7d9BA200B0E034b8236'
 # protocol_data_provider_address = '0x96bCFB86F1bFf315c13e00D850e2FAeA93CcD3e7'

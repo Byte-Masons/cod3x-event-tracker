@@ -10,12 +10,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class Arbitrum(Lending_Pool.Lending_Pool):
 
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x96bCFB86F1bFf315c13e00D850e2FAeA93CcD3e7'
-    RPC_URL = 'wss://arbitrum-one-rpc.publicnode.com'
+    RPC_URL = 'https://arbitrum.llamarpc.com'
     TREASURY_ADDRESS = '0xb17844F6E50f4eE8f8FeC7d9BA200B0E034b8236'
     INDEX = 'arbitrum_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 5000
-    WAIT_TIME = 0.8
+    WAIT_TIME = 1.05
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
