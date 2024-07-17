@@ -16,6 +16,7 @@ class Aurelius(Lending_Pool.Lending_Pool):
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 500
     WAIT_TIME = 0.6
+    GATEWAY_ADDRESS = '0x039BcB43cE3e5ef9Bf555a30e3b74a7719c46499'
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS

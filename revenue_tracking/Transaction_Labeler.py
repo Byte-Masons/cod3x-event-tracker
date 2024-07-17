@@ -160,7 +160,13 @@ class Transaction_Labeler(Protocol_Data_Provider.Protocol_Data_Provider):
         combo_df = combo_df.fillna(0)
 
         combo_df = combo_df.sort_values(by='day', ascending=True)
-        
+
+        for col in combo_df.columns:
+
+            if col != 'day' and 'daily' not in col:
+                mask = combo_df[col] != 0
+                combo_df[col] = combo_df[col].mask(~mask).ffill().fillna(0)
+
         return combo_df
     
     def run_all(self, df):

@@ -99,8 +99,6 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
 
 
-        print(df.loc[df['tx_hash'] == '0x349e6c3aea1b82db7a0ce7f26ce827fafdbab706b5d01a0de4877f4d73c80a20'])
-
         daily_max_balance_list = []
 
         unique_day_list = df['day'].unique()
@@ -148,9 +146,6 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         return df
 
     def update_daily_total_revenue(self):
-        
-
-        # df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
 
         df = self.set_token_flows()
 
@@ -160,6 +155,7 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         df = self.set_token_and_day_diffs(df)
 
         # # makes our moving average daily revenues
+        df = self.set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
         df = self.set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
         df = self.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
         df = self.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)

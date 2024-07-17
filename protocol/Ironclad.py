@@ -10,12 +10,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class Ironclad(Lending_Pool.Lending_Pool):
 
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x29563f73De731Ae555093deb795ba4D1E584e42E'
-    RPC_URL = 'wss://mode.drpc.org'
+    RPC_URL = 'https://mainnet.mode.network'
     TREASURY_ADDRESS = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
     INDEX = 'ironclad_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 250
     WAIT_TIME = 0.6
+    GATEWAY_ADDRESS = '0x6387c7193B5563DD17d659b9398ACd7b03FF0080'
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS

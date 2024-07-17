@@ -1,6 +1,6 @@
 from_block,last_block,index
-49068561,66340811,aurelius_lend_events
-3929914,10161964,ironclad_lend_events
-3164466,17601216,metis_lend_events
-9004448,31150848,optimism_lend_events
-44788508,84854008,arbitrum_lend_events
+49068561,66474811,aurelius_lend_events
+3929914,10482214,ironclad_lend_events
+3164466,17680716,metis_lend_events
+9004448,34433348,optimism_lend_events
+44788508,232689008,arbitrum_lend_events

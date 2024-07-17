@@ -16,6 +16,7 @@ class Metis(Lending_Pool.Lending_Pool):
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 500
     WAIT_TIME = 0.6
+    GATEWAY_ADDRESS = '0x4d8d90FAF90405b9743Ce600E98A2Aa8CdF579a0'
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
