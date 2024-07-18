@@ -8,7 +8,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider):
+class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider, ERC_20.ERC_20):
     
     def __init__(self, protocol_data_provider_address: str, treasury_address: str, rpc_url: str, index: str):
         
@@ -18,6 +18,12 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         self.index = index
         self.web3 = lph.get_web_3(self.rpc_url)
         self.cloud_file_name = index + '.zip'
+
+        # # makes a more concise name for our cod3x lend revenue file
+        revenue_cloud_filename = index.split('_')
+        revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue.zip'
+        self.revenue_cloud_file_name = revenue_cloud_filename
+
         self.cloud_bucket_name = 'cooldowns2'
         self.table_name = self.index
     
@@ -93,6 +99,32 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
 
         return df
     
+    # # sets rolling balances for each of a users tokens
+    def set_rolling_balance_2(self, df):
+        
+        df[['timestamp', 'usd_token_amount']] = df[['timestamp', 'usd_token_amount']].astype(float)
+
+        df = df.sort_values(by=['timestamp'], ascending=True)
+
+        # Group the DataFrame by 'name' and calculate cumulative sum
+
+        token_address_list = df['token_address'].unique()
+
+        for token_address in token_address_list:
+            df.loc[df['token_address'] == token_address, 'usd_rolling_balance'] = df.loc[df['token_address'] == token_address]['usd_token_amount'].cumsum()
+        
+        # name_groups = df.groupby(['token_address'])['usd_token_amount'].transform(pd.Series.cumsum)
+
+        # Print the DataFrame with the new 'amount_cumulative' column
+        # df = df.assign(usd_rolling_balance=name_groups)
+
+        # df = df.reset_index()
+
+        df = df[['user_address', 'tx_hash', 'token_address', 'token_volume', 'usd_token_amount', 'timestamp', 'usd_rolling_balance']]
+        
+        df = df.sort_values(by=['timestamp'], ascending=True)
+        
+        return df
     
     def set_token_and_day_diffs(self, df):
 
@@ -137,22 +169,86 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
 
         return df
     
+    # # gets the change in daily and total revenue per token per day
+    def set_token_and_day_diffs_2(self, df):
+
+        df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
+
+        daily_token_sum = df.groupby(['day', 'token_address'])['usd_rolling_balance'].max().reset_index()
+
+        daily_token_sum = daily_token_sum.sort_values(['day', 'token_address'], ascending=True)
+
+        daily_token_sum.rename(columns = {'usd_rolling_balance':'total_revenue_per_token'}, inplace = True)
+
+        df = daily_token_sum
+
+        unique_token_address_list = df['token_address'].unique()
+
+        for token_address in unique_token_address_list:
+            df.loc[df['token_address'] == token_address, 'daily_revenue_per_token'] = df.loc[df['token_address'] == token_address]['total_revenue_per_token'].diff().fillna(0)
+
+        total_revenue_df = df.groupby(['day'])['total_revenue_per_token'].sum().reset_index()
+        daily_revenue_df = df.groupby(['day'])['daily_revenue_per_token'].sum().reset_index()
+        
+        unique_day_list = df['day'].unique()
+        total_revenue_list = total_revenue_df['total_revenue_per_token'].tolist()
+        daily_revenue_list = daily_revenue_df['daily_revenue_per_token'].tolist()
+
+        i = 0
+
+        while i < len(unique_day_list):
+            day = unique_day_list[i]
+            total_revenue = total_revenue_list[i]
+            daily_revenue = daily_revenue_list[i]
+
+            df.loc[df['day'] == day, 'total_revenue'] = total_revenue
+            df.loc[df['day'] == day, 'daily_revenue'] = daily_revenue
+
+            i += 1
+
+        return df
+
+    # # sets a moving average for our dataframe
     def set_n_days_avg_revenue(self, df, new_column_name, lookback_days):
 
         df = df.sort_values(by=['day'], ascending=True)
 
-        df[new_column_name] = df['daily_revenue'].rolling(window=lookback_days, min_periods=1).mean()
+        day_revenue_df = df.groupby(['day'])['daily_revenue'].max().reset_index()
+
+        # Calculate the rolling average
+        day_revenue_df[new_column_name] = day_revenue_df['daily_revenue'].rolling(window=lookback_days, min_periods=1).mean()
+
+        # Merge the rolling average back to the original dataframe
+        df = df.merge(day_revenue_df[['day', new_column_name]], on='day', how='left')
 
         return df
 
-    def update_daily_total_revenue(self):
+    # # adds token names to our dataframe
+    def add_token_names(self, df):
+
+        unique_token_list = df['token_address'].unique()
+
+        erc_20_list = [ERC_20.ERC_20(token_address, self.rpc_url) for token_address in unique_token_list]
+
+        for erc_20 in erc_20_list:
+            token_address = erc_20.token_address
+            token_name = erc_20.name
+
+            df.loc[df['token_address'] == token_address, 'token_name'] = token_name
+
+        return df
+    
+    def run_all_lend_revenue(self):
 
         df = self.set_token_flows()
 
-        df = self.set_rolling_balance(df)
+        # df = df.loc[df['token_address'].isin(['0xc3B515BCa486520483EF182c3128F72ce270C069', '0xBb406187C01cC1c9EAf9d4b5C924b7FA37aeCEFD'])]
+
+        df = self.set_rolling_balance_2(df)
         
         df = lph.make_day_from_timestamp(df)
-        df = self.set_token_and_day_diffs(df)
+
+        df = self.set_token_and_day_diffs_2(df)
 
         # # makes our moving average daily revenues
         df = self.set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
@@ -160,6 +256,10 @@ class Cod3x_Lend_Revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider)
         df = self.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
         df = self.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
         
+        df = self.add_token_names(df)
+
+        cs.df_write_to_cloud_storage_as_zip(df, self.revenue_cloud_file_name, self.cloud_bucket_name)
+
         return df
 
     def get_revenue_by_day_cloud_name(index):

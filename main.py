@@ -21,14 +21,15 @@ from revenue_tracking import Cod3x_Lend_Revenue_Tracking as cod3x, Transaction_L
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis
 import logging
+from helper_classes import ERC_20 as erc20
 
 logging.basicConfig(level=logging.ERROR)
 
 
-runtime_pause = 60
+runtime_pause = 600
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum()]
 # PROTOCOL_LIST = [Optimism.Optimism()]
-PROTOCOL_LIST = [Optimism.Optimism()]
+PROTOCOL_LIST = [Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -44,7 +45,7 @@ def loop_all_functions():
 
     i = 1
     for protocol in PROTOCOL_LIST:
-        run_robust_function(protocol.run_all)
+        run_robust_function(protocol.run_all_modules)
 
         # cod3x.run_total_revenue_by_day(index)
 
@@ -66,7 +67,7 @@ def loop_all_functions_2():
     i = 1
     for protocol in PROTOCOL_LIST:
         try:
-            protocol.run_all()
+            protocol.run_all_modules()
 
         # df = cod3x.run_total_revenue_by_day(index)
         # print(df)
@@ -112,24 +113,26 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions_2()
+loop_all_functions_2()
 
-PROTOCOL_DATA_PROVIDER_ADDRESS = '0xedB4f24e4b74a6B1e20e2EAf70806EAC19E1FA54'
-RPC_URL = 'https://rpc.mantle.xyz'
-TREASURY_ADDRESS = '0xCE4975E63b6e737c41C9c0e5aCd248Ef0145B51A'
-INDEX = 'aurelius_lend_events'
-CLOUD_BUCKET_NAME = 'cooldowns2'
-INTERVAL = 500
-WAIT_TIME = 0.6
-GATEWAY_ADDRESS = '0x039BcB43cE3e5ef9Bf555a30e3b74a7719c46499'
+# PROTOCOL_DATA_PROVIDER_ADDRESS = '0xedB4f24e4b74a6B1e20e2EAf70806EAC19E1FA54'
+# RPC_URL = 'https://rpc.mantle.xyz'
+# TREASURY_ADDRESS = '0xCE4975E63b6e737c41C9c0e5aCd248Ef0145B51A'
+# INDEX = 'aurelius_lend_events'
+# CLOUD_BUCKET_NAME = 'cooldowns2'
+# INTERVAL = 500
+# WAIT_TIME = 0.6
+# GATEWAY_ADDRESS = '0x039BcB43cE3e5ef9Bf555a30e3b74a7719c46499'
 
-aurelius_lend_revenue = cod3x.Cod3x_Lend_Revenue_Tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
+# aurelius_lend_revenue = cod3x.Cod3x_Lend_Revenue_Tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
 
-df = aurelius_lend_revenue.update_daily_total_revenue()
-print(df)
+# df = aurelius_lend_revenue.update_daily_total_revenue()
+# print(df)
+
+# df.to_csv('test_test.csv', index=False)
 
 # lend_events = Metis.Metis()
-# lend_events.run_all()
+# lend_events.run_all_modules()
 
 # df = sql.get_transaction_data_df('optimism_lend_events')
 # df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', 'cooldowns2')

@@ -195,7 +195,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         return df
     
     # # will run all of the lending pool transfer event tracking
-    def run_all(self):
+    def run_all_lend_event_tracking(self):
         
         from_block = lph.get_from_block(self.index, self.interval)
 

@@ -8,7 +8,7 @@ from lending_pool import lending_pool_helper as lph
 
 class ERC_20():
 
-    WAIT_TIME = 2
+    WAIT_TIME = 1.05
 
     def __init__(self, token_address: str, rpc_url: str):
         self.token_address = token_address
@@ -25,6 +25,10 @@ class ERC_20():
         decimals = self.get_token_decimals()
         decimals = 10 ** decimals
         self.decimals = decimals
+
+        time.sleep(self.WAIT_TIME)
+        
+        self.name = self.get_token_name_no_receipt()
 
         time.sleep(self.WAIT_TIME)
     
@@ -71,6 +75,29 @@ class ERC_20():
         token_decimals = token_contract.functions.decimals().call()
         
         return token_decimals
+    
+    def get_token_name(self):
+        
+        token_contract = self.token_contract
+
+        token_name = token_contract.functions.name().call()
+        
+        return token_name
+    
+    # # only gets the name of our token without a receipt descriptor
+    def get_token_name_no_receipt(self):
+
+        token_name = self.get_token_name()
+
+        token_name_no_receipt = token_name.split()
+
+        if len(token_name_no_receipt) > 1:
+            token_name = token_name_no_receipt[1]
+        
+        else:
+            token_name = token_name_no_receipt[0]
+
+        return token_name
     
     def get_transfer_events(self, token_contract, from_block, to_block):
         
