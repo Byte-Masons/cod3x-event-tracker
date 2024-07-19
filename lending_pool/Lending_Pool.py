@@ -10,11 +10,14 @@ from lending_pool import lending_pool_helper as lph
 from helper_classes import ERC_20, Protocol_Data_Provider, Sanitize
 from cloud_storage import cloud_storage as cs
 from sql_interfacer import sql
+from revenue_tracking import Transaction_Labeler as tl
 
 class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider):
 
-    def __init__(self, protocol_data_provider_address: str, rpc_url: str, wait_time: float, interval: float, index: str):
+    def __init__(self, protocol_data_provider_address: str, gateway_address: str, treasury_address: str, rpc_url: str, wait_time: float, interval: float, index: str):
         self.protocol_data_provider_address = protocol_data_provider_address
+        self.gateway_address = gateway_address
+        self.treasury_address = treasury_address
         self.rpc_url = rpc_url
         self.wait_time = wait_time
         self.interval = interval
@@ -29,8 +32,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
         
         query = f"""
-        INSERT INTO {table_name} (from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,block_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO {table_name} (from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,block_number,event_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         sql.write_to_custom_table(query, df)
@@ -49,7 +52,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
                 token_volume TEXT,
                 asset_price TEXT,
                 usd_token_amount TEXT,
-                block_number TEXT
+                block_number TEXT,
+                event_type TEXT
                 )
             """
 
@@ -66,7 +70,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         combined_df = pd.concat([db_df, cloud_df])
         combined_df = combined_df.drop_duplicates(subset=duplicate_column_list)
 
-        sanitized_df = combined_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']]
+        sanitized_df = combined_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number','event_type']]
 
         # # extra decimal sanitation
         sanitizer = Sanitize.Sanitize(sanitized_df, self.rpc_url)
@@ -197,6 +201,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
     # # will run all of the lending pool transfer event tracking
     def run_all_lend_event_tracking(self):
         
+        labeler = tl.Transaction_Labeler(self.protocol_data_provider_address, self.rpc_url, self.index, self.gateway_address, self.treasury_address)
+
         from_block = lph.get_from_block(self.index, self.interval)
 
         latest_block = lph.get_latest_block(self.web3) 
@@ -219,7 +225,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         cloud_df.drop_duplicates(subset=['tx_hash', 'token_address', 'token_volume', 'from_address', 'to_address'])
 
         # # inputs to our sql function
-        column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']
+        column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number', 'event_type']
 
         self.create_lend_table(cloud_df)
         
@@ -238,6 +244,8 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
                     contract_df = self.process_events(events, token_reserve_df)
 
                     if len(contract_df) > 0:
+                        contract_df = labeler.label_events(contract_df)
+
                         sql.write_to_db(contract_df, column_list, self.table_name)
                 
                 time.sleep(wait_time)

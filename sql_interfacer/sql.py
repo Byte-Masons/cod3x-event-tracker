@@ -680,7 +680,7 @@ def get_transaction_data_df(all_data_table_name):
 
     rows = cursor.fetchall()
     
-    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number']
+    column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number','event_type']
 
     df = get_sql_df(rows, column_list)
     

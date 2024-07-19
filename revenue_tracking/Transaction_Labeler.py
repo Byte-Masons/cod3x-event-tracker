@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class Transaction_Labeler(Protocol_Data_Provider.Protocol_Data_Provider):
     
-    def __init__(self, protocol_data_provider_address: str, rpc_url: str, df: pd.DataFrame, index: str, gateway_address: str, treasury_address: str):
+    def __init__(self, protocol_data_provider_address: str, rpc_url: str, index: str, gateway_address: str, treasury_address: str):
         
         self.protocol_data_provider_address = protocol_data_provider_address
         self.rpc_url = rpc_url
@@ -21,14 +21,20 @@ class Transaction_Labeler(Protocol_Data_Provider.Protocol_Data_Provider):
         self.gateway_address = gateway_address
         self.treasury_address = treasury_address
         self.null_address = '0x0000000000000000000000000000000000000000'
+        
+        self.reserve_address_list = self.get_reserve_address_list()
+        self.receipt_token_list = self.get_receipt_token_list()
+
+        self.deposit_token_list = self.get_a_token_list()
+        self.borrow_token_list = borrow_token_list = self.get_v_token_list()
     
     def label_events(self, df):
 
-        self.get_reserve_address_list()
-        self.get_receipt_token_list()
+        # self.get_reserve_address_list()
+        # self.get_receipt_token_list()
 
-        deposit_token_list = self.get_a_token_list()
-        borrow_token_list = self.get_v_token_list()
+        deposit_token_list = self.deposit_token_list
+        borrow_token_list = self.borrow_token_list
 
         unique_user_df = sql.set_unique_users(self.index)
 
@@ -69,8 +75,6 @@ class Transaction_Labeler(Protocol_Data_Provider.Protocol_Data_Provider):
         revenue_df['event_type'] = 'revenue'
         borrow_df['event_type'] = 'borrow'
         repay_df['event_type'] = 'repay'
-
-        print(len(deposit_df), len(withdraw_df), len(revenue_df), len(borrow_df), len(repay_df))
 
         combo_df = pd.concat([deposit_df, withdraw_df, revenue_df, borrow_df, repay_df])
         combo_df = combo_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])

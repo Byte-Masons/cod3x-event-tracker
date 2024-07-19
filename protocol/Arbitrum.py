@@ -15,12 +15,14 @@ class Arbitrum(Lending_Pool.Lending_Pool):
     TREASURY_ADDRESS = '0xb17844F6E50f4eE8f8FeC7d9BA200B0E034b8236'
     INDEX = 'arbitrum_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
-    INTERVAL = 100000
-    WAIT_TIME = 0.1
+    INTERVAL = 2500
+    WAIT_TIME = 1.05
     GATEWAY_ADDRESS = '0x3CC0a623f1aFFab5D5514A453965cE8C80B45549'
     
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
+        self.gateway_address = self.GATEWAY_ADDRESS
+        self.treasury_address = self.TREASURY_ADDRESS        
         self.rpc_url = self.RPC_URL
         self.wait_time = self.WAIT_TIME
         self.interval = self.INTERVAL

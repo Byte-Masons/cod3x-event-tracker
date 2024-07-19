@@ -21,6 +21,8 @@ class Ironclad(Lending_Pool.Lending_Pool):
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
+        self.gateway_address = self.GATEWAY_ADDRESS
+        self.treasury_address = self.TREASURY_ADDRESS
         self.rpc_url = self.RPC_URL
         self.wait_time = self.WAIT_TIME
         self.interval = self.INTERVAL

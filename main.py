@@ -28,8 +28,7 @@ logging.basicConfig(level=logging.ERROR)
 
 runtime_pause = 600
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum()]
-# PROTOCOL_LIST = [Optimism.Optimism()]
-PROTOCOL_LIST = [Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum()]
+PROTOCOL_LIST = [Optimism.Optimism()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -113,16 +112,21 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
 
-# PROTOCOL_DATA_PROVIDER_ADDRESS = '0xedB4f24e4b74a6B1e20e2EAf70806EAC19E1FA54'
-# RPC_URL = 'https://rpc.mantle.xyz'
-# TREASURY_ADDRESS = '0xCE4975E63b6e737c41C9c0e5aCd248Ef0145B51A'
-# INDEX = 'aurelius_lend_events'
-# CLOUD_BUCKET_NAME = 'cooldowns2'
-# INTERVAL = 500
-# WAIT_TIME = 0.6
-# GATEWAY_ADDRESS = '0x039BcB43cE3e5ef9Bf555a30e3b74a7719c46499'
+lend_events = Optimism.Optimism()
+lend_events.run_all_modules()
+
+# sql.drop_table('optimism_lend_events')
+
+PROTOCOL_DATA_PROVIDER_ADDRESS = '0x9546F673eF71Ff666ae66d01Fd6E7C6Dae5a9995'
+RPC_URL = 'https://optimism.llamarpc.com'
+TREASURY_ADDRESS = '0xC01a7AD7Fb8a085a3cc16be8eaA10302c78a1783'
+INDEX = 'optimism_lend_events'
+CLOUD_BUCKET_NAME = 'cooldowns2'
+INTERVAL = 10000
+WAIT_TIME = 0.2
+GATEWAY_ADDRESS = '0x6e20E155819f0ee08d1291b0b9889b0e011b8224'
 
 # aurelius_lend_revenue = cod3x.Cod3x_Lend_Revenue_Tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
 
@@ -140,9 +144,17 @@ loop_all_functions_2()
 
 # print(df['usd_token_amount'].sum())
 
-# labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, df, INDEX, GATEWAY_ADDRESS, TREASURY_ADDRESS)
+# df = pd.read_csv('ironclad_lend_events.csv')
+# df = sql.get_transaction_data_df(INDEX)
+# df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', 'cooldowns2')
+# labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, INDEX, GATEWAY_ADDRESS, TREASURY_ADDRESS)
+# df = labeler.label_events(df)
 
-# df = labeler.run_all(df)
+# df = df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
+# print(df)
+
+# if len(df) > 0:
+#     cs.df_write_to_cloud_storage_as_zip(df, 'ironclad_lend_events.zip', 'cooldowns2')
 
 # df.to_csv('test_test.csv', index=False)
 

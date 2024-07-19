@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class Metis(Lending_Pool.Lending_Pool):
 
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x10615D451a5b91C92ce8538703E7AABA5d5cCC4D'
-    RPC_URL = 'https://metis.drpc.org'
+    RPC_URL = 'https://andromeda.metis.io/?owner=1088'
     TREASURY_ADDRESS = '0xd2abC5d7841d49C40Fd35A1Ec832ee1daCC8D339'
     INDEX = 'metis_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
@@ -21,6 +21,8 @@ class Metis(Lending_Pool.Lending_Pool):
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
+        self.gateway_address = self.GATEWAY_ADDRESS
+        self.treasury_address = self.TREASURY_ADDRESS        
         self.rpc_url = self.RPC_URL
         self.wait_time = self.WAIT_TIME
         self.interval = self.INTERVAL
