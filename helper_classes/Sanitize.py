@@ -35,7 +35,7 @@ class Sanitize(ERC_20.ERC_20):
 
         for unique_token_address in unique_token_address_list:
             erc_20_object = self.make_erc_20(unique_token_address, self.rpc_url)
-
+            
             erc_20_object_list.append(erc_20_object)
 
         self.erc_20_object_list = erc_20_object_list

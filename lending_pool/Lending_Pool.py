@@ -40,7 +40,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         return
 
-    def create_lend_table(self, cloud_df):
+    def create_lend_table(self, cloud_df, receipt_token_list):
         query = f"""
             CREATE TABLE IF NOT EXISTS {self.table_name}(
                 from_address TEXT,
@@ -71,6 +71,9 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         combined_df = combined_df.drop_duplicates(subset=duplicate_column_list)
 
         sanitized_df = combined_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number','event_type']]
+
+        # # gets rid of any tokens that aren't returned from our chains protocol data provider contract
+        sanitized_df = sanitized_df.loc[sanitized_df['token_address'].isin(receipt_token_list)]
 
         # # extra decimal sanitation
         sanitizer = Sanitize.Sanitize(sanitized_df, self.rpc_url)
@@ -227,7 +230,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         # # inputs to our sql function
         column_list = ['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number', 'event_type']
 
-        self.create_lend_table(cloud_df)
+        self.create_lend_table(cloud_df, receipt_token_list)
         
         token_reserve_df = self.get_token_and_reserve_df(receipt_contract_list, receipt_token_list)
 
