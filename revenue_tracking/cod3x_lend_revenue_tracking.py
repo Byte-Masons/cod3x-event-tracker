@@ -169,8 +169,38 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
 
         return df
     
+    # # will ffill total_revenue_per_token for every day in our dataframe irregardelous if there was a token transfer for that token on that day
+    def fill_missing_total_revenue_per_token_values(self, df):
+        # Assuming your dataframe is called 'df'
+        # Sort the dataframe by day and token_address
+        df = df.sort_values(['day', 'token_address'])
+
+        # Set day and token_address as index
+        df_indexed = df.set_index(['day', 'token_address'])
+
+        # Unstack the dataframe
+        df_unstacked = df_indexed.unstack()
+
+        # Forward fill the missing values
+        df_filled = df_unstacked
+
+        df_filled['total_revenue_per_token'] = df_unstacked['total_revenue_per_token'].ffill()
+
+        # Stack the dataframe back
+        df_stacked = df_filled.stack()
+
+        # Reset the index
+        df_result = df_stacked.reset_index()
+
+        # Rename the columns if needed
+        # df_result.columns = ['day', 'token_address', 'total_revenue']
+        
+        return df_result
+    
     # # gets the change in daily and total revenue per token per day
     def set_token_and_day_diffs_2(self, df):
+
+        df = df.sort_values(by='day', ascending=True)
 
         df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
 
@@ -187,7 +217,10 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
         for token_address in unique_token_address_list:
             df.loc[df['token_address'] == token_address, 'daily_revenue_per_token'] = df.loc[df['token_address'] == token_address]['total_revenue_per_token'].diff().fillna(0)
 
+        df = self.fill_missing_total_revenue_per_token_values(df)
+        df = df.fillna(0)
         total_revenue_df = df.groupby(['day'])['total_revenue_per_token'].sum().reset_index()
+        
         daily_revenue_df = df.groupby(['day'])['daily_revenue_per_token'].sum().reset_index()
         
         unique_day_list = df['day'].unique()
@@ -241,8 +274,6 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
     def run_all_lend_revenue(self):
 
         df = self.set_token_flows()
-
-        # df = df.loc[df['token_address'].isin(['0xc3B515BCa486520483EF182c3128F72ce270C069', '0xBb406187C01cC1c9EAf9d4b5C924b7FA37aeCEFD'])]
 
         df = self.set_rolling_balance_2(df)
         
