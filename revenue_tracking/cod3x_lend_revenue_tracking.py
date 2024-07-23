@@ -8,7 +8,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-class cod3x_lend_revenue_Tracking(Protocol_Data_Provider.Protocol_Data_Provider, ERC_20.ERC_20):
+class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider, ERC_20.ERC_20):
     
     def __init__(self, protocol_data_provider_address: str, treasury_address: str, rpc_url: str, index: str):
         
