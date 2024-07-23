@@ -1,7 +1,7 @@
 import pandas as pd
 from cloud_storage import cloud_storage as cs
 from lending_pool import lending_pool_helper as lph
-from revenue_tracking import Cod3x_Lend_Revenue_Tracking as cod3x
+from revenue_tracking import cod3x_lend_revenue_tracking as cod3x
 import csv
 from notion_client import Client
 from time import sleep

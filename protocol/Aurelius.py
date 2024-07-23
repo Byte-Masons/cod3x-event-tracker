@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
-from revenue_tracking import Cod3x_Lend_Revenue_Tracking
+from revenue_tracking import cod3x_lend_revenue_tracking
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -34,6 +34,6 @@ class Aurelius(Lending_Pool.Lending_Pool):
     
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
-        lend_revenue = Cod3x_Lend_Revenue_Tracking.Cod3x_Lend_Revenue_Tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
+        lend_revenue = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
         lend_revenue.run_all_lend_revenue()
         return

@@ -17,7 +17,7 @@ from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
-from revenue_tracking import Cod3x_Lend_Revenue_Tracking as cod3x, Transaction_Labeler as tl
+from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis
 import logging
@@ -128,7 +128,7 @@ loop_all_functions_2()
 # WAIT_TIME = 1.05
 # GATEWAY_ADDRESS = '0x3CC0a623f1aFFab5D5514A453965cE8C80B45549'
 
-# aurelius_lend_revenue = cod3x.Cod3x_Lend_Revenue_Tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
+# aurelius_lend_revenue = cod3x.cod3x_lend_revenue_tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
 
 # df = aurelius_lend_revenue.update_daily_total_revenue()
 # print(df)
