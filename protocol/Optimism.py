@@ -13,7 +13,7 @@ class Optimism(Lending_Pool.Lending_Pool):
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x9546F673eF71Ff666ae66d01Fd6E7C6Dae5a9995'
     RPC_URL = 'https://optimism.llamarpc.com'
     TREASURY_ADDRESS = '0xC01a7AD7Fb8a085a3cc16be8eaA10302c78a1783'
-    INDEX = 'optimism_lend_events'
+    INDEX = 'optimism_lend_events_2'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 10000
     WAIT_TIME = 1.05

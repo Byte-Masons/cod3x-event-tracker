@@ -95,7 +95,6 @@ def df_write_to_cloud_storage_as_zip(df, filename, bucketname):
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         temp_filename = filename.split('.')
         temp_filename = temp_filename[0]
-        print(temp_filename)
         zip_file.writestr(f"{temp_filename}.csv", csv_string)
     
     # Move the buffer's pointer to the beginning
