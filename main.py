@@ -17,7 +17,7 @@ from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
 from cdp import cdp
-from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl
+from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl, cod3x_lend_total_revenue_tracking as cdx_total
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis
 import logging
@@ -45,7 +45,7 @@ def loop_all_functions():
     i = 1
     for protocol in PROTOCOL_LIST:
         run_robust_function(protocol.run_all_modules)
-
+        df = cdx_total.run_all()
         # cod3x.run_total_revenue_by_day(index)
 
         print('Protocol Completed:', i, '/', len(PROTOCOL_LIST))
@@ -67,7 +67,7 @@ def loop_all_functions_2():
     for protocol in PROTOCOL_LIST:
         try:
             protocol.run_all_modules()
-
+            df = cdx_total.run_all()
         # df = cod3x.run_total_revenue_by_day(index)
         # print(df)
 
@@ -78,7 +78,7 @@ def loop_all_functions_2():
             
             print('Index Failed: ', i)
             pass
-
+        
         i += 1
 
     # cdp.find_all_trove_updated_transactions(1)
@@ -119,21 +119,24 @@ loop_all_functions_2()
 
 # sql.drop_table('arbitrum_lend_events')
 
-# PROTOCOL_DATA_PROVIDER_ADDRESS = '0x96bCFB86F1bFf315c13e00D850e2FAeA93CcD3e7'
-# RPC_URL = 'https://arbitrum.llamarpc.com'
-# TREASURY_ADDRESS = '0xb17844F6E50f4eE8f8FeC7d9BA200B0E034b8236'
-# INDEX = 'arbitrum_lend_events'
-# CLOUD_BUCKET_NAME = 'cooldowns2'
-# INTERVAL = 2500
-# WAIT_TIME = 1.05
-# GATEWAY_ADDRESS = '0x3CC0a623f1aFFab5D5514A453965cE8C80B45549'
+PROTOCOL_DATA_PROVIDER_ADDRESS = '0x9546F673eF71Ff666ae66d01Fd6E7C6Dae5a9995'
+RPC_URL = 'https://optimism.llamarpc.com'
+TREASURY_ADDRESS = '0xC01a7AD7Fb8a085a3cc16be8eaA10302c78a1783'
+INDEX = 'optimism_lend_events'
+CLOUD_BUCKET_NAME = 'cooldowns2'
+INTERVAL = 2500
+WAIT_TIME = 0.105
+GATEWAY_ADDRESS = '0x6e20E155819f0ee08d1291b0b9889b0e011b8224'
 
-# aurelius_lend_revenue = cod3x.cod3x_lend_revenue_tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
+# lend_revenue = cod3x.cod3x_lend_revenue_tracking(PROTOCOL_DATA_PROVIDER_ADDRESS, TREASURY_ADDRESS, RPC_URL, INDEX)
 
-# df = aurelius_lend_revenue.update_daily_total_revenue()
+# df = lend_revenue.run_all_lend_revenue()
 # print(df)
 
 # df.to_csv('test_test.csv', index=False)
+
+# df = cs.read_zip_csv_from_cloud_storage('ironclad_lend_events.zip', 'cooldowns2')
+# print(df)
 
 # lend_events = Metis.Metis()
 # lend_events.run_all_modules()
@@ -149,9 +152,9 @@ loop_all_functions_2()
 # df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', 'cooldowns2')
 # labeler = tl.Transaction_Labeler(PROTOCOL_DATA_PROVIDER_ADDRESS, RPC_URL, INDEX, GATEWAY_ADDRESS, TREASURY_ADDRESS)
 # df = labeler.label_events(df)
-
-# df = df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
 # print(df)
+
+# cs.df_write_to_cloud_storage_as_zip(df, 'ironclad_lend_events.zip', 'cooldowns2')
 
 # if len(df) > 0:
 #     cs.df_write_to_cloud_storage_as_zip(df, 'ironclad_lend_events.zip', 'cooldowns2')
@@ -163,8 +166,7 @@ loop_all_functions_2()
 # formats old .zips into new ones
 # df = sql.get_transaction_data_df('optimism_lend_events')
 # print(df)
-# df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', 'cooldowns2')
-
+# df = cs.read_zip_csv_from_cloud_storage('arbitrum_lend_events.zip', 'cooldowns2')
 # df = pd.read_csv('arbitrum_lend_events.csv')
 # df = df.astype(str)
 # df = df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
