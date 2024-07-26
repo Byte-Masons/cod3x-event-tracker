@@ -70,6 +70,10 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         combined_df = pd.concat([db_df, cloud_df])
         combined_df = combined_df.drop_duplicates(subset=duplicate_column_list)
 
+        # # drops any invalid token_address rows from setup
+        if len(combined_df) > 1:
+            combined_df = combined_df.loc[combined_df['token_address'] != '0x0000000000000000000000000000000000000000']
+
         sanitized_df = combined_df[['from_address','to_address','tx_hash','timestamp','token_address','reserve_address','token_volume','asset_price','usd_token_amount','block_number','event_type']]
 
         # # gets rid of any tokens that aren't returned from our chains protocol data provider contract
@@ -78,7 +82,7 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         # # extra decimal sanitation
         sanitizer = Sanitize.Sanitize(sanitized_df, self.rpc_url)
         sanitized_df = sanitizer.sanitize_df()
-
+        
         sql.drop_table(self.table_name)
         sql.create_custom_table(query)
         self.insert_bulk_data_into_table(sanitized_df, self.table_name)

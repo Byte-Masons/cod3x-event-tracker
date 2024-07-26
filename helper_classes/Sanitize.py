@@ -32,7 +32,6 @@ class Sanitize(ERC_20.ERC_20):
         erc_20_object_list = []
 
         unique_token_address_list = self.df['token_address'].unique()
-
         for unique_token_address in unique_token_address_list:
             erc_20_object = self.make_erc_20(unique_token_address, self.rpc_url)
             
@@ -70,6 +69,7 @@ class Sanitize(ERC_20.ERC_20):
             i += 1
         self.df = df
 
+
         return
 
     # # updates the usd_token_amount
@@ -84,8 +84,11 @@ class Sanitize(ERC_20.ERC_20):
         df_list = []
 
         for token_address in unique_reserve_address_list:
-            erc_20_object = self.make_erc_20(token_address, self.rpc_url)
-            reserve_erc_20_object_list.append(erc_20_object)
+            try:
+                erc_20_object = self.make_erc_20(token_address, self.rpc_url)
+                reserve_erc_20_object_list.append(erc_20_object)
+            except:
+                print(token_address, ' Failed')
             time.sleep(self.WAIT_TIME)
 
         for reserve_erc_20_object in reserve_erc_20_object_list:
@@ -107,7 +110,8 @@ class Sanitize(ERC_20.ERC_20):
         self.make_erc_20_object_list()
         self.sanitize_reserve_addresses()
         df = self.sanitize_df_decimal_columns()
-        df = df.drop_duplicates('tx_hash', 'from_address', 'to_address', 'token_address')
-        df = df.loc[df['token_address'] != '0x0000000000000000000000000000000000000000']
+
+        if len(df) > 1:
+            df = df.drop_duplicates(subset=['tx_hash', 'from_address', 'to_address', 'token_address'])
             
         return df
