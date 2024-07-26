@@ -5,4 +5,5 @@ from_block,last_block,index
 9004448,51840848,optimism_lend_events
 9004448,60845848,optimism_lend_events_2
 44788508,236246508,arbitrum_lend_events
-3855598,7596098,glyph_lend_events
+3855598,7601098,glyph_lend_events
+2363586,4108586,base_lend_events
