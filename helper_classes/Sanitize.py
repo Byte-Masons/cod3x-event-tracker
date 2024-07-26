@@ -107,5 +107,7 @@ class Sanitize(ERC_20.ERC_20):
         self.make_erc_20_object_list()
         self.sanitize_reserve_addresses()
         df = self.sanitize_df_decimal_columns()
-
+        df = df.drop_duplicates('tx_hash', 'from_address', 'to_address', 'token_address')
+        df = df.loc[df['token_address'] != '0x0000000000000000000000000000000000000000']
+            
         return df
