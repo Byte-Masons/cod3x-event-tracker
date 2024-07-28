@@ -48,6 +48,8 @@ def get_combined_revenue_df(protocol_revenue_list):
     
     df = pd.concat(df_list)
 
+    df = df.drop_duplicates(subset=['day', 'token_address', 'deployment'])
+
     return df
 
 # # gets the daily_revenue per token irregardless of deployment
@@ -79,11 +81,66 @@ def set_n_days_avg_revenue(df, new_column_name, lookback_days):
     df = df.merge(day_revenue_df[['day', new_column_name]], on='day', how='left')
 
     return df
+
+# # will find the total revenue earned per token
+def get_total_revenue_per_token(df):
     
+    df['daily_revenue_per_token'] = df['daily_revenue_per_token'].astype(float)
+
+    token_revenue_df = df.groupby(['token_name'])['daily_revenue_per_token'].sum().reset_index()
+
+    token_revenue_df.rename(columns = {'daily_revenue_per_token':'token_revenue'}, inplace = True)
+
+    token_revenue_df = token_revenue_df.sort_values(by='token_revenue', ascending=False)
+
+    return token_revenue_df
+
+# # a general function that will give us the total revenue given a specified number of days
+def get_n_days_revenue(df, new_column_name, lookback_days):
+
+    df['daily_revenue'] = df['daily_revenue'].astype(float)
+
+    df = df.sort_values(by=['day'], ascending=False)
+
+    df = df[:lookback_days]
+
+    df[new_column_name] = df['daily_revenue'].sum()
+
+    return df
+
+# # makes our moving average columns
+def get_ma_df(df):
+    df = set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
+    df = set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
+    df = set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
+    df = set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
+
+    return df
+
+# # gets our data_card_df
+def get_data_card_df(df):
+    revenue_data_card_df = get_n_days_revenue(df, '180_day_revenue', 180)
+    revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, '90_day_revenue', 90)
+    revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, '30_day_revenue', 30)
+    revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, '30_day_revenue', 30)
+    revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, '7_day_revenue', 7)
+    revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, 'todays_revenue', 1)
+
+    revenue_data_card_df = revenue_data_card_df[['day', 'todays_revenue', '7_day_revenue', '30_day_revenue', '90_day_revenue', '180_day_revenue']]
+
+    revenue_data_card_df = revenue_data_card_df[:1]
+
+    revenue_data_card_df['target_daily_revenue'] = 7000
+
+    return revenue_data_card_df
+
 # # finds our combined daily, cumulative, and moving averages of revenue
 def run_all():
     protocol_revenue_list = get_protocol_revenue_filename_list()
     df = get_combined_revenue_df(protocol_revenue_list)
+
+    token_revenue_df = get_total_revenue_per_token(df)
+
     df = get_daily_aggregate_revenue(df)
     df = get_total_aggregate_revenue_per_day(df)
 
@@ -91,11 +148,12 @@ def run_all():
 
     df = df[['day', 'daily_revenue', 'total_revenue']]
 
-    df = set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
-    df = set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
-    df = set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
-    df = set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
+    df = get_ma_df(df)
+
+    revenue_data_card_df = get_data_card_df(df)
 
     cs.df_write_to_cloud_storage_as_zip(df, 'aggregate_lend_revenue.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
 
     return df
