@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
-from revenue_tracking import cod3x_lend_revenue_tracking
+from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -16,7 +16,7 @@ class Arbitrum(Lending_Pool.Lending_Pool):
     INDEX = 'arbitrum_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 2500
-    WAIT_TIME = 1.05
+    WAIT_TIME = 1.25
     GATEWAY_ADDRESS = '0x3CC0a623f1aFFab5D5514A453965cE8C80B45549'
     
     def __init__(self):
@@ -36,5 +36,6 @@ class Arbitrum(Lending_Pool.Lending_Pool):
         self.run_all_lend_event_tracking()
         lend_revenue = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
         lend_revenue.run_all_lend_revenue()
+        cdx_total.run_all()
         return
     

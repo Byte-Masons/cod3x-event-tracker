@@ -1,9 +1,8 @@
 from_block,last_block,index
-49068561,66936311,aurelius_lend_events
-3929914,10917714,ironclad_lend_events
-3164466,17832216,metis_lend_events
-9004448,51840848,optimism_lend_events
-9004448,60845848,optimism_lend_events_2
-44788508,236246508,arbitrum_lend_events
+49068561,66845811,aurelius_lend_events
+3929914,10833714,ironclad_lend_events
+3164466,17804216,metis_lend_events
+9004448,123265402,optimism_lend_events
+44788508,235646508,arbitrum_lend_events
 3855598,7601098,glyph_lend_events
-2363586,4108586,base_lend_events
+2363586,4803586,base_lend_events

@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
-from revenue_tracking import cod3x_lend_revenue_tracking
+from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -13,10 +13,10 @@ class Optimism(Lending_Pool.Lending_Pool):
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x9546F673eF71Ff666ae66d01Fd6E7C6Dae5a9995'
     RPC_URL = 'https://optimism.llamarpc.com'
     TREASURY_ADDRESS = '0xC01a7AD7Fb8a085a3cc16be8eaA10302c78a1783'
-    INDEX = 'optimism_lend_events_2'
+    INDEX = 'optimism_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 2500
-    WAIT_TIME = 1.05
+    WAIT_TIME = 1.25
     GATEWAY_ADDRESS = '0x6e20E155819f0ee08d1291b0b9889b0e011b8224'
 
     def __init__(self):
@@ -36,4 +36,5 @@ class Optimism(Lending_Pool.Lending_Pool):
         self.run_all_lend_event_tracking()
         lend_revenue = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
         lend_revenue.run_all_lend_revenue()
+        cdx_total.run_all()
         return

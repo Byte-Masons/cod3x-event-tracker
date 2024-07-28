@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
-from revenue_tracking import cod3x_lend_revenue_tracking
+from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,7 +15,7 @@ class Ironclad(Lending_Pool.Lending_Pool):
     TREASURY_ADDRESS = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
     INDEX = 'ironclad_lend_events'
     CLOUD_BUCKET_NAME = 'cooldowns2'
-    INTERVAL = 250
+    INTERVAL = 500
     WAIT_TIME = 0.6
     GATEWAY_ADDRESS = '0x6387c7193B5563DD17d659b9398ACd7b03FF0080'
 
@@ -36,4 +36,5 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.run_all_lend_event_tracking()
         lend_revenue = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
         lend_revenue.run_all_lend_revenue()
+        cdx_total.run_all()
         return
