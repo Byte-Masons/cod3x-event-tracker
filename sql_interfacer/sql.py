@@ -684,7 +684,26 @@ def get_transaction_data_df(all_data_table_name):
 
     df = get_sql_df(rows, column_list)
     
+    return df
 
+def get_o_token_data_df(all_data_table_name):
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    query = f"""
+        SELECT *
+        FROM {all_data_table_name}
+    """
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+
+    column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'usd_payment_amount', 'block_number']
+
+    df = get_sql_df(rows, column_list)
+    
     return df
 
 # # makes a dataframe of our transaction table data
