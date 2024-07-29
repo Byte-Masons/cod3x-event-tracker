@@ -21,8 +21,9 @@ class oToken(ERC_20.ERC_20):
         self.cloud_file_name = index + '.zip'
         self.cloud_bucket_name = 'cooldowns2'
         self.table_name = self.index
+        self.lend_event_table_name = self.index.split('_')[0] + '_lend_events'
         
-        self.column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_payment_amount', 'block_number']
+        self.column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount', 'block_number']
         self.duplicate_column_list = ['sender', 'tx_hash', 'amount', 'payment_amount']
 
         web3 = lph.get_web_3(rpc_url)
@@ -43,8 +44,8 @@ class oToken(ERC_20.ERC_20):
         self.token_contract = self.get_token_contract(self.payment_token_address)
         time.sleep(self.WAIT_TIME)
 
-        self.payment_token_decimals = self.get_token_decimals()
-        self.payment_token_decimals = 10 ** self.payment_token_decimals
+        self.decimals = self.get_token_decimals()
+        self.decimals = 10 ** self.decimals
 
         time.sleep(self.WAIT_TIME)
 
@@ -125,6 +126,7 @@ class oToken(ERC_20.ERC_20):
         df['payment_token_address'] = [self.payment_token_address]
         df['o_token_amount'] = [0]
         df['payment_token_amount'] = [0]
+        df['usd_o_token_amount'] = [0]
         df['usd_payment_amount'] = [0]
         df['block_number'] = [1776]
 
@@ -132,12 +134,10 @@ class oToken(ERC_20.ERC_20):
     
     # # will load our cloud df information into the sql database
     def insert_bulk_data_into_table(self, df, table_name):
-        
-        # self.column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_payment_amount', 'block_number']
 
         query = f"""
-        INSERT INTO {table_name} (sender, recipient, tx_hash, timestamp, o_token_address, payment_token_address, o_token_amount, payment_token_amount, usd_payment_amount, block_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO {table_name} (sender, recipient, tx_hash, timestamp, o_token_address, payment_token_address, o_token_amount, payment_token_amount, usd_o_token_amount, usd_payment_amount, block_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         sql.write_to_custom_table(query, df)
@@ -156,6 +156,7 @@ class oToken(ERC_20.ERC_20):
                 payment_token_address TEXT,
                 o_token_amount TEXT,
                 payment_token_amount TEXT,
+                usd_o_token_amount TEXT,
                 usd_payment_amount TEXT,
                 block_number TEXT
                 )
@@ -177,6 +178,101 @@ class oToken(ERC_20.ERC_20):
         self.insert_bulk_data_into_table(combined_df, self.table_name)
 
         return combined_df
+    
+    # # will return a dataframe with the closest known asset_price to our oToken exercise
+    def add_payment_and_o_token_pricing_to_df(self, event_df):
+        lend_df = sql.get_transaction_data_df(self.lend_event_table_name)
+
+        lend_df = lend_df.loc[lend_df['reserve_address'] == self.payment_token_address]
+        lend_df = lend_df[['block_number', 'asset_price']]
+
+        event_df['block_number'] = event_df['block_number'].astype(int)
+        event_df['payment_token_amount'] = event_df['payment_token_amount'].astype(float)
+
+        lend_df['block_number'] = lend_df['block_number'].astype(int)
+        lend_df['asset_price'] = lend_df['asset_price'].astype(float)
+        
+        event_df = event_df.sort_values(by='block_number')
+        lend_df = lend_df.sort_values(by='block_number')
+
+        df = pd.merge_asof(event_df, lend_df, on='block_number', direction='nearest')
+
+        # df.rename(columns = {'asset_price':'usd_payment_amount'}, inplace = True)
+        df['usd_payment_amount'] = df['asset_price'] * df['payment_token_amount'] / self.decimals
+        # # tokens they receive should be about 2x what they paid
+        df['usd_o_token_amount'] = df['usd_payment_amount'] * 2
+
+        df = df[['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount']]
+
+        return df
+    
+
+    # # will process our events
+    def process_events(self, events):
+
+        df = pd.DataFrame()
+
+        sender_list = []
+        recipient_list = []
+        tx_hash_list = []
+        timestamp_list = []
+        o_token_address_list = []
+        payment_token_address_list = []
+        o_token_amount_list = []
+        payment_token_amount_list = []
+        usd_o_token_amount_list = []
+        usd_payment_amount_list = []
+        block_number_list = []
+
+        i = 1
+
+        for event in events:
+            i += 1
+
+            # lend_event_exists = self.lend_event_already_exists(event)
+            lend_event_exists = False
+
+            if lend_event_exists == False:
+                
+                sender_address = event['args']['sender']
+                recipient_address = event['args']['recipient']
+                tx_hash = event['transactionHash'].hex()
+                o_token_amount = event['args']['amount']
+                payment_token_amount = event['args']['paymentAmount']
+                
+                try:
+                    block = self.web3.eth.get_block(event['blockNumber'])
+                    block_number = int(block['number'])
+                except:
+                    block_number = int(event['blockNumber'])
+                
+                block_timestamp = block['timestamp']
+                
+                block_number_list.append(block_number)
+                tx_hash_list.append(tx_hash)
+                timestamp_list.append(block_timestamp)
+                sender_list.append(sender_address)
+                recipient_list.append(recipient_address)
+                o_token_amount_list.append(o_token_amount)
+                payment_token_amount_list.append(payment_token_amount)
+
+            time.sleep(self.wait_time)
+        
+        if len(sender_list) > 0:
+
+    
+            df['sender'] = sender_list
+            df['recipient'] = recipient_list
+            df['tx_hash'] = tx_hash_list
+            df['timestamp'] = timestamp_list
+            df['o_token_address'] = self.o_token_address
+            df['payment_token_address'] = self.payment_token_address
+            df['o_token_amount'] = o_token_amount_list
+            df['payment_token_amount'] = payment_token_amount_list
+            df['block_number'] = block_number_list
+            df = self.add_payment_and_o_token_pricing_to_df(df)
+
+        return df
     
     # # will track all of our o_token_events
     def run_all_o_token_tracking(self):
@@ -204,7 +300,8 @@ class oToken(ERC_20.ERC_20):
             events = self.get_exercised_events(from_block, to_block)
 
             if len(events) > 0:
-                print(events)
+                df = self.process_events(events)
+                print(df)
 
             time.sleep(wait_time)
 
