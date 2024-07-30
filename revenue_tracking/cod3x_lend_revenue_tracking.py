@@ -21,7 +21,12 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
 
         # # makes a more concise name for our cod3x lend revenue file
         revenue_cloud_filename = index.split('_')
-        revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue.zip'
+        contains_number = lph.number_in_string(index)
+        if contains_number == True:
+            revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue_' + revenue_cloud_filename[-1] + '.zip'
+        else:
+            revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue.zip'
+
         self.revenue_cloud_file_name = revenue_cloud_filename
 
         self.cloud_bucket_name = 'cooldowns2'

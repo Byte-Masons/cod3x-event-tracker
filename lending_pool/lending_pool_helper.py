@@ -1272,3 +1272,14 @@ def sanitize_database_and_cloud_df(db_df, cloud_df, column_list):
     sanitized_df = combined_df.drop_duplicates(subset=column_list)
 
     return sanitized_df
+
+# # will return a boolean on whether or not a number is in our string
+def number_in_string(string):
+    number_list = [0,1,2,3,4,5,6,7,8,9]
+    contains_number = False
+
+    for number in number_list:
+        if str(number) in string:
+            contains_number = True
+    
+    return contains_number
