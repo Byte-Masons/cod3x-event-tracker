@@ -21,17 +21,18 @@ from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_L
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base
 import logging
-from helper_classes import ERC_20 as erc20
+from helper_classes import ERC_20 as erc20, oToken
 
 logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 600
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base()]
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
+
 
     try:
         function(input)
@@ -107,22 +108,38 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
 
-# lend_events = Base.Base()
-# lend_events.run_all_modules()
+lend_events = Ironclad.Ironclad()
+lend_events.run_all_modules()
     
 # df = cdx_total.run_all()
 
-# sql.drop_table('arbitrum_lend_events')
+# EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
+# FROM_BLOCK = 10257616
+# RPC_URL = 'https://mainnet.mode.network'
+# WAIT_TIME = 1.05
+# INTERVAL = 250
+# INDEX = 'ironclad_o_token_events'
+
+# mode_o_token = oToken.oToken(EXERCISE_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
+
+# mode_o_token.run_all_o_token_tracking()
+
+# sql.drop_table('ironclad_o_token_events')
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
 # df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', bucket_name)
 # df = sql.get_transaction_data_df('optimism_lend_events')
+# df = sql.get_o_token_data_df('ironclad_o_token_events')
+# print(df)
 
 # df = df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
 
-# print(df)
+# df['block_number'] = df['block_number'].astype(int)
+# df = df.sort_values(by='block_number', ascending=False)
+# df = df[:555]
+
 # if len(df) > 1:
-#     cs.df_write_to_cloud_storage_as_zip(df, 'optimism_lend_events.zip', 'cooldowns2')
+#     cs.df_write_to_cloud_storage_as_zip(df, 'optimism_lend_events_2.zip', 'cooldowns2')

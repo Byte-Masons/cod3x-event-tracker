@@ -31,10 +31,10 @@ class Glyph(Lending_Pool.Lending_Pool):
         self.cloud_file_name = self.index + '.zip'
         self.cloud_bucket_name = self.CLOUD_BUCKET_NAME
         self.table_name = self.index
+        self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
     
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
-        lend_revenue = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
-        lend_revenue.run_all_lend_revenue()
+        self.lend_revenue_object.run_all_lend_revenue()
         cdx_total.run_all()
         return

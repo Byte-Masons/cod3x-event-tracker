@@ -360,7 +360,7 @@ def sql_multiple_values_exist(value_list, column_list, table_name):
 
     # Fetch results (optional)
     results = cursor.fetchall()
-    
+
     # Analyze results:
     if results:
         # print("Matching values found in the database.")
@@ -700,7 +700,7 @@ def get_o_token_data_df(all_data_table_name):
 
     rows = cursor.fetchall()
 
-    column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'usd_payment_amount', 'block_number']
+    column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount', 'block_number']
 
     df = get_sql_df(rows, column_list)
     

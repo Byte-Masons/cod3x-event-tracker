@@ -24,7 +24,7 @@ class oToken(ERC_20.ERC_20):
         self.lend_event_table_name = self.index.split('_')[0] + '_lend_events'
         
         self.column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount', 'block_number']
-        self.duplicate_column_list = ['sender', 'tx_hash', 'amount', 'payment_amount']
+        self.duplicate_column_list = ['sender', 'tx_hash', 'o_token_amount', 'payment_token_amount']
 
         web3 = lph.get_web_3(rpc_url)
         self.web3 = web3
@@ -130,7 +130,7 @@ class oToken(ERC_20.ERC_20):
         df['usd_payment_amount'] = [0]
         df['block_number'] = [1776]
 
-        return
+        return df
     
     # # will load our cloud df information into the sql database
     def insert_bulk_data_into_table(self, df, table_name):
@@ -173,6 +173,8 @@ class oToken(ERC_20.ERC_20):
         combined_df = pd.concat([db_df, cloud_df])
         combined_df = combined_df.drop_duplicates(subset=self.duplicate_column_list)
 
+        print(combined_df)
+        
         sql.drop_table(self.table_name)
         sql.create_custom_table(query)
         self.insert_bulk_data_into_table(combined_df, self.table_name)
@@ -202,11 +204,29 @@ class oToken(ERC_20.ERC_20):
         # # tokens they receive should be about 2x what they paid
         df['usd_o_token_amount'] = df['usd_payment_amount'] * 2
 
-        df = df[['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount']]
+        df = df[['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount','block_number']]
 
         return df
     
+    # # will return a boolean on whether our event already exists or not
+    def exercise_event_already_exists(self, event):
 
+        # column_list = ['sender', 'tx_hash', 'o_token_amount', 'payment_token_amount']
+        column_list = ['sender', 'o_token_amount', 'payment_token_amount']
+
+        # tx_hash = str(event['transactionHash'].hex())
+        sender_address = event['args']['sender']
+        o_token_amount = event['args']['amount']
+        payment_token_amount = event['args']['paymentAmount']
+
+        # value_list = [tx_hash, sender_address, o_token_amount, payment_token_amount]
+
+        value_list = [sender_address, o_token_amount, payment_token_amount]
+
+        exists = sql.sql_multiple_values_exist(value_list, column_list, self.table_name)
+
+        return exists
+    
     # # will process our events
     def process_events(self, events):
 
@@ -229,10 +249,9 @@ class oToken(ERC_20.ERC_20):
         for event in events:
             i += 1
 
-            # lend_event_exists = self.lend_event_already_exists(event)
-            lend_event_exists = False
+            event_exists = self.exercise_event_already_exists(event)
 
-            if lend_event_exists == False:
+            if event_exists == False:
                 
                 sender_address = event['args']['sender']
                 recipient_address = event['args']['recipient']
@@ -282,7 +301,6 @@ class oToken(ERC_20.ERC_20):
             cloud_df.drop_duplicates(subset=self.duplicate_column_list)
         except:
             cloud_df = self.make_default_o_token_df()
-        
 
         df = self.create_o_token_table(cloud_df)
         
@@ -301,7 +319,9 @@ class oToken(ERC_20.ERC_20):
 
             if len(events) > 0:
                 df = self.process_events(events)
-                print(df)
+
+                if len(df) > 0:
+                    sql.write_to_db(df, self.column_list, self.table_name)
 
             time.sleep(wait_time)
 
@@ -316,6 +336,10 @@ class oToken(ERC_20.ERC_20):
             
             print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             time.sleep(wait_time)
-
+        
+        df = sql.get_o_token_data_df(self.table_name)
+        df = df.drop_duplicates(subset=self.duplicate_column_list)
+        cs.df_write_to_cloud_storage_as_zip(df, self.cloud_file_name, self.cloud_bucket_name)
+        
         return
     
