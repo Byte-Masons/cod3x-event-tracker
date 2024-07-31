@@ -21,12 +21,24 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         self.rpc_url = rpc_url
         self.wait_time = wait_time
         self.interval = interval
-        self.index = index
+        self.index = self.get_event_index(index)
         self.web3 = lph.get_web_3(self.rpc_url)
-        self.cloud_file_name = index + '.zip'
+        self.cloud_file_name = self.get_cloud_filename()
         self.cloud_bucket_name = 'cooldowns2'
         self.table_name = self.index
 
+    # # adds onto our index for o_token_events
+    def get_event_index(self, index):
+        index = index + '_lend_events'
+        
+        return index
+    
+    # # makes our revenue cloud filename
+    def get_cloud_filename(self):
+        cloud_filename = self.index + '.zip'
+
+        return cloud_filename
+    
     # # will load our cloud df information into the sql database
     def insert_bulk_data_into_table(self, df, table_name):
         # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number

@@ -126,16 +126,15 @@ lend_events.run_all_modules()
 
 # mode_o_token.run_all_o_token_tracking()
 
-# sql.drop_table('ironclad_o_token_events')
+# sql.drop_table('optimism_lend_events')
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
 # df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', bucket_name)
+# df = pd.read_csv('optimism_lend_events.csv')
 # df = sql.get_transaction_data_df('optimism_lend_events')
 # df = sql.get_o_token_data_df('ironclad_o_token_events')
 # print(df)
-
-# df = df.drop_duplicates(subset=['tx_hash', 'to_address', 'from_address', 'token_address', 'token_volume'])
 
 # df['block_number'] = df['block_number'].astype(int)
 # df = df.sort_values(by='block_number', ascending=False)

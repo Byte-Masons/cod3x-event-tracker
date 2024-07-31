@@ -15,22 +15,32 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
         self.protocol_data_provider_address = protocol_data_provider_address
         self.treasury_address = treasury_address
         self.rpc_url = rpc_url
-        self.index = index
+        self.index = self.get_event_index(index)
         self.web3 = lph.get_web_3(self.rpc_url)
-        self.cloud_file_name = index + '.zip'
+        self.cloud_file_name = self.get_cloud_filename()
 
-        # # makes a more concise name for our cod3x lend revenue file
-        revenue_cloud_filename = index.split('_')
-        contains_number = lph.number_in_string(index)
-        if contains_number == True:
-            revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue_' + revenue_cloud_filename[-1] + '.zip'
-        else:
-            revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue.zip'
-
-        self.revenue_cloud_file_name = revenue_cloud_filename
+        self.revenue_cloud_file_name = self.get_lend_revenue_cloud_name()
 
         self.cloud_bucket_name = 'cooldowns2'
         self.table_name = self.index
+    
+    # # adds onto our index for o_token_events
+    def get_event_index(self, index):
+        index = index + '_lend_events'
+        
+        return index
+    
+    # # makes our revenue cloud filename
+    def get_cloud_filename(self):
+        cloud_filename = self.index + '.zip'
+
+        return cloud_filename
+    
+    # # makes our revenue cloud filename
+    def get_lend_revenue_cloud_name(self):
+        revenue_cloud_filename = self.index.split('_')[0] + '_lend_revenue.zip'
+
+        return revenue_cloud_filename
     
     # # finds if a transaction adds to or reduces a balance 
     # # (deposit + borrow add to a balance and withdraw + repay reduce a balance)
