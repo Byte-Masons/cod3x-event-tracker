@@ -294,20 +294,20 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
         df = lph.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
         df = lph.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
 
-        return
+        return df
     
     def run_all_lend_revenue(self):
 
         df = self.set_token_flows()
 
         df = self.set_rolling_balance_2(df)
-        
+
         df = lph.make_day_from_timestamp(df)
 
         df = self.set_token_and_day_diffs_2(df)
 
-        df = self.add_moving_averages(self, df)
-        
+        df = self.add_moving_averages(df)
+
         df = self.add_token_names(df)
 
         cs.df_write_to_cloud_storage_as_zip(df, self.revenue_cloud_file_name, self.cloud_bucket_name)
