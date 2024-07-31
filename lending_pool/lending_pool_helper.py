@@ -1283,3 +1283,18 @@ def number_in_string(string):
             contains_number = True
     
     return contains_number
+
+# # sets a moving average for our dataframe
+def set_n_days_avg_revenue(df, new_column_name, lookback_days):
+
+    df = df.sort_values(by=['day'], ascending=True)
+
+    day_revenue_df = df.groupby(['day'])['daily_revenue'].max().reset_index()
+
+    # Calculate the rolling average
+    day_revenue_df[new_column_name] = day_revenue_df['daily_revenue'].rolling(window=lookback_days, min_periods=1).mean()
+
+    # Merge the rolling average back to the original dataframe
+    df = df.merge(day_revenue_df[['day', new_column_name]], on='day', how='left')
+
+    return df

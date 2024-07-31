@@ -13,17 +13,113 @@ class o_token_revenue_tracking():
     def __init__(self, index: str):
         
         self.index = index
-        self.cloud_file_name = index + '.zip'
 
-        # # makes a more concise name for our cod3x lend revenue file
-        revenue_cloud_filename = index.split('_')
-        contains_number = lph.number_in_string(index)
-        if contains_number == True:
-            revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue_' + revenue_cloud_filename[-1] + '.zip'
-        else:
-            revenue_cloud_filename = revenue_cloud_filename[0] + '_' + revenue_cloud_filename[1] + '_revenue.zip'
-
-        self.revenue_cloud_file_name = revenue_cloud_filename
+        self.o_token_event_cloud_filename = self.get_o_token_event_cloud_filename()
+        self.lend_revenue_cloud_filename = self.get_lend_revenue_cloud_filename()
+        self.o_token_revenue_cloud_filename = self.get_o_token_revenue_cloud_filename()
 
         self.cloud_bucket_name = 'cooldowns2'
-        self.table_name = self.index
+    
+    # # makes our o_token_event cloud filename
+    def get_o_token_event_cloud_filename(self):
+        cloud_filename = self.index + '_o_token_events.zip'
+
+        return cloud_filename
+    
+    # # makes our revenue cloud filename
+    def get_lend_revenue_cloud_filename(self):
+        cloud_filename = self.index + '_lend_revenue.zip'
+
+        return cloud_filename
+    
+    # # makes our revenue cloud filename
+    def get_o_token_revenue_cloud_filename(self):
+        cloud_filename = self.index + '_o_token_revenue.zip'
+
+        return cloud_filename
+    
+    # # returns a rolling_balance of our oToken redemption rewards
+    def set_rolling_balance(self):
+
+        df = cs.read_zip_csv_from_cloud_storage(self.o_token_event_cloud_filename, self.cloud_bucket_name)
+        df[['timestamp', 'usd_payment_amount']] = df[['timestamp', 'usd_payment_amount']].astype(float)
+
+        df = df.sort_values(by=['timestamp'], ascending=True)
+        df['usd_rolling_balance'] = df['usd_payment_amount'].cumsum()
+        
+        return df
+    
+    # # finds out how much revenue we generated per day
+    def set_day_diffs(self, df):
+
+        df = df.sort_values(by='day', ascending=True)
+
+        df['usd_rolling_balance'] = df['usd_rolling_balance'].astype(float)
+
+        daily_max_balance = df.groupby(['day'])['usd_rolling_balance'].max().reset_index()
+
+        daily_max_balance.rename(columns = {'usd_rolling_balance':'total_revenue'}, inplace = True)
+
+        df = daily_max_balance
+
+        df['daily_revenue'] = df['total_revenue'].diff().fillna(0)
+
+        return df
+    
+    # # will add our o_token_revenue to our lend_revenue dataframe and return our updated lend_revenue dataframe
+    def combine_lend_revenue_with_o_token_revenue(self, o_token_revenue_df):
+        
+        lend_revenue_df = cs.read_zip_csv_from_cloud_storage(self.lend_revenue_cloud_filename, self.cloud_bucket_name)
+
+        lend_revenue_df[['total_revenue', 'daily_revenue']] = lend_revenue_df[['total_revenue', 'daily_revenue']].astype(float)
+
+        unique_o_token_days = o_token_revenue_df['day'].unique()
+
+        for unique_day in unique_o_token_days:
+            o_token_total_revenue = o_token_revenue_df.loc[o_token_revenue_df['day'] == unique_day]['total_revenue'].max()
+            o_token_daily_revenue = o_token_revenue_df.loc[o_token_revenue_df['day'] == unique_day]['daily_revenue'].max()
+
+            lend_revenue_df.loc[lend_revenue_df['day'] == unique_day, 'total_revenue'] = lend_revenue_df.loc[lend_revenue_df['day'] == unique_day]['total_revenue'] + o_token_total_revenue
+            lend_revenue_df.loc[lend_revenue_df['day'] == unique_day, 'daily_revenue'] = lend_revenue_df.loc[lend_revenue_df['day'] == unique_day]['daily_revenue'] + o_token_daily_revenue
+
+        return lend_revenue_df
+    
+    def update_moving_averages(self, df):
+        
+        # # makes our moving average daily revenues
+        df = lph.set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
+        df = lph.set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
+        df = lph.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
+        df = lph.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
+
+        return df
+    
+    # # runs all of our necessary code to add our o_token_revenue to our lend_revenue cloud file
+    def run_all_o_token_revenue(self):
+
+        df = self.set_rolling_balance()
+
+        # # removes our placeholder row
+        df = df.loc[df['block_number'] != '1776']
+
+        df = lph.make_day_from_timestamp(df)
+
+        df = self.set_day_diffs(df)
+
+        # # df that will just contain o_token total and daily revenue per day
+        o_token_revenue_df = df
+
+        df = self.combine_lend_revenue_with_o_token_revenue(df)
+
+        # # gets rid of the existing moving average columns
+        df = df[['day','token_address','total_revenue_per_token','daily_revenue_per_token','total_revenue','daily_revenue','token_name']]
+        df = self.update_moving_averages(df)
+
+        # # orders our dataframe columns back to their original
+        df = df[['day','token_address','total_revenue_per_token','daily_revenue_per_token','total_revenue','daily_revenue','7_days_ma_revenue','30_days_ma_revenue','90_days_ma_revenue','180_days_ma_revenue','token_name']]
+
+        # # writes to our cloud files
+        cs.df_write_to_cloud_storage_as_zip(o_token_revenue_df, self.o_token_revenue_cloud_filename, self.cloud_bucket_name)
+        cs.df_write_to_cloud_storage_as_zip(df, self.lend_revenue_cloud_filename, self.cloud_bucket_name)
+
+        return df

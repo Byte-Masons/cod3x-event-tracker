@@ -286,6 +286,16 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
 
         return df
     
+    # # makes our moving average daily revenues
+    def add_moving_averages(self, df):
+        
+        df = lph.set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
+        df = lph.set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
+        df = lph.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
+        df = lph.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
+
+        return
+    
     def run_all_lend_revenue(self):
 
         df = self.set_token_flows()
@@ -296,11 +306,7 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
 
         df = self.set_token_and_day_diffs_2(df)
 
-        # # makes our moving average daily revenues
-        df = self.set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
-        df = self.set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
-        df = self.set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
-        df = self.set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
+        df = self.add_moving_averages(self, df)
         
         df = self.add_token_names(df)
 
