@@ -3,475 +3,347 @@ from web3.middleware import geth_poa_middleware
 import pandas as pd
 import time
 import sys
+import os
 import sqlite3
-# sys.path.append("..")  # Add the root directory to the search path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from lending_pool import transaction_finder as tf
 from lending_pool import balance_and_points as bp
 from lending_pool import lending_pool_helper as lph
+from helper_classes import ERC_20
 from sql_interfacer import sql
 from cloud_storage import cloud_storage as cs
 
 
-def insert_bulk_data_into_table(df, table_name):
-    # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
+class CDP(ERC_20.ERC_20):
+
+    def __init__(self, borrower_operations_address: str, from_block: int, rpc_url: str, wait_time: float, interval: float, index: str):
+        self.borrower_operations_address = self.borrower_operations_address
+        self.from_block = from_block
+        self.rpc_url = rpc_url
+        self.wait_time = wait_time
+        self.interval = interval
+        self.index = self.get_event_index(index)
+        self.cloud_file_name = self.get_cloud_filename()
+        self.cloud_bucket_name = 'cooldowns2'
+        self.table_name = self.index
+        self.lend_event_table_name = self.index.split('_lend')[0] + '_lend_events'
+        
+        self.column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount', 'block_number']
+        self.duplicate_column_list = ['sender', 'tx_hash', 'o_token_amount', 'payment_token_amount']
+
+        web3 = lph.get_web_3(rpc_url)
+        self.web3 = web3
+
+        contract = self.get_borrower_operations_contract()
+        self.contract = contract
+
+        time.sleep(self.WAIT_TIME)
+        
+        self.debt_token_address = self.get_debt_token_address()
+
+        time.sleep(self.WAIT_TIME)
+
+        self.token_contract = self.get_token_contract(self.debt_token_address)
+        time.sleep(self.WAIT_TIME)
+
+        self.decimals = self.get_token_decimals()
+        self.decimals = 10 ** self.decimals
+
+        time.sleep(self.WAIT_TIME)
     
-    query = f"""
-    INSERT INTO {table_name} (borrower_address, tx_hash, collateral_address, mint_fee, block_number, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """
-
-    sql.write_to_custom_table(query, df)
-
-    return
-
-def insert_bulk_data_into_trove_updated_table(df, table_name):
-    # from_address,to_address,tx_hash,timestamp,token_address,reserve_address,token_volume,asset_price,usd_token_amount,log_index,transaction_index,block_number
+    # # adds onto our index for o_token_events
+    def get_event_index(self, index):
+        index = index + '_cdp_events'
+        
+        return index
     
-    query = f"""
-    INSERT INTO {table_name} (borrower_address, tx_hash, collateral_address, debt_balance, collateral_balance, operation, block_number, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """
+    # # makes our revenue cloud filename
+    def get_cloud_filename(self):
+        cloud_filename = self.index + '.zip'
 
-    sql.write_to_custom_table(query, df)
+        return cloud_filename
 
-    return
+    # # gets our LUSD debt token
+    def get_debt_token_address(self):
+        debt_token_address = self.contract.functions.lusdToken().call()
 
-def create_tx_table(table_name, df):
-    query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name}(
-                borrower_address TEXT,
+        return debt_token_address
+    
+    # # cdp contract
+    def get_borrower_operations_abi():
+
+        abi = [{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_activePoolAddress","type":"address"}],"name":"ActivePoolAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_collSurplusPoolAddress","type":"address"}],"name":"CollSurplusPoolAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_newCollateralConfigAddress","type":"address"}],"name":"CollateralConfigAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_defaultPoolAddress","type":"address"}],"name":"DefaultPoolAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_gasPoolAddress","type":"address"}],"name":"GasPoolAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_lqtyStakingAddress","type":"address"}],"name":"LQTYStakingAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"_borrower","type":"address"},{"indexed":False,"internalType":"address","name":"_collateral","type":"address"},{"indexed":False,"internalType":"uint256","name":"_LUSDFee","type":"uint256"}],"name":"LUSDBorrowingFeePaid","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_lusdTokenAddress","type":"address"}],"name":"LUSDTokenAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":True,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_newPriceFeedAddress","type":"address"}],"name":"PriceFeedAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_sortedTrovesAddress","type":"address"}],"name":"SortedTrovesAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_stabilityPoolAddress","type":"address"}],"name":"StabilityPoolAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"_borrower","type":"address"},{"indexed":False,"internalType":"address","name":"_collateral","type":"address"},{"indexed":False,"internalType":"uint256","name":"arrayIndex","type":"uint256"}],"name":"TroveCreated","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"_newTroveManagerAddress","type":"address"}],"name":"TroveManagerAddressChanged","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"_borrower","type":"address"},{"indexed":False,"internalType":"address","name":"_collateral","type":"address"},{"indexed":False,"internalType":"uint256","name":"_debt","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"_coll","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"stake","type":"uint256"},{"indexed":False,"internalType":"enum BorrowerOperations.BorrowerOperation","name":"operation","type":"uint8"}],"name":"TroveUpdated","type":"event"},{"inputs":[],"name":"BORROWING_FEE_FLOOR","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DECIMAL_PRECISION","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LUSD_GAS_COMPENSATION","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MIN_NET_DEBT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"NAME","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERCENT_DIVISOR","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_100pct","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"activePool","outputs":[{"internalType":"contract IActivePool","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_collAmount","type":"uint256"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"addColl","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_maxFeePercentage","type":"uint256"},{"internalType":"uint256","name":"_collTopUp","type":"uint256"},{"internalType":"uint256","name":"_collWithdrawal","type":"uint256"},{"internalType":"uint256","name":"_LUSDChange","type":"uint256"},{"internalType":"bool","name":"_isDebtIncrease","type":"bool"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"adjustTrove","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"}],"name":"claimCollateral","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"}],"name":"closeTrove","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"collateralConfig","outputs":[{"internalType":"contract ICollateralConfig","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"defaultPool","outputs":[{"internalType":"contract IDefaultPool","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_debt","type":"uint256"}],"name":"getCompositeDebt","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"}],"name":"getEntireSystemColl","outputs":[{"internalType":"uint256","name":"entireSystemColl","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"}],"name":"getEntireSystemDebt","outputs":[{"internalType":"uint256","name":"entireSystemDebt","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lqtyStaking","outputs":[{"internalType":"contract ILQTYStaking","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lqtyStakingAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lusdToken","outputs":[{"internalType":"contract ILUSDToken","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_borrower","type":"address"},{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_collAmount","type":"uint256"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"moveCollateralGainToTrove","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_collAmount","type":"uint256"},{"internalType":"uint256","name":"_maxFeePercentage","type":"uint256"},{"internalType":"uint256","name":"_LUSDAmount","type":"uint256"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"openTrove","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"priceFeed","outputs":[{"internalType":"contract IPriceFeed","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_LUSDAmount","type":"uint256"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"repayLUSD","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateralConfigAddress","type":"address"},{"internalType":"address","name":"_troveManagerAddress","type":"address"},{"internalType":"address","name":"_activePoolAddress","type":"address"},{"internalType":"address","name":"_defaultPoolAddress","type":"address"},{"internalType":"address","name":"_stabilityPoolAddress","type":"address"},{"internalType":"address","name":"_gasPoolAddress","type":"address"},{"internalType":"address","name":"_collSurplusPoolAddress","type":"address"},{"internalType":"address","name":"_priceFeedAddress","type":"address"},{"internalType":"address","name":"_sortedTrovesAddress","type":"address"},{"internalType":"address","name":"_lusdTokenAddress","type":"address"},{"internalType":"address","name":"_lqtyStakingAddress","type":"address"}],"name":"setAddresses","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"sortedTroves","outputs":[{"internalType":"contract ISortedTroves","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"troveManager","outputs":[{"internalType":"contract ITroveManager","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_collWithdrawal","type":"uint256"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"withdrawColl","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_collateral","type":"address"},{"internalType":"uint256","name":"_maxFeePercentage","type":"uint256"},{"internalType":"uint256","name":"_LUSDAmount","type":"uint256"},{"internalType":"address","name":"_upperHint","type":"address"},{"internalType":"address","name":"_lowerHint","type":"address"}],"name":"withdrawLUSD","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+        return abi
+
+    # # will make our web3 token contract object for our given token_address
+    def get_borrower_operations_contract(self):
+        token_abi = self.get_borrower_operations_abi()
+        contract_address = self.borrower_operations_address
+
+        web3 = self.web3
+
+        contract = lph.get_contract(contract_address, token_abi, web3)
+        time.sleep(self.WAIT_TIME)
+
+        return contract
+    
+    # # gets the last block we have scanned
+    def get_last_block_checked(self, df):
+
+        df['block_number'] = df['block_number'].astype(float)
+
+        last_checked_block_number = df['block_number'].max()
+
+        return last_checked_block_number
+    
+    # # gets the bare minimum block we want to start our scanning from
+    def get_borrower_operations_from_block(self, df):
+        
+        from_block = self.from_block
+
+        last_block_checked = self.get_last_block_checked(df)
+
+        if last_block_checked > from_block:
+            from_block = last_block_checked
+            from_block = from_block - self.interval
+
+        from_block = int(from_block)
+        
+        return from_block
+
+    # # returns any events that may have occured in the specified block range
+    def get_trove_updated_events(self, from_block, to_block):
+        
+        from_block = int(from_block)
+        to_block = int(to_block)
+        
+        events = self.contract.events.TroveUpdated.get_logs(fromBlock=from_block, toBlock=to_block)
+
+        return events
+    
+    # # makes a boilerplate dummy data df
+    def make_default_df(self):
+
+        df = pd.DataFrame()
+        
+        df['borrower_address'] = ['0x0000000000000000000000000000000000000000']
+        df['tx_hash'] = ['0x0000000000000000000000000000000000000000']
+        df['timestamp'] = [1776]
+        df['collateral_address'] = [self.o_token_address]
+        df['collateral_amount'] = [self.payment_token_address]
+        df['usd_collateral_amount'] = [0]
+        df['debt_amount'] = [0]
+        df['mint_fee'] = [0]
+        df['block_number'] = [1776]
+
+        return df
+    
+    # # will load our cloud df information into the sql database
+    def insert_bulk_data_into_table(self, df, table_name):
+
+        query = f"""
+        INSERT INTO {table_name} (sender, recipient, tx_hash, timestamp, o_token_address, payment_token_address, o_token_amount, payment_token_amount, usd_o_token_amount, usd_payment_amount, block_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        sql.write_to_custom_table(query, df)
+
+        return
+    
+    # # creates our local oToken table
+    def create_o_token_table(self, cloud_df):
+        query = f"""
+            CREATE TABLE IF NOT EXISTS {self.table_name}(
+                sender TEXT,
+                recipient TEXT,
                 tx_hash TEXT,
-                collateral_address TEXT,
-                mint_fee TEXT,
-                block_number TEXT,
-                timestamp TEXT
+                timestamp TEXT,
+                o_token_address TEXT,
+                payment_token_address TEXT,
+                o_token_amount TEXT,
+                payment_token_amount TEXT,
+                usd_o_token_amount TEXT,
+                usd_payment_amount TEXT,
+                block_number TEXT
                 )
             """
-    
-    # # will only insert data into the sql table if the table doesn't exist
 
-    sql.create_custom_table(query)
-
-    table_length = sql.select_star_count(table_name)[0][0]
-    
-    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
-    if table_length < len(df):
-        sql.drop_table(table_name)
+        # # will only insert data into the sql table if the table doesn't exist
         sql.create_custom_table(query)
-        insert_bulk_data_into_table(df, table_name)
+        
+        db_df = sql.get_o_token_data_df(self.table_name)
 
-    return
-
-def create_trove_updated_table(table_name, df):
-    query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name}(
-                borrower_address TEXT,
-                tx_hash TEXT,
-                collateral_address TEXT,
-                debt_balance TEXT,
-                collateral_balance TEXT,
-                operation TEXT,
-                block_number TEXT,
-                timestamp TEXT
-                )
-            """
-    
-    # # will only insert data into the sql table if the table doesn't exist
-
-    sql.create_custom_table(query)
-
-    table_length = sql.select_star_count(table_name)[0][0]
-    
-    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
-    if table_length < len(df):
-        sql.drop_table(table_name)
+        # # makes a combined local and cloud dataframe and drops any duplicates from the dataframe
+        # # drops our old database table
+        # # then writes the updated sanitized dataframe to our local database table
+        combined_df = pd.concat([db_df, cloud_df])
+        combined_df = combined_df.drop_duplicates(subset=self.duplicate_column_list)
+        
+        sql.drop_table(self.table_name)
         sql.create_custom_table(query)
-        insert_bulk_data_into_table(df, table_name)
+        self.insert_bulk_data_into_table(combined_df, self.table_name)
 
-    return
-
-def create_trove_updated_table(table_name, df):
-    query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name}(
-                borrower_address TEXT,
-                tx_hash TEXT,
-                collateral_address TEXT,
-                debt_balance TEXT,
-                collateral_balance TEXT,
-                operation TEXT,
-                block_number TEXT,
-                timestamp TEXT
-                )
-            """
+        return combined_df
     
-    # # will only insert data into the sql table if the table doesn't exist
+    # # will return a dataframe with the closest known asset_price to our oToken exercise
+    def add_payment_and_o_token_pricing_to_df(self, event_df):
+        lend_df = sql.get_transaction_data_df(self.lend_event_table_name)
 
-    sql.create_custom_table(query)
+        lend_df = lend_df.loc[lend_df['reserve_address'] == self.payment_token_address]
+        lend_df = lend_df[['block_number', 'asset_price']]
 
-    table_length = sql.select_star_count(table_name)[0][0]
+        event_df['block_number'] = event_df['block_number'].astype(int)
+        event_df['payment_token_amount'] = event_df['payment_token_amount'].astype(float)
+
+        lend_df['block_number'] = lend_df['block_number'].astype(int)
+        lend_df['asset_price'] = lend_df['asset_price'].astype(float)
+        
+        event_df = event_df.sort_values(by='block_number')
+        lend_df = lend_df.sort_values(by='block_number')
+
+        df = pd.merge_asof(event_df, lend_df, on='block_number', direction='nearest')
+
+        # df.rename(columns = {'asset_price':'usd_payment_amount'}, inplace = True)
+        df['usd_payment_amount'] = df['asset_price'] * df['payment_token_amount'] / self.decimals
+        # # tokens they receive should be about 2x what they paid
+        df['usd_o_token_amount'] = df['usd_payment_amount'] * 2
+
+        df = df[['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount','block_number']]
+
+        return df
     
-    # # we will drop our table and insert the data from the cloud of our local database has less entries than the cloud
-    if table_length < len(df):
-        sql.drop_table(table_name)
-        sql.create_custom_table(query)
-        insert_bulk_data_into_trove_updated_table(df, table_name)
+    # # will return a boolean on whether our event already exists or not
+    def exercise_event_already_exists(self, event):
 
-    return
+        # column_list = ['sender', 'tx_hash', 'o_token_amount', 'payment_token_amount']
+        column_list = ['sender', 'o_token_amount', 'payment_token_amount']
 
+        # tx_hash = str(event['transactionHash'].hex())
+        sender_address = event['args']['sender']
+        o_token_amount = event['args']['amount']
+        payment_token_amount = event['args']['paymentAmount']
 
-#makes our dataframe
-def user_data(events, web3, index):
+        # value_list = [tx_hash, sender_address, o_token_amount, payment_token_amount]
+
+        value_list = [sender_address, o_token_amount, payment_token_amount]
+
+        exists = sql.sql_multiple_values_exist(value_list, column_list, self.table_name)
+
+        return exists
     
-    df = pd.DataFrame()
+    # # will process our events
+    def process_events(self, events):
 
-    # column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number']
+        df = pd.DataFrame()
 
-    borrower_address_list = []
-    tx_hash_list = []
-    collateral_address_list = []
-    mint_fee_list = []
-    block_list = []
-    timestamp_list = []
+        sender_list = []
+        recipient_list = []
+        tx_hash_list = []
+        timestamp_list = []
+        o_token_address_list = []
+        payment_token_address_list = []
+        o_token_amount_list = []
+        payment_token_amount_list = []
+        usd_o_token_amount_list = []
+        usd_payment_amount_list = []
+        block_number_list = []
 
-    # # inputs to our sql function
-    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number', 'timestamp']
-    data_type_list = ['TEXT' for x in column_list]
-    table_name = lph.get_cdp_config_value('table_name', index)
+        i = 1
 
-    # reduces wait time by 50%
-    wait_time = lph.get_cdp_config_value('wait_time', index)
-    wait_time = wait_time/3
+        for event in events:
+            i += 1
 
-    i = 1
-    for event in events:
+            event_exists = self.exercise_event_already_exists(event)
 
-        # print('Batch of Events Processed: ', i, '/', len(events))
-        i+=1
-            
-        # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
-        exists_list = sql.cdp_fee_already_part_of_database(event, wait_time, column_list, table_name)
-
-        tx_hash = exists_list[0]
-        borrower_address = exists_list[1]
-        mint_fee = exists_list[2]
-        collateral_address = exists_list[3]
-        exists = exists_list[4]
-
-        if exists == False:
-            try:
-                block = web3.eth.get_block(event['blockNumber'])
-                block_number = int(block['number'])
-            except:
-                block_number = int(event['blockNumber'])
-
-            time.sleep(wait_time)
-            if mint_fee < 0:
-                mint_fee = event['args']['_LUSDFee']
-                mint_fee /= 1e18
-            
-            time.sleep(wait_time)
-            if len(borrower_address) < 1:
-                borrower_address = event['args']['_borrower']
-
-            time.sleep(wait_time)
-            if len(collateral_address) < 1:
-                collateral_address = event['args']['_collateral']
-
-            if mint_fee > 0:
-
-                # borrower_address_list = []
-                # tx_hash_list = []
-                # collateral_address_list = []
-                # mint_fee_list = []
-                # block_list = []
-                # timestamp_list = []
-
-                block_list.append(block_number)
-                borrower_address_list.append(borrower_address)
-                collateral_address_list.append(collateral_address)
+            if event_exists == False:
+                
+                sender_address = event['args']['sender']
+                recipient_address = event['args']['recipient']
+                tx_hash = event['transactionHash'].hex()
+                o_token_amount = event['args']['amount']
+                payment_token_amount = event['args']['paymentAmount']
+                
+                try:
+                    block = self.web3.eth.get_block(event['blockNumber'])
+                    block_number = int(block['number'])
+                except:
+                    block_number = int(event['blockNumber'])
+                
+                block_timestamp = block['timestamp']
+                
+                block_number_list.append(block_number)
                 tx_hash_list.append(tx_hash)
-                timestamp_list.append(block['timestamp'])
-                # token_address = event['address']
-                mint_fee_list.append(mint_fee)
+                timestamp_list.append(block_timestamp)
+                sender_list.append(sender_address)
+                recipient_list.append(recipient_address)
+                o_token_amount_list.append(o_token_amount)
+                payment_token_amount_list.append(payment_token_amount)
 
-        else:
-            # print('Already part of the dataframe')
-            # print(event)
-            time.sleep(wait_time)
-            pass
-    
-    if len(borrower_address_list) > 0:
-        time.sleep(wait_time)
+            time.sleep(self.wait_time)
+        
+        if len(sender_list) > 0:
 
     
-        df['borrower_address'] = borrower_address_list
-        df['tx_hash'] = tx_hash_list
-        df['collateral_address'] = collateral_address_list
-        df['mint_fee'] = mint_fee_list
-        df['block_number'] = block_list
-        df['timestamp'] = timestamp_list
+            df['sender'] = sender_list
+            df['recipient'] = recipient_list
+            df['tx_hash'] = tx_hash_list
+            df['timestamp'] = timestamp_list
+            df['o_token_address'] = self.o_token_address
+            df['payment_token_address'] = self.payment_token_address
+            df['o_token_amount'] = o_token_amount_list
+            df['payment_token_amount'] = payment_token_amount_list
+            df['block_number'] = block_number_list
+            df = self.add_payment_and_o_token_pricing_to_df(df)
+
+        return df
     
+    # # will track all of our o_token_events
+    def run_all_o_token_tracking(self):
 
-    # print('User Data Event Looping done in: ', time.time() - start_time)
-    return df
+        try:
+            cloud_df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
+            cloud_df.drop_duplicates(subset=self.duplicate_column_list)
+        except:
+            cloud_df = self.make_default_o_token_df()
 
-#makes our dataframe
-def get_trove_updated_data(events, web3, index):
-    
-    df = pd.DataFrame()
+        df = self.create_o_token_table(cloud_df)
+        
+        from_block = self.get_o_token_from_block(df)
 
-    # column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number']
+        latest_block = lph.get_latest_block(self.web3)
 
-    borrower_address_list = []
-    tx_hash_list = []
-    collateral_address_list = []
-    debt_balance_list = []
-    collateral_balance_list = []
-    operation_list = []
+        interval = self.interval
+        wait_time = self.wait_time
 
-    block_list = []
-    timestamp_list = []
+        to_block = from_block + interval
 
-    # # inputs to our sql function
-    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'debt_balance', 'collateral_balance', 'operation', 'block_number', 'timestamp']
-    data_type_list = ['TEXT' for x in column_list]
-    table_name = lph.get_cdp_config_value('table_name', index)
-
-    # reduces wait time by 50%
-    wait_time = lph.get_cdp_config_value('wait_time', index)
-    wait_time = wait_time/3
-
-    i = 1
-    for event in events:
-
-        # print('Batch of Events Processed: ', i, '/', len(events))
-        i+=1
+        while to_block < latest_block:
             
-        # exists_list = already_part_of_df(event, wait_time, from_block, to_block, index)
-        exists_list = sql.cdp_trove_update_already_part_of_database(event, wait_time, column_list, table_name)
+            events = self.get_exercised_events(from_block, to_block)
 
-        tx_hash = exists_list[0]
-        borrower_address = exists_list[1]
-        collateral_address = exists_list[2]
-        collateral_balance = exists_list[3]
-        debt_balance = exists_list[4]
-        exists = exists_list[5]
+            if len(events) > 0:
+                df = self.process_events(events)
 
-        if exists == False:
-            try:
-                block = web3.eth.get_block(event['blockNumber'])
-                block_number = int(block['number'])
-            except:
-                block_number = int(event['blockNumber'])
+                if len(df) > 0:
+                    sql.write_to_db(df, self.column_list, self.table_name)
 
             time.sleep(wait_time)
-            if collateral_balance < 0:
-                collateral_balance = event['args']['_coll']
+
+            from_block += interval
+            to_block += interval
+
+            if from_block >= latest_block:
+                from_block = latest_block - 1
             
-            time.sleep(wait_time)
-            if debt_balance < 0:
-                debt_balance = event['args']['_debt']
+            if to_block >= latest_block:
+                to_block = latest_block
             
+            print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             time.sleep(wait_time)
-            if len(borrower_address) < 1:
-                borrower_address = event['args']['_borrower']
-
-            time.sleep(wait_time)
-            if len(collateral_address) < 1:
-                collateral_address = event['args']['_collateral']
-
-            block_list.append(block_number)
-            borrower_address_list.append(borrower_address)
-            collateral_address_list.append(collateral_address)
-            collateral_balance_list.append(collateral_balance)
-            debt_balance_list.append(debt_balance)
-            operation = event['args']['operation']
-            time.sleep(wait_time)
-            operation_list.append(operation)
-            tx_hash_list.append(tx_hash)
-            timestamp_list.append(block['timestamp'])
-
-        else:
-            # print('Already part of the dataframe')
-            # print(event)
-            time.sleep(wait_time)
-            pass
-    
-    if len(borrower_address_list) > 0:
-        time.sleep(wait_time)
-    
-        df['borrower_address'] = borrower_address_list
-        df['tx_hash'] = tx_hash_list
-        df['collateral_address'] = collateral_address_list
-        df['debt_balance'] = debt_balance_list
-        df['collateral_balance'] = collateral_balance_list
-        df['operation'] = operation_list
-        df['block_number'] = block_list
-        df['timestamp'] = timestamp_list
-    
-
-    # print('User Data Event Looping done in: ', time.time() - start_time)
-    return df
-
-# # runs all our looks
-# # updates our csv
-def find_all_mint_fee_transactions(index):
-
-    config_df = lph.get_cdp_config_df()
-    config_df = config_df.loc[config_df['index'] == index]
-
-    rpc_url = lph.get_cdp_config_value('rpc_url', index)
-    
-    web3 = tf.get_web_3(rpc_url)
-
-    from_block = lph.get_cdp_config_value('last_block', index)
-
-    latest_block = lph.get_latest_block(web3) 
-
-    interval = lph.get_cdp_config_value('interval', index)
-
-    wait_time = lph.get_cdp_config_value('wait_time', index)
-    from_block -= interval
-
-    to_block = from_block + interval
-
-    borrower_operations_address = lph.get_cdp_config_value('borrower_operations_address', index)
-
-    borrower_operations_contract = lph.get_borrower_operations_contract(web3, borrower_operations_address)
-
-    # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = lph.get_cdp_config_value('cloud_filename', index)
-    cloud_bucket_name = lph.get_cdp_config_value('cloud_bucket_name', index)
-    tx_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
-    
-    # # drops any stray duplicates
-    tx_df.drop_duplicates(subset=['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee'])
-
-    # # inputs to our sql function
-    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee', 'block_number', 'timestamp']
-
-    table_name = lph.get_cdp_config_value('table_name', index)
-
-    # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
-    create_tx_table(table_name, tx_df)
-
-    while to_block < latest_block:
-        # print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
-
-        events = lph.get_mint_fee_events(borrower_operations_contract, from_block, to_block)
         
-        if len(events) > 0:
-            contract_df = user_data(events, web3, index)
-            if len(contract_df) > 0:
-                sql.write_to_db(contract_df, column_list, table_name)
-                # sql.drop_duplicates_from_database(cursor)
-                # make_user_data_csv(contract_df, index)
-        else:
-            time.sleep(wait_time)
-
-        # # will make sure not overwrite other chains' data in the config file
-        temp_config_df = lph.get_cdp_config_df()
-        temp_config_df.loc[(temp_config_df['index'] == index) and (temp_config_df['tx_type'] == 0), 'last_block'] = to_block
-        # config_df['last_block'] = from_block
-        temp_config_df.to_csv('./config/cdp_config.csv', index=False)
-
-        from_block += interval
-        to_block += interval
-
-        # print(deposit_events)
-
-
-        if from_block >= latest_block:
-            from_block = latest_block - 1
+        df = sql.get_o_token_data_df(self.table_name)
+        df = df.drop_duplicates(subset=self.duplicate_column_list)
+        cs.df_write_to_cloud_storage_as_zip(df, self.cloud_file_name, self.cloud_bucket_name)
         
-        if to_block >= latest_block:
-            to_block = latest_block
-        
-        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
-    
-    contract_df = sql.get_transaction_data_df(table_name, column_list)
-    cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
-    
-    # bp.set_embers_database(index)
-
-    return
-
-# # runs all our looks
-# # updates our csv
-def find_all_trove_updated_transactions(index):
-
-    config_df = lph.get_cdp_config_df()
-    config_df = config_df.loc[config_df['index'] == index]
-
-    rpc_url = lph.get_cdp_config_value('rpc_url', index)
-    
-    web3 = tf.get_web_3(rpc_url)
-
-    from_block = lph.get_cdp_config_value('last_block', index)
-
-    latest_block = lph.get_latest_block(web3) 
-
-    interval = lph.get_cdp_config_value('interval', index)
-
-    wait_time = lph.get_cdp_config_value('wait_time', index)
-    from_block -= interval
-
-    to_block = from_block + interval
-
-    borrower_operations_address = lph.get_cdp_config_value('borrower_operations_address', index)
-
-    borrower_operations_contract = lph.get_borrower_operations_contract(web3, borrower_operations_address)
-
-    # # reads our last data from our treasury to ensure we don't lose info do to the vm reverting
-    cloud_csv_name = lph.get_cdp_config_value('cloud_filename', index)
-    cloud_bucket_name = lph.get_cdp_config_value('cloud_bucket_name', index)
-    tx_df = cs.read_zip_csv_from_cloud_storage(cloud_csv_name, cloud_bucket_name)
-    
-    # # drops any stray duplicates
-    tx_df.drop_duplicates(subset=['borrower_address', 'tx_hash', 'collateral_address', 'debt_balance', 'collateral_balance', 'operation'])
-
-    # # inputs to our sql function
-    column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'debt_balance', 'collateral_balance', 'operation', 'block_number', 'timestamp']
-
-    table_name = lph.get_cdp_config_value('table_name', index)
-
-    # # will create our table and only insert data into it from our cloud bucket if the table doesn't exist
-    create_trove_updated_table(table_name, tx_df)
-
-    while to_block < latest_block:
-        # print(receipt_token_address, ': Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
-
-        events = lph.get_trove_updated_events(borrower_operations_contract, from_block, to_block)
-        
-        if len(events) > 0:
-            contract_df = get_trove_updated_data(events, web3, index)
-            if len(contract_df) > 0:
-                sql.write_to_db(contract_df, column_list, table_name)
-                # sql.drop_duplicates_from_database(cursor)
-                # make_user_data_csv(contract_df, index)
-        else:
-            time.sleep(wait_time)
-
-        # # will make sure not overwrite other chains' data in the config file
-        temp_config_df = lph.get_cdp_config_df()
-        temp_config_df.loc[temp_config_df['index'] == index, 'last_block'] = to_block
-        # config_df['last_block'] = from_block
-        temp_config_df.to_csv('./config/cdp_config.csv', index=False)
-
-        from_block += interval
-        to_block += interval
-
-        if from_block >= latest_block:
-            from_block = latest_block - 1
-        
-        if to_block >= latest_block:
-            to_block = latest_block
-        
-        print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
-    
-    contract_df = sql.get_transaction_data_df(table_name)
-    cs.df_write_to_cloud_storage_as_zip(contract_df, cloud_csv_name, cloud_bucket_name)
-    
-    # bp.set_embers_database(index)
-
-    return
+        return
