@@ -84,6 +84,14 @@ class ERC_20():
         
         return token_name
     
+    def get_token_symbol(self):
+
+        token_contract = self.token_contract
+
+        token_symbol = token_contract.functions.symbol().call()
+        
+        return token_symbol
+    
     # # only gets the name of our token without a receipt descriptor
     def get_token_name_no_receipt(self):
 
