@@ -19,7 +19,7 @@ from lending_pool import treasury_tracker as tt
 from cdp import cdp
 from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl, cod3x_lend_total_revenue_tracking as cdx_total
 from datetime import datetime, timezone
-from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base
+from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base, Fantom
 import logging
 from helper_classes import ERC_20 as erc20, oToken
 
@@ -27,8 +27,8 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 600
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base()]
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -108,11 +108,11 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions_2()
+loop_all_functions_2()
 
-lend_events = Ironclad.Ironclad()
-lend_events.run_all_modules()
-    
+# lend_events = Optimism.Optimism()
+# lend_events.run_all_modules()
+
 # df = cdx_total.run_all()
 
 # EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
@@ -132,7 +132,7 @@ lend_events.run_all_modules()
 # bucket_name = 'cooldowns2'
 # df = cs.read_zip_csv_from_cloud_storage('optimism_lend_events.zip', bucket_name)
 # df = pd.read_csv('optimism_lend_events.csv')
-# df = sql.get_transaction_data_df('optimism_lend_events')
+# df = sql.get_transaction_data_df('ironclad_lend_events')
 # df = sql.get_o_token_data_df('ironclad_o_token_events')
 # print(df)
 
