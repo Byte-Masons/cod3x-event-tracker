@@ -38,7 +38,7 @@ class cod3x_lend_revenue_tracking(Protocol_Data_Provider.Protocol_Data_Provider,
     
     # # makes our revenue cloud filename
     def get_lend_revenue_cloud_name(self):
-        revenue_cloud_filename = self.index.split('_')[0] + '_lend_revenue.zip'
+        revenue_cloud_filename = self.index.split('_lend')[0] + '_lend_revenue.zip'
 
         return revenue_cloud_filename
     
