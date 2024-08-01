@@ -13,7 +13,7 @@ class Arbitrum(Lending_Pool.Lending_Pool):
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x96bCFB86F1bFf315c13e00D850e2FAeA93CcD3e7'
     RPC_URL = 'https://arbitrum.llamarpc.com'
     TREASURY_ADDRESS = '0xb17844F6E50f4eE8f8FeC7d9BA200B0E034b8236'
-    INDEX = 'arbitrum_lend_events'
+    INDEX = 'arbitrum'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 2500
     WAIT_TIME = 1.25
@@ -22,13 +22,13 @@ class Arbitrum(Lending_Pool.Lending_Pool):
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
         self.gateway_address = self.GATEWAY_ADDRESS
-        self.treasury_address = self.TREASURY_ADDRESS        
+        self.treasury_address = self.TREASURY_ADDRESS
         self.rpc_url = self.RPC_URL
         self.wait_time = self.WAIT_TIME
         self.interval = self.INTERVAL
-        self.index = self.INDEX
+        self.index = self.get_event_index(self.INDEX)
         self.web3 = lph.get_web_3(self.rpc_url)
-        self.cloud_file_name = self.index + '.zip'
+        self.cloud_file_name = self.get_cloud_filename()
         self.cloud_bucket_name = self.CLOUD_BUCKET_NAME
         self.table_name = self.index
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)

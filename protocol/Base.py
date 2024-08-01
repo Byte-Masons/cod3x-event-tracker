@@ -13,7 +13,7 @@ class Base(Lending_Pool.Lending_Pool):
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0xed984A0E9c12Ee27602314191Fc4487A702bB83f'
     RPC_URL = 'https://mainnet.base.org'
     TREASURY_ADDRESS = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
-    INDEX = 'base_lend_events'
+    INDEX = 'base'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 5000
     WAIT_TIME = 0.6
@@ -26,9 +26,9 @@ class Base(Lending_Pool.Lending_Pool):
         self.rpc_url = self.RPC_URL
         self.wait_time = self.WAIT_TIME
         self.interval = self.INTERVAL
-        self.index = self.INDEX
+        self.index = self.get_event_index(self.INDEX)
         self.web3 = lph.get_web_3(self.rpc_url)
-        self.cloud_file_name = self.index + '.zip'
+        self.cloud_file_name = self.get_cloud_filename()
         self.cloud_bucket_name = self.CLOUD_BUCKET_NAME
         self.table_name = self.index
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)

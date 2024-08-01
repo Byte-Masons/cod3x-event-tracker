@@ -29,7 +29,7 @@ def get_protocol_revenue_filename_list():
 def get_combined_revenue_df(protocol_revenue_list):
 
     # # just gets the deployments name without any suffixes
-    deployment_name_list = [protocol.split('_')[0] for protocol in protocol_revenue_list]
+    deployment_name_list = [protocol.split('_lend')[0] for protocol in protocol_revenue_list]
 
     df_list = []
 
@@ -55,6 +55,16 @@ def get_combined_revenue_df(protocol_revenue_list):
 # # gets the daily_revenue per token irregardless of deployment
 def get_daily_aggregate_revenue(df):
 
+    df['daily_revenue'] = df['daily_revenue'].astype(float)
+    daily_revenue_df = df.groupby(['day','deployment'])['daily_revenue'].max().reset_index()
+
+    daily_revenue_df = daily_revenue_df.groupby(['day'])['daily_revenue'].sum().reset_index()
+
+    return daily_revenue_df
+
+# # gets the daily_revenue per token irregardless of deployment
+def get_daily_aggregate_revenue_2(df):
+
     df['daily_revenue_per_token'] = df['daily_revenue_per_token'].astype(float)
     daily_revenue_df = df.groupby(['day'])['daily_revenue_per_token'].sum().reset_index()
 
@@ -62,6 +72,13 @@ def get_daily_aggregate_revenue(df):
 
 # # gets our cumulative revenue per day
 def get_total_aggregate_revenue_per_day(df):
+
+    df['total_revenue'] = df['daily_revenue'].cumsum()
+
+    return df
+
+# # gets our cumulative revenue per day
+def get_total_aggregate_revenue_per_day_2(df):
 
     df['total_revenue'] = df['daily_revenue_per_token'].cumsum()
 
@@ -119,6 +136,8 @@ def get_ma_df(df):
 
 # # gets our data_card_df
 def get_data_card_df(df):
+
+    total_revenue = df['total_revenue'].max()
     revenue_data_card_df = get_n_days_revenue(df, '180_day_revenue', 180)
     revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, '90_day_revenue', 90)
     revenue_data_card_df = get_n_days_revenue(revenue_data_card_df, '30_day_revenue', 30)
@@ -130,6 +149,8 @@ def get_data_card_df(df):
 
     revenue_data_card_df = revenue_data_card_df[:1]
 
+    revenue_data_card_df['total_revenue'] = total_revenue
+
     revenue_data_card_df['target_daily_revenue'] = 7000
 
     return revenue_data_card_df
@@ -138,13 +159,13 @@ def get_data_card_df(df):
 def run_all():
     protocol_revenue_list = get_protocol_revenue_filename_list()
     df = get_combined_revenue_df(protocol_revenue_list)
-
     token_revenue_df = get_total_revenue_per_token(df)
 
     df = get_daily_aggregate_revenue(df)
+
     df = get_total_aggregate_revenue_per_day(df)
 
-    df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
+    # df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
 
     df = df[['day', 'daily_revenue', 'total_revenue']]
 
