@@ -147,7 +147,7 @@ class CDP(ERC_20.ERC_20):
         df['tx_hash'] = ['0x0000000000000000000000000000000000000000']
         df['timestamp'] = [1776]
         df['collateral_address'] = ['0x0000000000000000000000000000000000000000']
-        df['collateral_amount'] = ['0x0000000000000000000000000000000000000000']
+        df['collateral_amount'] = [0]
         df['usd_collateral_amount'] = [0]
         df['debt_amount'] = [0]
         df['mint_fee'] = [0]
@@ -249,7 +249,7 @@ class CDP(ERC_20.ERC_20):
         # df.rename(columns = {'asset_price':'usd_payment_amount'}, inplace = True)
         df['usd_collateral_amount'] = df['asset_price'] * df['collateral_amount'] / df['token_decimal']
 
-        df = df[['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'block_number']]
+        df = df[['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'mint_fee', 'block_number']]
 
         return df
     
@@ -360,8 +360,8 @@ class CDP(ERC_20.ERC_20):
         tx_hash_list = []
         collateral_address_list = []
         mint_fee_list = []
-        block_number_list = []
-        timestamp_list = []
+        # block_number_list = []
+        # timestamp_list = []
 
         i = 1
 
@@ -376,18 +376,19 @@ class CDP(ERC_20.ERC_20):
                 tx_hash = str(event['transactionHash'].hex())
                 collateral_address = event['args']['_collateral']
                 mint_fee = event['args']['_LUSDFee']
+                mint_fee /= self.decimals
                 
-                try:
-                    block = self.web3.eth.get_block(event['blockNumber'])
-                    block_number = int(block['number'])
-                except:
-                    block_number = int(event['blockNumber'])
+                # try:
+                #     block = self.web3.eth.get_block(event['blockNumber'])
+                #     block_number = int(block['number'])
+                # except:
+                #     block_number = int(event['blockNumber'])
                 
-                block_timestamp = block['timestamp']
+                # block_timestamp = block['timestamp']
                 
-                block_number_list.append(block_number)
+                # block_number_list.append(block_number)
                 tx_hash_list.append(tx_hash)
-                timestamp_list.append(block_timestamp)
+                # timestamp_list.append(block_timestamp)
                 borrower_address_list.append(borrower_address)
                 collateral_address_list.append(collateral_address)
                 mint_fee_list.append(mint_fee)
@@ -402,10 +403,25 @@ class CDP(ERC_20.ERC_20):
             df['tx_hash'] = tx_hash_list
             df['collateral_address'] = collateral_address_list
             df['mint_fee'] = mint_fee_list
-            df['block_number'] = block_number_list
-            df['timestamp'] = timestamp_list
+            # df['block_number'] = block_number_list
+            # df['timestamp'] = timestamp_list
 
         return df
+    
+    def combine_trove_and_mint_df(self, trove_df, mint_df):
+        # Merge the DataFrames on common columns
+        merged = pd.merge(trove_df, mint_df[['borrower_address', 'collateral_address', 'tx_hash', 'mint_fee']], 
+                        on=['borrower_address', 'collateral_address', 'tx_hash'], 
+                        how='left', 
+                        suffixes=('', '_new'))
+
+        # Update the mint_fee column in df1
+        trove_df['mint_fee'] = merged['mint_fee_new'].fillna(trove_df['mint_fee'])
+
+        # If you want to drop the extra column created by the merge
+        trove_df = trove_df.drop('mint_fee_new', axis=1, errors='ignore')
+
+        return trove_df
     
     # # will track all of our cdp_events
     def run_all_cdp_tracking(self):
@@ -435,16 +451,23 @@ class CDP(ERC_20.ERC_20):
             mint_events = self.get_mint_fee_events(from_block, to_block)
 
             if len(events) > 0:
-                print(events)
-                df = self.process_events(events)
+                trove_df = self.process_events(events)
+
+            else:
+                trove_df = pd.DataFrame()
 
             if len(mint_events) > 0:
-                print(mint_events)
-                mint_df = self.process_mint_fee_events()
-                print(mint_df)
+                mint_df = self.process_mint_fee_events(mint_events)
+            
+            else:
+                mint_df = pd.DataFrame()
 
-            if len(df) > 0:
-                sql.write_to_db(df, self.column_list, self.table_name)
+            # # if our trove df exists, it means we will write to our database
+            # # if our mint_df also exists, we will add the mint_fee from mint_df to the default 0 mint_fee of trove_updated
+            if len(trove_df) > 0:
+                if len(mint_df) > 0:
+                    trove_df = self.combine_trove_and_mint_df(trove_df, mint_df)
+                sql.write_to_db(trove_df, self.column_list, self.table_name)
 
             time.sleep(wait_time)
 
@@ -460,7 +483,7 @@ class CDP(ERC_20.ERC_20):
             print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             time.sleep(wait_time)
         
-        df = sql.get_o_token_data_df(self.table_name)
+        df = sql.get_cdp_token_data_df(self.table_name)
         df = df.drop_duplicates(subset=self.duplicate_column_list)
         cs.df_write_to_cloud_storage_as_zip(df, self.cloud_file_name, self.cloud_bucket_name)
         
