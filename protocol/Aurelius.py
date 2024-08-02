@@ -5,6 +5,7 @@ import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
 from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total
+from cdp import CDP
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,6 +19,8 @@ class Aurelius(Lending_Pool.Lending_Pool):
     INTERVAL = 500
     WAIT_TIME = 0.6
     GATEWAY_ADDRESS = '0x039BcB43cE3e5ef9Bf555a30e3b74a7719c46499'
+    BORROWER_OPERATIONS_ADDRESS = '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1'
+    CDP_FROM_BLOCK = 52092639
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
@@ -32,9 +35,11 @@ class Aurelius(Lending_Pool.Lending_Pool):
         self.cloud_bucket_name = self.CLOUD_BUCKET_NAME
         self.table_name = self.index
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
+        self.cdp_object = CDP.CDP(self.BORROWER_OPERATIONS_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
     
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
+        self.cdp_object.run_all_cdp_tracking()
         self.lend_revenue_object.run_all_lend_revenue()
         cdx_total.run_all()
         return

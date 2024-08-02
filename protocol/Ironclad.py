@@ -6,6 +6,7 @@ import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
 from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total, o_token_revenue_tracking
 from helper_classes import oToken
+from cdp import CDP
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -21,6 +22,8 @@ class Ironclad(Lending_Pool.Lending_Pool):
     GATEWAY_ADDRESS = '0x6387c7193B5563DD17d659b9398ACd7b03FF0080'
     EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
     FROM_BLOCK = 10257616
+    BORROWER_OPERATIONS_ADDRESS = '0x2d1b857F459ca527991f574A5CB2cfF2763088f2'
+    CDP_FROM_BLOCK = 11202864
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
@@ -37,11 +40,13 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
         self.o_token_object = oToken.oToken(self.EXERCISE_ADDRESS, self.FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
         self.o_token_revenue_object = o_token_revenue_tracking.o_token_revenue_tracking(self.INDEX)
+        self.cdp_object = CDP.CDP(self.BORROWER_OPERATIONS_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
     
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
         self.lend_revenue_object.run_all_lend_revenue()
         self.o_token_object.run_all_o_token_tracking()
+        self.cdp_object.run_all_cdp_tracking()
         self.o_token_revenue_object.run_all_o_token_revenue()
         cdx_total.run_all()
         return
