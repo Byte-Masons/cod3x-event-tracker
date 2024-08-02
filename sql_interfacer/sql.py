@@ -706,6 +706,27 @@ def get_o_token_data_df(all_data_table_name):
     
     return df
 
+def get_cdp_token_data_df(all_data_table_name):
+    
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    query = f"""
+        SELECT *
+        FROM {all_data_table_name}
+    """
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+
+    column_list = ['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'mint_fee', 'block_number']
+
+    df = get_sql_df(rows, column_list)
+
+    return df
+
 # # makes a dataframe of our transaction table data
 def get_transaction_data_df_2(all_data_table_name, column_list):
     

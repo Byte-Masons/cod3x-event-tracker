@@ -16,7 +16,7 @@ from lending_pool import approval_tracker
 from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt
-from cdp import cdp
+from cdp import CDP
 from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl, cod3x_lend_total_revenue_tracking as cdx_total
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base, Fantom
@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.ERROR)
 
 runtime_pause = 600
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -108,25 +108,27 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
 
 # lend_events = Optimism.Optimism()
 # lend_events.run_all_modules()
 
 # df = cdx_total.run_all()
 
-# EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
-# FROM_BLOCK = 10257616
-# RPC_URL = 'https://mainnet.mode.network'
-# WAIT_TIME = 1.05
-# INTERVAL = 250
-# INDEX = 'ironclad_o_token_events'
+EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
+BORROWER_OPERATIONS_ADDRESS = '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1'
+FROM_BLOCK = 51922639
+RPC_URL = 'https://rpc.mantle.xyz'
+INTERVAL = 5000
+WAIT_TIME = 0.6
+INDEX = 'aurelius'
 
 # mode_o_token = oToken.oToken(EXERCISE_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
-
 # mode_o_token.run_all_o_token_tracking()
 
-# sql.drop_table('optimism_lend_events')
+cdp_events = CDP.CDP(BORROWER_OPERATIONS_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
+cdp_events.run_all_cdp_tracking()
+# sql.drop_table('aurelius_cdp_events')
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'

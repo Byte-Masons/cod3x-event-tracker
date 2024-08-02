@@ -30,7 +30,7 @@ class CDP(ERC_20.ERC_20):
         self.lend_event_table_name = index + '_lend_events'
 
         self.column_list = ['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'mint_fee', 'block_number']
-        self.duplicate_column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'collateral_amount', 'debt_amount', 'mint_fee']
+        self.duplicate_column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'collateral_amount', 'debt_amount']
 
         web3 = lph.get_web_3(rpc_url)
         self.web3 = web3
@@ -55,6 +55,8 @@ class CDP(ERC_20.ERC_20):
         self.token_symbol = self.get_token_symbol()
 
         time.sleep(self.WAIT_TIME)
+
+        self.asset_decimal_df = self.get_asset_decimal_df()
     
     # # adds onto our index for o_token_events
     def get_event_index(self, index):
@@ -125,6 +127,16 @@ class CDP(ERC_20.ERC_20):
         events = self.contract.events.TroveUpdated.get_logs(fromBlock=from_block, toBlock=to_block)
 
         return events
+
+    # # will get the mint fee paid when someone mints our cdp stablecoin
+    def get_mint_fee_events(self, from_block, to_block):
+        
+        from_block = int(from_block)
+        to_block = int(to_block)
+        
+        events = self.contract.events.LUSDBorrowingFeePaid.get_logs(fromBlock=from_block, toBlock=to_block)
+
+        return events
     
     # # makes a boilerplate dummy data df
     def make_default_df(self):
@@ -134,8 +146,8 @@ class CDP(ERC_20.ERC_20):
         df['borrower_address'] = ['0x0000000000000000000000000000000000000000']
         df['tx_hash'] = ['0x0000000000000000000000000000000000000000']
         df['timestamp'] = [1776]
-        df['collateral_address'] = [self.o_token_address]
-        df['collateral_amount'] = [self.payment_token_address]
+        df['collateral_address'] = ['0x0000000000000000000000000000000000000000']
+        df['collateral_amount'] = ['0x0000000000000000000000000000000000000000']
         df['usd_collateral_amount'] = [0]
         df['debt_amount'] = [0]
         df['mint_fee'] = [0]
@@ -147,8 +159,8 @@ class CDP(ERC_20.ERC_20):
     def insert_bulk_data_into_table(self, df, table_name):
 
         query = f"""
-        INSERT INTO {table_name} (sender, recipient, tx_hash, timestamp, o_token_address, payment_token_address, o_token_amount, payment_token_amount, usd_o_token_amount, usd_payment_amount, block_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO {table_name} (borrower_address, tx_hash, timestamp, collateral_address, collateral_amount, usd_collateral_amount, debt_amount, mint_fee, block_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         sql.write_to_custom_table(query, df)
@@ -156,19 +168,17 @@ class CDP(ERC_20.ERC_20):
         return
     
     # # creates our local oToken table
-    def create_o_token_table(self, cloud_df):
+    def create_cdp_table(self, cloud_df):
         query = f"""
             CREATE TABLE IF NOT EXISTS {self.table_name}(
-                sender TEXT,
-                recipient TEXT,
+                borrower_address TEXT,
                 tx_hash TEXT,
                 timestamp TEXT,
-                o_token_address TEXT,
-                payment_token_address TEXT,
-                o_token_amount TEXT,
-                payment_token_amount TEXT,
-                usd_o_token_amount TEXT,
-                usd_payment_amount TEXT,
+                collateral_address TEXT,
+                collateral_amount TEXT,
+                usd_collateral_amount TEXT,
+                debt_amount TEXT,
+                mint_fee TEXT,
                 block_number TEXT
                 )
             """
@@ -176,7 +186,7 @@ class CDP(ERC_20.ERC_20):
         # # will only insert data into the sql table if the table doesn't exist
         sql.create_custom_table(query)
         
-        db_df = sql.get_o_token_data_df(self.table_name)
+        db_df = sql.get_cdp_token_data_df(self.table_name)
 
         # # makes a combined local and cloud dataframe and drops any duplicates from the dataframe
         # # drops our old database table
@@ -190,18 +200,46 @@ class CDP(ERC_20.ERC_20):
 
         return combined_df
     
-    # # will return a dataframe with the closest known asset_price to our oToken exercise
-    def add_payment_and_o_token_pricing_to_df(self, event_df):
+    # # will make a dataframe of all the tokens in our lend_event table and their decimals
+    def get_asset_decimal_df(self):
+        lend_event_df = sql.get_transaction_data_df(self.lend_event_table_name)
+
+        unique_reserve_address_list = lend_event_df['reserve_address'].unique()
+
+        reserve_address_list = []
+        token_decimal_list = []
+
+        for reserve_address in unique_reserve_address_list:
+            token_contract = ERC_20.ERC_20(reserve_address, self.rpc_url)
+            token_decimals = int(token_contract.decimals)
+
+            reserve_address_list.append(reserve_address)
+            token_decimal_list.append(token_decimals)
+        
+        df = pd.DataFrame()
+        df['reserve_address'] = reserve_address_list
+        df['token_decimal'] = token_decimal_list
+
+        return df
+    
+    # # will return a dataframe with the closest known asset_price to our BorrowerOperations TroveUpdated
+    def add_collateral_token_pricing_to_df(self, event_df):
         lend_df = sql.get_transaction_data_df(self.lend_event_table_name)
 
-        lend_df = lend_df.loc[lend_df['reserve_address'] == self.payment_token_address]
-        lend_df = lend_df[['block_number', 'asset_price']]
+        lend_df = lend_df[['reserve_address','block_number', 'asset_price']]
+
+        unique_reserve_address_list = self.asset_decimal_df['reserve_address'].unique()
+
+        # # temporarily will add decimals to our lend_df
+        for reserve_address in unique_reserve_address_list:
+            token_decimal = self.asset_decimal_df.loc[self.asset_decimal_df['reserve_address'] == reserve_address]['token_decimal'].max()
+            lend_df.loc[lend_df['reserve_address'] == reserve_address, 'token_decimal'] = token_decimal
 
         event_df['block_number'] = event_df['block_number'].astype(int)
-        event_df['payment_token_amount'] = event_df['payment_token_amount'].astype(float)
+        event_df['collateral_amount'] = event_df['collateral_amount'].astype(float)
 
         lend_df['block_number'] = lend_df['block_number'].astype(int)
-        lend_df['asset_price'] = lend_df['asset_price'].astype(float)
+        lend_df[['asset_price', 'token_decimal']] = lend_df[['asset_price', 'token_decimal']].astype(float)
         
         event_df = event_df.sort_values(by='block_number')
         lend_df = lend_df.sort_values(by='block_number')
@@ -209,28 +247,40 @@ class CDP(ERC_20.ERC_20):
         df = pd.merge_asof(event_df, lend_df, on='block_number', direction='nearest')
 
         # df.rename(columns = {'asset_price':'usd_payment_amount'}, inplace = True)
-        df['usd_payment_amount'] = df['asset_price'] * df['payment_token_amount'] / self.decimals
-        # # tokens they receive should be about 2x what they paid
-        df['usd_o_token_amount'] = df['usd_payment_amount'] * 2
+        df['usd_collateral_amount'] = df['asset_price'] * df['collateral_amount'] / df['token_decimal']
 
-        df = df[['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount','block_number']]
+        df = df[['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'block_number']]
 
         return df
     
     # # will return a boolean on whether our event already exists or not
-    def exercise_event_already_exists(self, event):
+    def event_already_exists(self, event):
 
-        # column_list = ['sender', 'tx_hash', 'o_token_amount', 'payment_token_amount']
-        column_list = ['sender', 'o_token_amount', 'payment_token_amount']
+        column_list = self.duplicate_column_list
+        # ['borrower_address', 'tx_hash', 'collateral_address', 'collateral_amount', 'debt_amount']
 
-        # tx_hash = str(event['transactionHash'].hex())
-        sender_address = event['args']['sender']
-        o_token_amount = event['args']['amount']
-        payment_token_amount = event['args']['paymentAmount']
+        borrower_address = event['args']['_borrower']
+        tx_hash = str(event['transactionHash'].hex())
+        collateral_address = event['args']['_collateral']
+        collateral_amount = event['args']['_coll']
+        debt_amount = event['args']['_debt']
 
-        # value_list = [tx_hash, sender_address, o_token_amount, payment_token_amount]
+        value_list = [borrower_address, tx_hash, collateral_address, collateral_amount, debt_amount]
 
-        value_list = [sender_address, o_token_amount, payment_token_amount]
+        exists = sql.sql_multiple_values_exist(value_list, column_list, self.table_name)
+
+        return exists
+    
+    def mint_fee_event_already_exists(self, event):
+        
+        column_list = ['borrower_address', 'tx_hash', 'collateral_address', 'mint_fee']
+        
+        borrower_address = event['args']['_borrower']
+        tx_hash = event['transactionHash'].hex()
+        collateral_address = event['args']['_collateral']
+        mint_fee = event['args']['_LUSDFee']
+
+        value_list = [borrower_address, tx_hash, collateral_address, mint_fee]
 
         exists = sql.sql_multiple_values_exist(value_list, column_list, self.table_name)
 
@@ -240,17 +290,15 @@ class CDP(ERC_20.ERC_20):
     def process_events(self, events):
 
         df = pd.DataFrame()
-
-        sender_list = []
-        recipient_list = []
+        # ['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'block_number']
+        
+        borrower_list = []
         tx_hash_list = []
         timestamp_list = []
-        o_token_address_list = []
-        payment_token_address_list = []
-        o_token_amount_list = []
-        payment_token_amount_list = []
-        usd_o_token_amount_list = []
-        usd_payment_amount_list = []
+        collateral_address_list = []
+        collateral_amount_list = []
+        usd_collateral_amount_list = []
+        debt_amount_list = []
         block_number_list = []
 
         i = 1
@@ -258,15 +306,15 @@ class CDP(ERC_20.ERC_20):
         for event in events:
             i += 1
 
-            event_exists = self.exercise_event_already_exists(event)
+            event_exists = self.event_already_exists(event)
 
             if event_exists == False:
                 
-                sender_address = event['args']['sender']
-                recipient_address = event['args']['recipient']
-                tx_hash = event['transactionHash'].hex()
-                o_token_amount = event['args']['amount']
-                payment_token_amount = event['args']['paymentAmount']
+                borrower_address = event['args']['_borrower']
+                tx_hash = str(event['transactionHash'].hex())
+                collateral_address = event['args']['_collateral']
+                collateral_amount = event['args']['_coll']
+                debt_amount = event['args']['_debt']
                 
                 try:
                     block = self.web3.eth.get_block(event['blockNumber'])
@@ -279,41 +327,98 @@ class CDP(ERC_20.ERC_20):
                 block_number_list.append(block_number)
                 tx_hash_list.append(tx_hash)
                 timestamp_list.append(block_timestamp)
-                sender_list.append(sender_address)
-                recipient_list.append(recipient_address)
-                o_token_amount_list.append(o_token_amount)
-                payment_token_amount_list.append(payment_token_amount)
+                borrower_list.append(borrower_address)
+                collateral_address_list.append(collateral_address)
+                collateral_amount_list.append(collateral_amount)
+                debt_amount_list.append(debt_amount)
+
 
             time.sleep(self.wait_time)
         
-        if len(sender_list) > 0:
+        if len(tx_hash_list) > 0:
 
     
-            df['sender'] = sender_list
-            df['recipient'] = recipient_list
+            df['borrower_address'] = borrower_list
             df['tx_hash'] = tx_hash_list
             df['timestamp'] = timestamp_list
-            df['o_token_address'] = self.o_token_address
-            df['payment_token_address'] = self.payment_token_address
-            df['o_token_amount'] = o_token_amount_list
-            df['payment_token_amount'] = payment_token_amount_list
+            df['collateral_address'] = collateral_address_list
+            df['collateral_amount'] = collateral_amount_list
+            df['debt_amount'] = debt_amount_list
+            df['mint_fee'] = 0
             df['block_number'] = block_number_list
-            df = self.add_payment_and_o_token_pricing_to_df(df)
+            df = self.add_collateral_token_pricing_to_df(df)
+
+        return df
+
+    # # will process our events
+    def process_mint_fee_events(self, events):
+
+        df = pd.DataFrame()
+        # ['borrower_address', 'tx_hash', 'timestamp', 'collateral_address', 'collateral_amount', 'usd_collateral_amount', 'debt_amount', 'block_number']
+        
+        borrower_address_list = []
+        tx_hash_list = []
+        collateral_address_list = []
+        mint_fee_list = []
+        block_number_list = []
+        timestamp_list = []
+
+        i = 1
+
+        for event in events:
+            i += 1
+
+            event_exists = self.mint_fee_event_already_exists(event)
+
+            if event_exists == False:
+                
+                borrower_address = event['args']['_borrower']
+                tx_hash = str(event['transactionHash'].hex())
+                collateral_address = event['args']['_collateral']
+                mint_fee = event['args']['_LUSDFee']
+                
+                try:
+                    block = self.web3.eth.get_block(event['blockNumber'])
+                    block_number = int(block['number'])
+                except:
+                    block_number = int(event['blockNumber'])
+                
+                block_timestamp = block['timestamp']
+                
+                block_number_list.append(block_number)
+                tx_hash_list.append(tx_hash)
+                timestamp_list.append(block_timestamp)
+                borrower_address_list.append(borrower_address)
+                collateral_address_list.append(collateral_address)
+                mint_fee_list.append(mint_fee)
+
+
+            time.sleep(self.wait_time)
+        
+        if len(tx_hash_list) > 0:
+
+    
+            df['borrower_address'] = borrower_address_list
+            df['tx_hash'] = tx_hash_list
+            df['collateral_address'] = collateral_address_list
+            df['mint_fee'] = mint_fee_list
+            df['block_number'] = block_number_list
+            df['timestamp'] = timestamp_list
 
         return df
     
-    # # will track all of our o_token_events
-    def run_all_o_token_tracking(self):
+    # # will track all of our cdp_events
+    def run_all_cdp_tracking(self):
 
         try:
             cloud_df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
             cloud_df.drop_duplicates(subset=self.duplicate_column_list)
         except:
-            cloud_df = self.make_default_o_token_df()
+            cloud_df = self.make_default_df()
 
-        df = self.create_o_token_table(cloud_df)
+        df = self.create_cdp_table(cloud_df)
         
-        from_block = self.get_o_token_from_block(df)
+        from_block = self.get_borrower_operations_from_block(df)
 
         latest_block = lph.get_latest_block(self.web3)
 
@@ -324,13 +429,22 @@ class CDP(ERC_20.ERC_20):
 
         while to_block < latest_block:
             
-            events = self.get_exercised_events(from_block, to_block)
+            events = self.get_trove_updated_events(from_block, to_block)
+            
+            time.sleep(wait_time)
+            mint_events = self.get_mint_fee_events(from_block, to_block)
 
             if len(events) > 0:
+                print(events)
                 df = self.process_events(events)
 
-                if len(df) > 0:
-                    sql.write_to_db(df, self.column_list, self.table_name)
+            if len(mint_events) > 0:
+                print(mint_events)
+                mint_df = self.process_mint_fee_events()
+                print(mint_df)
+
+            if len(df) > 0:
+                sql.write_to_db(df, self.column_list, self.table_name)
 
             time.sleep(wait_time)
 
