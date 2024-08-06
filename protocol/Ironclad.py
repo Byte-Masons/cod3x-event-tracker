@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
-from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total, o_token_revenue_tracking
+from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total, o_token_revenue_tracking, cdp_mint_fee_revenue_tracking
 from helper_classes import oToken
 from cdp import CDP
 
@@ -41,12 +41,14 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.o_token_object = oToken.oToken(self.EXERCISE_ADDRESS, self.FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
         self.o_token_revenue_object = o_token_revenue_tracking.o_token_revenue_tracking(self.INDEX)
         self.cdp_object = CDP.CDP(self.BORROWER_OPERATIONS_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
+        self.cdp_revenue_object = cdp_mint_fee_revenue_tracking.cdp_mint_fee_revenue_tracking(self.INDEX)
     
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
         self.lend_revenue_object.run_all_lend_revenue()
         self.o_token_object.run_all_o_token_tracking()
-        self.cdp_object.run_all_cdp_tracking()
         self.o_token_revenue_object.run_all_o_token_revenue()
+        self.cdp_object.run_all_cdp_tracking()
+        self.cdp_revenue_object.run_all_cdp_revenue()
         cdx_total.run_all()
         return
