@@ -26,9 +26,9 @@ from helper_classes import ERC_20 as erc20, oToken
 logging.basicConfig(level=logging.ERROR)
 
 
-runtime_pause = 600
+runtime_pause = 7200
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -108,36 +108,42 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions_2()
+loop_all_functions_2()
 
-lend_events = Ironclad.Ironclad()
-lend_events.run_all_modules()
+# lend_events = Ironclad.Ironclad()
+# lend_events.run_all_modules()
 
 # df = cdx_total.run_all()
 
-EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
-BORROWER_OPERATIONS_ADDRESS = '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1'
-# FROM_BLOCK = 51922639
-FROM_BLOCK = 52092639
-RPC_URL = 'https://rpc.mantle.xyz'
-INTERVAL = 5000
-WAIT_TIME = 0.6
-INDEX = 'aurelius'
+# EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
+# BORROWER_OPERATIONS_ADDRESS = '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1'
+# # FROM_BLOCK = 51922639
+# FROM_BLOCK = 52092639
+# RPC_URL = 'https://rpc.mantle.xyz'
+# INTERVAL = 5000
+# WAIT_TIME = 0.6
+# INDEX = 'aurelius'
 
 # mode_o_token = oToken.oToken(EXERCISE_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
 # mode_o_token.run_all_o_token_tracking()
 
 # cdp_events = CDP.CDP(BORROWER_OPERATIONS_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
 # cdp_events.run_all_cdp_tracking()
-# sql.drop_table('aurelius_cdp_events')
+# sql.drop_table('ironclad_2_o_token_events')
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
-# df = cs.read_zip_csv_from_cloud_storage('aurelius_cdp_events.zip', bucket_name)
-# df = pd.read_csv('test_test.csv')
+# df = cs.read_zip_csv_from_cloud_storage('ironclad_o_token_events.zip', bucket_name)
+# df = pd.read_csv('ironclad_o_token_events.csv')
+# df['o_token_amount'] = df['o_token_amount'].astype(float)
+# print(df['o_token_amount'].sum() / 1e18)
 # df = sql.get_transaction_data_df('ironclad_lend_events')
 # df = sql.get_o_token_data_df('ironclad_o_token_events')
 # df = sql.get_cdp_token_data_df('aurelius_cdp_events')
+# df = df.drop_duplicates(subset=['tx_hash', 'from_address', 'to_address', 'token_address', 'token_volume'])
+# df['timestamp'] = df['timestamp'].astype(float)
+# df = df.sort_values(by='timestamp', ascending=False)
+# df = df[-5:]
 # print(df)
 # df = df.loc[df['collateral_amount'] != '0x0000000000000000000000000000000000000000']
 # df.to_csv('test_test.csv', index=False)
@@ -147,4 +153,4 @@ INDEX = 'aurelius'
 # df = df[:555]
 
 # if len(df) > 1:
-#     cs.df_write_to_cloud_storage_as_zip(df, 'aurelius_cdp_events.zip', 'cooldowns2')
+#     cs.df_write_to_cloud_storage_as_zip(df, 'ironclad_2_o_token_events.zip', 'cooldowns2')

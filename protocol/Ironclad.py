@@ -15,7 +15,7 @@ class Ironclad(Lending_Pool.Lending_Pool):
     PROTOCOL_DATA_PROVIDER_ADDRESS = '0x29563f73De731Ae555093deb795ba4D1E584e42E'
     RPC_URL = 'https://mainnet.mode.network'
     TREASURY_ADDRESS = '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF'
-    INDEX = 'ironclad'
+    INDEX = 'ironclad_2'
     CLOUD_BUCKET_NAME = 'cooldowns2'
     INTERVAL = 500
     WAIT_TIME = 0.6

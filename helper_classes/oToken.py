@@ -21,7 +21,7 @@ class oToken(ERC_20.ERC_20):
         self.cloud_file_name = self.get_cloud_filename()
         self.cloud_bucket_name = 'cooldowns2'
         self.table_name = self.index
-        self.lend_event_table_name = self.index.split('_')[0] + '_lend_events'
+        self.lend_event_table_name = index.split('_lend')[0] + '_lend_events'
         
         self.column_list = ['sender', 'recipient', 'tx_hash', 'timestamp', 'o_token_address', 'payment_token_address', 'o_token_amount', 'payment_token_amount', 'usd_o_token_amount', 'usd_payment_amount', 'block_number']
         self.duplicate_column_list = ['sender', 'tx_hash', 'o_token_amount', 'payment_token_amount']
@@ -313,7 +313,7 @@ class oToken(ERC_20.ERC_20):
             cloud_df = self.make_default_o_token_df()
 
         df = self.create_o_token_table(cloud_df)
-        
+
         from_block = self.get_o_token_from_block(df)
 
         latest_block = lph.get_latest_block(self.web3)

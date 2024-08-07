@@ -22,7 +22,8 @@ class cdp_mint_fee_revenue_tracking():
     
     # # makes our o_token_event cloud filename
     def get_cdp_event_cloud_filename(self):
-        cloud_filename = self.index + '_cdp_events.zip'
+        cloud_filename = self.index
+        cloud_filename = cloud_filename + '_cdp_events.zip'
 
         return cloud_filename
     
@@ -34,7 +35,8 @@ class cdp_mint_fee_revenue_tracking():
     
     # # makes our revenue cloud filename
     def get_cdp_revenue_cloud_filename(self):
-        cloud_filename = self.index + '_cdp_revenue.zip'
+        cloud_filename = self.index
+        cloud_filename = cloud_filename + '_cdp_revenue.zip'
 
         return cloud_filename
     

@@ -22,7 +22,8 @@ class o_token_revenue_tracking():
     
     # # makes our o_token_event cloud filename
     def get_o_token_event_cloud_filename(self):
-        cloud_filename = self.index + '_o_token_events.zip'
+        cloud_filename = self.index
+        cloud_filename = cloud_filename + '_o_token_events.zip'
 
         return cloud_filename
     
@@ -34,7 +35,8 @@ class o_token_revenue_tracking():
     
     # # makes our revenue cloud filename
     def get_o_token_revenue_cloud_filename(self):
-        cloud_filename = self.index + '_o_token_revenue.zip'
+        cloud_filename = self.index
+        cloud_filename = cloud_filename + '_o_token_revenue.zip'
 
         return cloud_filename
     

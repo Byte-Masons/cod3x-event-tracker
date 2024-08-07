@@ -53,10 +53,6 @@ class CDP(ERC_20.ERC_20):
         time.sleep(self.WAIT_TIME)
 
         self.token_symbol = self.get_token_symbol()
-
-        time.sleep(self.WAIT_TIME)
-
-        self.asset_decimal_df = self.get_asset_decimal_df()
     
     # # adds onto our index for o_token_events
     def get_event_index(self, index):
@@ -426,6 +422,10 @@ class CDP(ERC_20.ERC_20):
     # # will track all of our cdp_events
     def run_all_cdp_tracking(self):
 
+        self.asset_decimal_df = self.get_asset_decimal_df()
+
+        time.sleep(self.WAIT_TIME)
+    
         try:
             cloud_df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
             cloud_df.drop_duplicates(subset=self.duplicate_column_list)
@@ -433,7 +433,7 @@ class CDP(ERC_20.ERC_20):
             cloud_df = self.make_default_df()
 
         df = self.create_cdp_table(cloud_df)
-        
+
         from_block = self.get_borrower_operations_from_block(df)
 
         latest_block = lph.get_latest_block(self.web3)
