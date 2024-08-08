@@ -61,8 +61,6 @@ def get_combined_revenue_df(protocol_revenue_list):
     
     df = pd.concat(df_list)
 
-    df = df.drop_duplicates(subset=['day', 'token_address', 'deployment'])
-
     return df
 
 # # gets the daily_revenue per token irregardless of deployment
@@ -72,14 +70,6 @@ def get_daily_aggregate_revenue(df):
     daily_revenue_df = df.groupby(['day','deployment'])['daily_revenue'].max().reset_index()
 
     daily_revenue_df = daily_revenue_df.groupby(['day','deployment'])['daily_revenue'].sum().reset_index()
-
-    return daily_revenue_df
-
-# # gets the daily_revenue per token irregardless of deployment
-def get_daily_aggregate_revenue_2(df):
-
-    df['daily_revenue_per_token'] = df['daily_revenue_per_token'].astype(float)
-    daily_revenue_df = df.groupby(['day'])['daily_revenue_per_token'].sum().reset_index()
 
     return daily_revenue_df
 
@@ -165,17 +155,42 @@ def get_data_card_df(df):
 
     return revenue_data_card_df
 
+# # gets our lend_revenue dataframe
 def get_lend_revenue_df(protocol_revenue_list):
     
-    lend_revenue_list = get_specified_revenue_file_list(protocol_revenue_list, 'lend')
+    revenue_type = 'lend'
 
-    df = get_combined_revenue_df(lend_revenue_list)
+    revenue_list = get_specified_revenue_file_list(protocol_revenue_list, revenue_type)
+
+    df = get_combined_revenue_df(revenue_list)
+
+    df = df.drop_duplicates(subset=['day', 'token_address', 'deployment'], keep='last')
 
     df = get_daily_aggregate_revenue(df)
 
     df = get_total_aggregate_revenue_per_day(df)
 
-    df.rename(columns = {'daily_revenue':'daily_deployment_revenue'}, inplace = True)
+    df['revenue_type'] = revenue_type
+
+    return df
+
+# # essentially gets any of our revenue dataframes
+def get_general_revenue_df(protocol_revenue_list, revenue_type):
+    
+    revenue_list = get_specified_revenue_file_list(protocol_revenue_list, revenue_type)
+
+    df = get_combined_revenue_df(revenue_list)
+
+    try:
+        df = df.drop_duplicates(subset=['day', 'token_address', 'deployment'], keep='last')
+    except:
+        df = df.drop_duplicates(subset=['day', 'deployment'], keep='last')
+
+    df = get_daily_aggregate_revenue(df)
+
+    df = get_total_aggregate_revenue_per_day(df)
+
+    df['revenue_type'] = revenue_type
 
     return df
 
@@ -183,15 +198,7 @@ def get_lend_revenue_df(protocol_revenue_list):
 def run_all():
     protocol_revenue_list = cs.get_all_revenue_files('cooldowns2')
 
-    df = get_lend_revenue_df(protocol_revenue_list)
-
-    # lend_revenue_list = get_specified_revenue_file_list(protocol_revenue_list, 'lend')
-
-    # df = get_combined_revenue_df(lend_revenue_list)
-
-    # df = get_daily_aggregate_revenue(df)
-
-    # df = get_total_aggregate_revenue_per_day(df)
+    df = get_general_revenue_df(protocol_revenue_list, 'cdp')
 
     # # df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
 
