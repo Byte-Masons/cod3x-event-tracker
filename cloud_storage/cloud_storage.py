@@ -109,3 +109,18 @@ def df_write_to_cloud_storage_as_zip(df, filename, bucketname):
     blob.upload_from_file(zip_buffer, content_type='application/zip')
 
     return f"Uploaded {zip_filename} to {bucketname}"
+
+# # will return a list of all the files with 'revenue' in their name from our GCP bucket
+def get_all_revenue_files(bucket_name):
+    """Lists all the blobs in the bucket that begin with the prefix."""
+    bucket = STORAGE_CLIENT.get_bucket(bucket_name)
+
+    # List blobs with the given prefix
+    blobs = bucket.list_blobs()
+
+    file_list = []
+    for blob in blobs:
+        if 'revenue' in blob.name.lower():
+            file_list.append(blob.name)
+
+    return file_list
