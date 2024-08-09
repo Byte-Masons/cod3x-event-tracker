@@ -186,8 +186,10 @@ def run_all():
     concat_df = pd.concat([lend_df, cdp_df, o_token_df])
 
     deployment_df = concat_df
-    deployment_df = deployment_df.groupby(['day','deployment'])['total_deployment_revenue'].sum().reset_index()
-    deployment_df['total_revenue'] = deployment_df['total_deployment_revenue'].cumsum()
+
+    deployment_df = deployment_df.groupby(['day','deployment'])['daily_revenue'].sum().reset_index()
+    deployment_df['total_deployment_revenue'] = deployment_df.groupby(['deployment'])['daily_revenue'].cumsum()
+    deployment_df['total_aggregate_revenue'] = deployment_df['daily_revenue'].cumsum()
 
     # # df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
 
