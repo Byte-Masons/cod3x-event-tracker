@@ -108,23 +108,9 @@ class cdp_mint_fee_revenue_tracking():
 
         df = self.set_day_diffs(df)
 
-        # # # df that will just contain o_token total and daily revenue per day
-        cdp_revenue_df = df
-
-        df = self.combine_lend_revenue_with_cdp_revenue(df)
-
-        # # # gets rid of the existing moving average columns
-        df = df[['day','token_address','total_revenue_per_token','daily_revenue_per_token','total_revenue','daily_revenue','token_name']]
         df = self.update_moving_averages(df)
 
-        # # # orders our dataframe columns back to their original
-        df = df[['day','token_address','total_revenue_per_token','daily_revenue_per_token','total_revenue','daily_revenue','7_days_ma_revenue','30_days_ma_revenue','90_days_ma_revenue','180_days_ma_revenue','token_name']]
-
         # # # writes to our cloud files
-        cs.df_write_to_cloud_storage_as_zip(cdp_revenue_df, self.revenue_cloud_filename, self.cloud_bucket_name)
-        cs.df_write_to_cloud_storage_as_zip(df, self.lend_revenue_cloud_filename, self.cloud_bucket_name)
-
-        # print(cdp_revenue_df)
-        # print(df)
+        cs.df_write_to_cloud_storage_as_zip(df, self.revenue_cloud_filename, self.cloud_bucket_name)
 
         return df
