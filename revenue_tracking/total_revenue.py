@@ -99,6 +99,30 @@ def set_n_days_avg_revenue(df, new_column_name, lookback_days):
 
     return df
 
+# # sets a moving average for our dataframe
+def set_deployment_n_days_avg_revenue(df, new_column_name, lookback_days):
+    # Sort the dataframe by day and deployment
+    df = df.sort_values(by=['day', 'deployment'])
+
+    # Group by day and deployment, and calculate the daily revenue
+    day_deployment_revenue = df.groupby(['day', 'deployment'])['daily_revenue'].sum().reset_index()
+
+    # Create a helper column for sorting within each deployment group
+    # day_deployment_revenue['day'] = pd.to_datetime(day_deployment_revenue['day'])
+    day_deployment_revenue['rank'] = day_deployment_revenue.groupby('deployment')['day'].rank(method='dense')
+
+    # Calculate the rolling average for each deployment
+    day_deployment_revenue[new_column_name] = day_deployment_revenue.groupby('deployment')['daily_revenue'].transform(
+        lambda x: x.rolling(window=lookback_days, min_periods=1).mean()
+    )
+
+    # Merge the rolling average back to the original dataframe
+    df = df.merge(day_deployment_revenue[['day', 'deployment', new_column_name]], 
+                  on=['day', 'deployment'], 
+                  how='left')
+
+    return df
+
 # # will find the total revenue earned per token
 def get_total_revenue_per_token(df):
     
@@ -122,15 +146,6 @@ def get_n_days_revenue(df, new_column_name, lookback_days):
     df = df[:lookback_days]
 
     df[new_column_name] = df['daily_revenue'].sum()
-
-    return df
-
-# # makes our moving average columns
-def get_ma_df(df):
-    df = set_n_days_avg_revenue(df, '7_days_ma_revenue', 7)
-    df = set_n_days_avg_revenue(df, '30_days_ma_revenue', 30)
-    df = set_n_days_avg_revenue(df, '90_days_ma_revenue', 90)
-    df = set_n_days_avg_revenue(df, '180_days_ma_revenue', 180)
 
     return df
 
@@ -175,9 +190,56 @@ def get_general_revenue_df(protocol_revenue_list, revenue_type):
 
     return df
 
+# # will set all of our moving averages in our dataframe
+def get_ma_df(df):
+    column_names_list = ['7_days_ma_revenue','30_days_ma_revenue','90_days_ma_revenue','180_days_ma_revenue']
+    lookback_days_list = [7, 30, 90, 180]
+
+    i = 0
+
+    while i < len(column_names_list):
+        column_name = column_names_list[i]
+        lookback_days = lookback_days_list[i]
+
+        df = set_deployment_n_days_avg_revenue(df, column_name, lookback_days)
+
+        i += 1
+
+    # Group by day and sum the MA metrics across all deployments
+    total_ma_df = df.groupby('day')[column_names_list].sum().reset_index()
+    
+    # Rename the columns to indicate they are totals
+    total_ma_columns = ['total_' + col for col in column_names_list]
+    total_ma_df.columns = ['day'] + total_ma_columns
+    
+    # Merge the total MA metrics back to the original dataframe
+    df = df.merge(total_ma_df, on='day', how='left')
+
+    return df
+
+# # will return a list of file names for a given event type
+def get_event_type_list(event_type):
+    df = lph.get_lp_config_df()
+    
+    df = df[df['index'].str.contains('lend', case=False, na=False)]
+
+    protocol_list = df['index'].unique()
+
+    # # reformats our list to their revenue file names
+    protocol_list = [protocol.split('_events')[0] for protocol in protocol_list]
+    protocol_list = [protocol + '_' + event_type + '_events.zip' for protocol in protocol_list]
+
+    return protocol_list
+
+
+def get_combined_lend_event_df():
+
+
+    return
+
 # # finds our combined daily, cumulative, and moving averages of revenue
 def run_all():
-    protocol_revenue_list = cs.get_all_revenue_files('cooldowns2')
+    protocol_revenue_list = cs.get_all_prefix_files('cooldowns2', 'revenue')
 
     lend_df = get_general_revenue_df(protocol_revenue_list, 'lend')
     cdp_df = get_general_revenue_df(protocol_revenue_list, 'cdp')
@@ -191,6 +253,14 @@ def run_all():
     deployment_df['total_deployment_revenue'] = deployment_df.groupby(['deployment'])['daily_revenue'].cumsum()
     deployment_df['total_aggregate_revenue'] = deployment_df['daily_revenue'].cumsum()
 
+    deployment_df = get_ma_df(deployment_df)
+
+    # lend_df = get_event_type_list('lend')
+
+    # token_revenue_df = get_total_revenue_per_token(lend_df)
+
+    # lend_list = cs.get_all_prefix_files('cooldowns2', 'lend')
+
     # # df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
 
     # df = df[['day', 'daily_revenue', 'total_revenue']]
@@ -199,8 +269,10 @@ def run_all():
 
     # revenue_data_card_df = get_data_card_df(df)
 
-    cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
+    # cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
     # cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
     # cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
 
-    return concat_df
+    print(deployment_df)
+
+    return deployment_df

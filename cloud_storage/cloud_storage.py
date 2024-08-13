@@ -124,3 +124,18 @@ def get_all_revenue_files(bucket_name):
             file_list.append(blob.name)
 
     return file_list
+
+# # will return a list of all the files with 'revenue' in their name from our GCP bucket
+def get_all_prefix_files(bucket_name, prefix):
+    """Lists all the blobs in the bucket that begin with the prefix."""
+    bucket = STORAGE_CLIENT.get_bucket(bucket_name)
+
+    # List blobs with the given prefix
+    blobs = bucket.list_blobs()
+
+    file_list = []
+    for blob in blobs:
+        if prefix in blob.name.lower():
+            file_list.append(blob.name)
+
+    return file_list

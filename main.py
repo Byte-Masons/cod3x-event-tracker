@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 7200
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
 # PROTOCOL_LIST = [Lore.Lore()]
 
 # # will try to run the function it it fails for whatever reason
@@ -108,14 +108,14 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
 
 # lend_events = Lore.Lore()
 # lend_events.run_all_modules()
 
 # df = cdx_total.run_all()
 
-# df = total_revenue.run_all()
+df = total_revenue.run_all()
 # print(df)
 
 # df.to_csv('test_test.csv', index=False)
