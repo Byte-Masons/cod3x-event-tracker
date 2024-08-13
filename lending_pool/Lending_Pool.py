@@ -92,8 +92,11 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
         sanitized_df = sanitized_df.loc[sanitized_df['token_address'].isin(receipt_token_list)]
 
         # # extra decimal sanitation
-        sanitizer = Sanitize.Sanitize(sanitized_df, self.rpc_url)
-        sanitized_df = sanitizer.sanitize_df()
+        try:
+            sanitizer = Sanitize.Sanitize(sanitized_df, self.rpc_url)
+            sanitized_df = sanitizer.sanitize_df()
+        except:
+            pass
 
         sql.drop_table(self.table_name)
         sql.create_custom_table(query)

@@ -199,8 +199,8 @@ def run_all():
 
     # revenue_data_card_df = get_data_card_df(df)
 
-    # cs.df_write_to_cloud_storage_as_zip(df, 'aggregate_lend_revenue.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
     # cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
     # cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
 
-    return deployment_df
+    return concat_df
