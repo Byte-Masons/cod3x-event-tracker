@@ -241,48 +241,55 @@ def get_event_type_list(event_type):
     return protocol_list
 
 
-def get_combined_lend_event_df(lend_list):
-
-
-
-    return
+# # finds the sum of daily_revenue across all deployments per day
+# # finds the max total_revenue value per day
+# # finds the first ma metric per day, these are all the same per day, so arbitrarily picking the first should be fine
+def aggregate_daily_revenue(df):
+    
+    # Group by day and aggregate
+    aggregated_df = df.groupby('day').agg({
+        'daily_revenue': 'sum',
+        'total_revenue': 'max',
+        '7_days_ma_revenue': 'first',
+        '30_days_ma_revenue': 'first',
+        '90_days_ma_revenue': 'first',
+        '180_days_ma_revenue': 'first'
+    }).reset_index()
+    
+    return aggregated_df
 
 # # finds our combined daily, cumulative, and moving averages of revenue
 def run_all():
     protocol_revenue_list = cs.get_all_prefix_files('cooldowns2', 'revenue')
 
-    # lend_df = get_general_revenue_df(protocol_revenue_list, 'lend')
-    # cdp_df = get_general_revenue_df(protocol_revenue_list, 'cdp')
-    # o_token_df = get_general_revenue_df(protocol_revenue_list, 'o_token')
+    lend_df = get_general_revenue_df(protocol_revenue_list, 'lend')
+    cdp_df = get_general_revenue_df(protocol_revenue_list, 'cdp')
+    o_token_df = get_general_revenue_df(protocol_revenue_list, 'o_token')
 
-    # concat_df = pd.concat([lend_df, cdp_df, o_token_df])
+    concat_df = pd.concat([lend_df, cdp_df, o_token_df])
 
-    # deployment_df = concat_df
+    deployment_df = concat_df
 
-    # deployment_df = deployment_df.groupby(['day','deployment'])['daily_revenue'].sum().reset_index()
-    # deployment_df['total_deployment_revenue'] = deployment_df.groupby(['deployment'])['daily_revenue'].cumsum()
-    # deployment_df['total_aggregate_revenue'] = deployment_df['daily_revenue'].cumsum()
+    deployment_df = deployment_df.groupby(['day','deployment'])['daily_revenue'].sum().reset_index()
+    deployment_df['total_deployment_revenue'] = deployment_df.groupby(['deployment'])['daily_revenue'].cumsum()
+    deployment_df['total_aggregate_revenue'] = deployment_df['daily_revenue'].cumsum()
 
-    # deployment_df = get_ma_df(deployment_df)
+    deployment_df = get_ma_df(deployment_df)
 
     # # gets the total revenue per token
     lend_revenue_list = cs.get_all_prefix_files('cooldowns2', 'lend_revenue')
     token_revenue_df = get_combined_revenue_df(lend_revenue_list)
     token_revenue_df = get_total_revenue_per_token(token_revenue_df)
-    print(token_revenue_df)
 
+    # # makes our data_card df
+    revenue_data_card_df = deployment_df[['day', 'daily_revenue', 'total_aggregate_revenue', 'total_7_days_ma_revenue','total_30_days_ma_revenue','total_90_days_ma_revenue','total_180_days_ma_revenue']]
+    revenue_data_card_df.rename(columns = {'total_aggregate_revenue':'total_revenue', 'total_7_days_ma_revenue': '7_days_ma_revenue', 'total_30_days_ma_revenue': '30_days_ma_revenue', 'total_90_days_ma_revenue': '90_days_ma_revenue','total_180_days_ma_revenue': '180_days_ma_revenue'}, inplace = True)
+    revenue_data_card_df = aggregate_daily_revenue(revenue_data_card_df)
+    revenue_data_card_df = get_data_card_df(revenue_data_card_df)
 
-    # # df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
-
-    # df = df[['day', 'daily_revenue', 'total_revenue']]
-
-    # df = get_ma_df(df)
-
-    # revenue_data_card_df = get_data_card_df(df)
-
-    # cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
     cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
-    # cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
 
 
-    return token_revenue_df
+    return revenue_data_card_df

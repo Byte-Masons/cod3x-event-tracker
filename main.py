@@ -116,9 +116,9 @@ def run_all_treasury_2():
 # df = cdx_total.run_all()
 
 df = total_revenue.run_all()
-# print(df)
+print(df)
 
-# df.to_csv('test_test.csv', index=False)
+df.to_csv('test_test.csv', index=False)
 # EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
 # BORROWER_OPERATIONS_ADDRESS = '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1'
 # # FROM_BLOCK = 51922639
@@ -137,7 +137,7 @@ df = total_revenue.run_all()
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
-# df = cs.read_zip_csv_from_cloud_storage('ironclad_o_token_events.zip', bucket_name)
+# df = cs.read_zip_csv_from_cloud_storage('ironclad_lend_revenue.zip', bucket_name)
 # df = pd.read_csv('ironclad_o_token_events.csv')
 # df['o_token_amount'] = df['o_token_amount'].astype(float)
 # print(df['o_token_amount'].sum() / 1e18)
