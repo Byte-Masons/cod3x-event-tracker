@@ -287,9 +287,15 @@ def run_all():
     revenue_data_card_df = aggregate_daily_revenue(revenue_data_card_df)
     revenue_data_card_df = get_data_card_df(revenue_data_card_df)
 
+    # # revenue per revenue_type
+    concat_df = concat_df.sort_values(by='day')
+    concat_df['cumulative_revenue'] = concat_df.groupby('revenue_type')['daily_revenue'].cumsum()
+    concat_df = concat_df[['day', 'revenue_type', 'daily_revenue', 'cumulative_revenue']]
+
+    # # writes our juicy dataframes to the cloud
     cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
     cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
     cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(concat_df, 'revenue_by_type.zip', 'cooldowns2')
 
-
-    return revenue_data_card_df
+    return concat_df

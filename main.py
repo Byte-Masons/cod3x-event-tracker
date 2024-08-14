@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 7200
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
 # PROTOCOL_LIST = [Lore.Lore()]
 
 # # will try to run the function it it fails for whatever reason
@@ -108,17 +108,17 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions_2()
+loop_all_functions_2()
 
 # lend_events = Lore.Lore()
 # lend_events.run_all_modules()
 
 # df = cdx_total.run_all()
 
-df = total_revenue.run_all()
-print(df)
+# df = total_revenue.run_all()
+# print(df)
 
-df.to_csv('test_test.csv', index=False)
+# df.to_csv('test_test.csv', index=False)
 # EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
 # BORROWER_OPERATIONS_ADDRESS = '0x4Cd23F2C694F991029B85af5575D0B5E70e4A3F1'
 # # FROM_BLOCK = 51922639

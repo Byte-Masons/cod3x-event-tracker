@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph
-from revenue_tracking import cod3x_lend_revenue_tracking, cod3x_lend_total_revenue_tracking as cdx_total
+from revenue_tracking import cod3x_lend_revenue_tracking, total_revenue
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -36,5 +36,5 @@ class Glyph(Lending_Pool.Lending_Pool):
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
         self.lend_revenue_object.run_all_lend_revenue()
-        cdx_total.run_all()
+        total_revenue.run_all()
         return
