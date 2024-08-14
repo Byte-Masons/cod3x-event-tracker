@@ -43,11 +43,6 @@ def get_specified_event_list(protocol_list, event_type):
 
     event_list = [name for name in protocol_list if 'aggregate' not in name.lower() and 'revenue' not in name.lower()]
 
-    # for protocol in protocol_list:
-    #     if event_type in protocol:
-    #         if protocol.split('_')[0] != 'aggregate' and protocol.split('_')[0] != 'revenue':
-    #             event_list.append(protocol)
-
     return event_list
 
 # # combined all of our revenue dataframes together
@@ -74,6 +69,8 @@ def get_combined_revenue_df(protocol_revenue_list):
     df = pd.concat(df_list)
 
     return df
+
+
 
 # # gets the daily_revenue per token irregardless of deployment
 def get_daily_aggregate_revenue(df):
@@ -244,14 +241,15 @@ def get_event_type_list(event_type):
     return protocol_list
 
 
-def get_combined_lend_event_df():
+def get_combined_lend_event_df(lend_list):
+
 
 
     return
 
 # # finds our combined daily, cumulative, and moving averages of revenue
 def run_all():
-    # protocol_revenue_list = cs.get_all_prefix_files('cooldowns2', 'revenue')
+    protocol_revenue_list = cs.get_all_prefix_files('cooldowns2', 'revenue')
 
     # lend_df = get_general_revenue_df(protocol_revenue_list, 'lend')
     # cdp_df = get_general_revenue_df(protocol_revenue_list, 'cdp')
@@ -267,10 +265,12 @@ def run_all():
 
     # deployment_df = get_ma_df(deployment_df)
 
-    # token_revenue_df = get_total_revenue_per_token(lend_df)
+    # # gets the total revenue per token
+    lend_revenue_list = cs.get_all_prefix_files('cooldowns2', 'lend_revenue')
+    token_revenue_df = get_combined_revenue_df(lend_revenue_list)
+    token_revenue_df = get_total_revenue_per_token(token_revenue_df)
+    print(token_revenue_df)
 
-    lend_list = cs.get_all_prefix_files('cooldowns2', 'lend')
-    lend_list = get_specified_event_list(lend_list, 'lend')
 
     # # df.rename(columns = {'daily_revenue_per_token':'daily_revenue'}, inplace = True)
 
@@ -281,9 +281,8 @@ def run_all():
     # revenue_data_card_df = get_data_card_df(df)
 
     # cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
-    # cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
     # cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
 
-    print(lend_list)
 
-    return lend_list
+    return token_revenue_df
