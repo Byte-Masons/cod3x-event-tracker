@@ -263,6 +263,7 @@ def run_all():
     protocol_revenue_list = cs.get_all_prefix_files('cooldowns2', 'revenue')
 
     lend_df = get_general_revenue_df(protocol_revenue_list, 'lend')
+    lend_df['revenue_type'] = 'reserve_factor'
     cdp_df = get_general_revenue_df(protocol_revenue_list, 'cdp')
     o_token_df = get_general_revenue_df(protocol_revenue_list, 'o_token')
 
