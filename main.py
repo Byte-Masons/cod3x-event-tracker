@@ -15,7 +15,7 @@ import sqlite3
 from lending_pool import approval_tracker
 from lending_pool import lending_pool_helper as lph
 # from lending_pool import current_balance_tracker as cbt
-from lending_pool import treasury_tracker as tt
+from lending_pool import treasury_tracker as tt, user_balance
 from cdp import CDP
 from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl, cod3x_lend_total_revenue_tracking as cdx_total, total_revenue
 from datetime import datetime, timezone
@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 7200
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
 # PROTOCOL_LIST = [Lore.Lore()]
 
 # # will try to run the function it it fails for whatever reason
@@ -108,7 +108,7 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
 
 # lend_events = Lore.Lore()
 # lend_events.run_all_modules()
@@ -116,6 +116,20 @@ loop_all_functions_2()
 # df = cdx_total.run_all()
 
 # df = total_revenue.run_all()
+# print(df)
+
+# contract_blacklist = ['0x0000000000000000000000000000000000000000', '0x4cE1A1eC13DBd9084B1A741b036c061b2d58dABf', '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', '0x5F272Ee6348BDE137D9a6c640c42DDcF0dE3D0aA']
+# user_balance = User_Balance.User_Balance('lore', 'lend', '0x19624e5e4aD3F8de2ab516C67645Bb5B79EcfFE6', 'weeth', 6, '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', contract_blacklist)
+# df = user_balance.get_asset_df()
+# df = user_balance.attribute_positive_and_negative_token_flows(df)
+# df = user_balance.set_user_transactions(df)
+# df = df[['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'event_type']]
+# df = user_balance.set_user_balances_over_time(df)
+
+# df = df.drop_duplicates(subset=['tx_hash','from_address','to_address', 'token_address','event_type'])
+
+# df = df.loc[df['user_address'] == '0x94E430AE6B09665588379092Dbc5FA891281D869']
+# df = user_balance.run_all()
 # print(df)
 
 # df.to_csv('test_test.csv', index=False)
@@ -136,8 +150,8 @@ loop_all_functions_2()
 # sql.drop_table('ironclad_2_o_token_events')
 
 # cdx_total.run_all()
-# bucket_name = 'cooldowns2'
-# df = cs.read_zip_csv_from_cloud_storage('ironclad_lend_revenue.zip', bucket_name)
+bucket_name = 'cooldowns2'
+df = cs.read_zip_csv_from_cloud_storage('weeth_balances.zip', bucket_name)
 # df = pd.read_csv('ironclad_o_token_events.csv')
 # df['o_token_amount'] = df['o_token_amount'].astype(float)
 # print(df['o_token_amount'].sum() / 1e18)
@@ -148,7 +162,7 @@ loop_all_functions_2()
 # df['timestamp'] = df['timestamp'].astype(float)
 # df = df.sort_values(by='timestamp', ascending=False)
 # df = df[-5:]
-# print(df)
+print(df)
 # df = df.loc[df['collateral_amount'] != '0x0000000000000000000000000000000000000000']
 # df.to_csv('test_test.csv', index=False)
 
