@@ -3,7 +3,7 @@ import os
 import time
 import pandas as pd
 import sqlite3
-from lending_pool import Lending_Pool, lending_pool_helper as lph, user_balance
+from lending_pool import Lending_Pool, lending_pool_helper as lph, User_Balance
 from revenue_tracking import cod3x_lend_revenue_tracking, total_revenue
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,7 +33,7 @@ class Lore(Lending_Pool.Lending_Pool):
         self.cloud_bucket_name = self.CLOUD_BUCKET_NAME
         self.table_name = self.index
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
-        self.user_balancer = user_balance.user_balance('lore', 'lend', '0x19624e5e4aD3F8de2ab516C67645Bb5B79EcfFE6', 'weeth', 6, '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', self.CONTRACT_BLACKLIST)
+        self.user_balancer = User_Balance.User_Balance('lore', 'lend', '0x19624e5e4aD3F8de2ab516C67645Bb5B79EcfFE6', 'weeth', 6, '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', self.CONTRACT_BLACKLIST)
 
     def run_all_modules(self):
         self.run_all_lend_event_tracking()

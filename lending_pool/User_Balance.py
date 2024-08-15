@@ -10,7 +10,7 @@ from cloud_storage import cloud_storage as cs
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-class user_balance():
+class User_Balance():
 
     def __init__(self, index:str, event_type:str, token_address:str, token_name:str, token_decimals:int, leverager_address:str, contract_blacklist:list):
         self.index = index
@@ -35,7 +35,7 @@ class user_balance():
         df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
         df = df.loc[df['token_address'] == self.token_address]
 
-        df = df[['from_address', 'to_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'event_type']]
+        df = df[['from_address', 'to_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'event_type']]
         return df
 
     # # will classify leverager transaction as a deposit or withdraw
@@ -100,8 +100,8 @@ class user_balance():
         df = self.get_asset_df()
         df = self.attribute_positive_and_negative_token_flows(df)
         df = self.set_user_transactions(df)
-        df = df[['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'event_type']]
-        df = df.drop_duplicates(subset=['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'event_type'])
+        df = df[['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'event_type']]
+        df = df.drop_duplicates(subset=['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'event_type'])
         df = self.set_user_balances_over_time(df)
 
         df.rename(columns = {'user_address':'user', 'balance':'effective_balance'}, inplace = True)
