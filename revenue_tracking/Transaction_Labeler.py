@@ -79,7 +79,14 @@ class Transaction_Labeler(Protocol_Data_Provider.Protocol_Data_Provider):
         combo_df = pd.concat([deposit_df, withdraw_df, revenue_df, borrow_df, repay_df])
         combo_df = combo_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
 
-        return combo_df
+        # Create a new DataFrame with all rows from df and event_type as 'unknown'
+        result_df = df.copy()
+        result_df['event_type'] = 'unknown'
+
+        # Update the event_type for rows that are in combo_df
+        result_df.update(combo_df[['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume', 'event_type']])
+
+        return result_df
     
     # # sets our rolling balance for each of our event types
     def set_rolling_volume(self, df):
