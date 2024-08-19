@@ -105,6 +105,8 @@ class User_Balance():
         df = self.set_user_balances_over_time(df)
 
         df.rename(columns = {'user_address':'user', 'balance':'effective_balance'}, inplace = True)
+        df = df[df['user'].notna()]
+        df = df.loc[df['user'] != '0x574F42132cB7C9f57Ac9B832960ee4e5Af807E54']
 
         cs.df_write_to_cloud_storage_as_zip(df, self.balance_file_name, self.cloud_bucket_name)
         

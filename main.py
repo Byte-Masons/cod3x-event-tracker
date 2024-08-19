@@ -21,14 +21,14 @@ from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_L
 from datetime import datetime, timezone
 from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base, Fantom, Lore
 import logging
-from helper_classes import ERC_20 as erc20, oToken
+from helper_classes import ERC_20 as erc20, oToken, Rewarder
 
 logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 7200
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
 PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
-# PROTOCOL_LIST = [Lore.Lore()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -117,6 +117,10 @@ loop_all_functions_2()
 
 # df = total_revenue.run_all()
 # print(df)
+
+# rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0xC043BA54F34C9fb3a0B45d22e2Ef1f171272Bc9D', 'lending_pool', 0.6, 'ironclad')
+# df = rewarder.run_all()
+# print(df['link'][0])
 
 # mode_o_token = oToken.oToken(EXERCISE_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
 # mode_o_token.run_all_o_token_tracking()

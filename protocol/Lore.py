@@ -33,7 +33,7 @@ class Lore(Lending_Pool.Lending_Pool):
         self.cloud_bucket_name = self.CLOUD_BUCKET_NAME
         self.table_name = self.index
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
-        self.user_balancer = User_Balance.User_Balance('lore', 'lend', '0x19624e5e4aD3F8de2ab516C67645Bb5B79EcfFE6', 'weeth', 6, '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', self.CONTRACT_BLACKLIST)
+        self.user_balancer = User_Balance.User_Balance('lore', 'lend', '0x80E0Fb6B416E1Ae9bBD02A9bC6A6D10C9E9D51B7', 'weeth', 18, '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', self.CONTRACT_BLACKLIST)
 
     def run_all_modules(self):
         self.run_all_lend_event_tracking()
@@ -41,6 +41,6 @@ class Lore(Lending_Pool.Lending_Pool):
         total_revenue.run_all()
 
         # # weETH balance updater
-        self.user_balancer.run_all()
+        df = self.user_balancer.run_all()
 
         return

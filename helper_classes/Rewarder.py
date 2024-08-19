@@ -2,6 +2,8 @@ import sys
 import os
 import time
 import pandas as pd
+from datetime import datetime, timezone
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lending_pool import lending_pool_helper as lph
@@ -74,11 +76,52 @@ class Rewarder(ERC_20.ERC_20):
         
         return reward_token_address_list
     
-    # # gets the vault contract for an individual vault
-    def get_rewards_vault_contract(self, contract_address):
+    def get_rewarder_config_df(self):
+        df = pd.DataFrame()
 
-        return
+        protocol_list = ['ironclad']
+        rewarder_type_list = ['lending_pool']
+        block_explorer_list = ['https://explorer.mode.network/address/']
+
+        df['protocol'] = protocol_list
+        df['rewarder_type'] = rewarder_type_list
+        df['block_explorer'] = block_explorer_list
+
+        return df
     
+    def get_config_df_value(self, column_name, protocol, rewarder_type):
+
+        config_df = self.get_rewarder_config_df()
+
+        config_df = config_df.loc[(config_df['protocol'] == protocol) & (config_df['rewarder_type'] == rewarder_type)]
+
+        value = config_df[column_name].tolist()[0]
+
+        return value
+
+    # # will make our rewarder block explorer link
+    def get_contract_block_explorer_link(self, protocol, rewarder_type, rewarder_address):
+
+        link = self.get_config_df_value('block_explorer', protocol, rewarder_type)
+
+        link = link + rewarder_address
+
+        return link
+
+    # # will read our existing rewarder_file then will update it with our latest rewarder data
+    def update_rewarder_cloud_file(self, df):
+
+        try:
+            cloud_df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
+        except:
+            cloud_df = pd.DataFrame()
+
+        protocol_list = df['protocol'].tolist()
+        rewarder_type_list = df['rewarder_type'].tolist()
+
+        
+        return
+
     def run_all(self):
 
         contract = self.get_supply_borrow_rewarder_contract()
@@ -88,6 +131,7 @@ class Rewarder(ERC_20.ERC_20):
 
         vault_address_list = []
         vault_reward_balance_list = []
+        link_list = []
 
         for reward_token in reward_token_list:
             vault_address = self.get_supply_borrow_rewards_vault_address(contract, reward_token)
@@ -103,5 +147,23 @@ class Rewarder(ERC_20.ERC_20):
             vault_reward_balance /= vault_token_decimals
             vault_reward_balance_list.append(vault_reward_balance)
 
-        return vault_address_list
+            link = self.get_contract_block_explorer_link(self.index, self.rewarder_type, vault_address)
+            link_list.append(link)
+
+        # Get current UTC time
+        utc_now = datetime.now(timezone.utc)
+
+        # Format it as a string
+        readable_utc = utc_now.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+        df = pd.DataFrame()
+
+        df['protocol'] = [self.index]
+        df['rewarder_type'] = [self.rewarder_type]
+        df['rewarder_address'] = vault_address_list
+        df['rewarder_balance'] = vault_reward_balance_list
+        df['timestamp'] = readable_utc
+        df['link'] = link_list
+
+        return df
     
