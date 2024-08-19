@@ -43,4 +43,6 @@ class Lore(Lending_Pool.Lending_Pool):
         # # weETH balance updater
         df = self.user_balancer.run_all()
 
-        return
+        print(df)
+
+        return 
