@@ -41,8 +41,6 @@ class Lore(Lending_Pool.Lending_Pool):
         total_revenue.run_all()
 
         # # weETH balance updater
-        df = self.user_balancer.run_all()
-
-        print(df)
+        self.user_balancer.run_all()
 
         return 

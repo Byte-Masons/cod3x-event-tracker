@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.ERROR)
 
 runtime_pause = 7200
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Lore.Lore(),Optimism.Optimism(),Lore.Lore(),Ironclad.Ironclad(),Lore.Lore(),Metis.Metis(),Lore.Lore(),Arbitrum.Arbitrum(),Lore.Lore(),Glyph.Glyph(),Lore.Lore(),Base.Base(),Lore.Lore(),Fantom.Fantom(),Lore.Lore()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
@@ -120,6 +120,7 @@ loop_all_functions_2()
 
 # rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0xC043BA54F34C9fb3a0B45d22e2Ef1f171272Bc9D', 'lending_pool', 0.6, 'ironclad')
 # df = rewarder.run_all()
+# print(df)
 # print(df['link'][0])
 
 # mode_o_token = oToken.oToken(EXERCISE_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)

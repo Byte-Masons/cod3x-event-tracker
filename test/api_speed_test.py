@@ -19,7 +19,9 @@ def ping_api(url):
         }
 
 def main():
-    url = "https://etherfi-dot-internal-website-427620.uc.r.appspot.com/user_balances?blockNumber=8038970&addresses=0x0347F0867b9B28a34fE6c044c4d48C2E5F71C528"
+    start_time = time.time()
+
+    url = "https://etherfi-dot-internal-website-427620.uc.r.appspot.com/user_balances?blockNumber=8438970&addresses=0x0347F0867b9B28a34fE6c044c4d48C2E5F71C528"
     num_requests = 50
 
     results = []
@@ -38,5 +40,9 @@ def main():
     print(f"Failed requests: {failed_requests}")
     print(f"Average response time: {avg_response_time:.4f} seconds")
 
+    end_time = time.time()
+
+    print('Finished in: ', end_time - start_time)
+    
 if __name__ == "__main__":
     main()
