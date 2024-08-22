@@ -63,6 +63,12 @@ class Rewarder(ERC_20.ERC_20):
         
         return contract_abi
     
+    def get_stability_pool_abi(self):
+
+        contract_abi = [ { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [ { "internalType": "address", "name": "target", "type": "address" } ], "name": "AddressEmptyCode", "type": "error" }, { "inputs": [ { "internalType": "address", "name": "account", "type": "address" } ], "name": "AddressInsufficientBalance", "type": "error" }, { "inputs": [], "name": "FailedInnerCall", "type": "error" }, { "inputs": [ { "internalType": "address", "name": "token", "type": "address" } ], "name": "SafeERC20FailedOperation", "type": "error" }, { "anonymous": False, "inputs": [ { "indexed": False, "internalType": "uint256", "name": "_rewardPerSecond", "type": "uint256" } ], "name": "LogRewardPerSecond", "type": "event" }, { "anonymous": False, "inputs": [ { "indexed": False, "internalType": "address", "name": "_lqtyTokenAddress", "type": "address" } ], "name": "OATHTokenAddressSet", "type": "event" }, { "anonymous": False, "inputs": [ { "indexed": False, "internalType": "address", "name": "_oathTokenAddress", "type": "address" } ], "name": "OathTokenAddressSet", "type": "event" }, { "anonymous": False, "inputs": [ { "indexed": True, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": True, "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": False, "inputs": [ { "indexed": False, "internalType": "address", "name": "_stabilityPoolAddress", "type": "address" } ], "name": "StabilityPoolAddressSet", "type": "event" }, { "anonymous": False, "inputs": [ { "indexed": True, "internalType": "address", "name": "_oathTokenAddress", "type": "address" }, { "indexed": False, "internalType": "uint256", "name": "_totalOATHIssued", "type": "uint256" } ], "name": "TotalOATHIssuedUpdated", "type": "event" }, { "anonymous": False, "inputs": [ { "indexed": False, "internalType": "uint256", "name": "_totalLQTYIssued", "type": "uint256" } ], "name": "TotalOathIssuedUpdated", "type": "event" }, { "inputs": [], "name": "DECIMAL_PRECISION", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "NAME", "outputs": [ { "internalType": "string", "name": "", "type": "string" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "distributionPeriod", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "fund", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "seconds_", "type": "uint256" } ], "name": "getRewardAmount", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "initialized", "outputs": [ { "internalType": "bool", "name": "", "type": "bool" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "issueOath", "outputs": [ { "internalType": "uint256", "name": "issuance", "type": "uint256" } ], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "lastDistributionTime", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "lastIssuanceTimestamp", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "oathToken", "outputs": [ { "internalType": "contract IERC20", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "rewardPerSecond", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "_account", "type": "address" }, { "internalType": "uint256", "name": "_OathAmount", "type": "uint256" } ], "name": "sendOath", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "_oathTokenAddress", "type": "address" }, { "internalType": "address", "name": "_stabilityPoolAddress", "type": "address" } ], "name": "setAddresses", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "_oathTokenAddress", "type": "address" } ], "name": "setOathToken", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "stabilityPoolAddress", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "contract IERC20", "name": "", "type": "address" } ], "name": "totalOATHIssued", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "_newDistributionPeriod", "type": "uint256" } ], "name": "updateDistributionPeriod", "outputs": [], "stateMutability": "nonpayable", "type": "function" } ]
+
+        return contract_abi
+    
     # Lending Rewarder:
     # Staking Pool Rewarder:
     # Lp Staking Rolling Rewarder:
@@ -79,6 +85,11 @@ class Rewarder(ERC_20.ERC_20):
 
         return contract
     
+    def get_stability_pool_contract(self):
+        contract = lph.get_contract(self.rewarder_address, self.get_stability_pool_abi(), self.web3)
+
+        return contract
+        
     # # gets the reward token(s) for this kind of rewarder
     def get_lending_pool_reward_token_addresses(self, contract):
         reward_token_address_list = contract.functions.getRewardTokens().call()
@@ -90,6 +101,14 @@ class Rewarder(ERC_20.ERC_20):
         reward_token_address_list = [contract.functions.rewardToken().call()]
         
         return reward_token_address_list
+    
+    # # gets the stability pool (community_issuance) reward token
+    def get_stability_pool_reward_address(self, contract):
+        
+        reward_token_address_list = [contract.functions.oathToken().call()]
+        
+        return reward_token_address_list
+
 
     # # gets the vault contract address
     def get_lending_pool_rewards_vault_address(self, contract, token_address):
@@ -139,25 +158,28 @@ class Rewarder(ERC_20.ERC_20):
 
         protocol_list = df['protocol'].tolist()
         rewarder_type_list = df['rewarder_type'].tolist()
+        rewarder_token_address_list = df['reward_token_address'].tolist()
 
 
         for protocol in protocol_list:
             for rewarder_type in rewarder_type_list:
-                last_checked_timestamp = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['timestamp'].tolist()[0]
-                rewarder_balance = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['rewarder_balance'].tolist()[0]
+                for token_address in rewarder_token_address_list:
 
-                temp_df = cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type)]
-                
-                # # will update a protocol/rewarder_type if the pair already exists
-                if len(temp_df) > 0:
-                    cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type), 'timestamp'] = last_checked_timestamp
-                    cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type), 'rewarder_balance'] = rewarder_balance
-                
-                # # will add our new protocol/rewarder_type combo to our cloud_df if it doesn't already exist
-                else:
-                    temp_df = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]
-                    cloud_df = pd.concat([cloud_df, temp_df])
-                    cloud_df = cloud_df.drop_duplicates(subset=['protocol', 'rewarder_type'], keep='last')
+                    last_checked_timestamp = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['timestamp'].tolist()[0]
+                    rewarder_balance = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['rewarder_balance'].tolist()[0]
+
+                    temp_df = cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type) & (cloud_df['reward_token_address'] == token_address)]
+                    
+                    # # will update a protocol/rewarder_type if the pair already exists
+                    if len(temp_df) > 0:
+                        cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type) & (cloud_df['reward_token_address'] == token_address), 'timestamp'] = last_checked_timestamp
+                        cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type) & (cloud_df['reward_token_address'] == token_address), 'rewarder_balance'] = rewarder_balance
+                    
+                    # # will add our new protocol/rewarder_type combo to our cloud_df if it doesn't already exist
+                    else:
+                        temp_df = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type) & (df['reward_token_address'] == token_address)]
+                        cloud_df = pd.concat([cloud_df, temp_df])
+                        cloud_df = cloud_df.drop_duplicates(subset=['protocol', 'rewarder_type', 'reward_token_address'], keep='last')
         
         return cloud_df
 
@@ -172,6 +194,9 @@ class Rewarder(ERC_20.ERC_20):
         elif self.rewarder_type == 'reliquary_mrp_token' or self.rewarder_type == 'reliquary_other_token':
             contract = self.get_reliquary_contract()
 
+        elif self.rewarder_type == 'stability_pool':
+            contract = self.get_stability_pool_contract()
+
         return contract
     
     # # will return a list of our reward_tokens for our specified rewarder contract
@@ -184,6 +209,9 @@ class Rewarder(ERC_20.ERC_20):
         
         elif self.rewarder_type == 'reliquary_mrp_token' or self.rewarder_type == 'reliquary_other_token':
             reward_token_list = self.get_reliquary_reward_address(contract)
+        
+        elif self.rewarder_type == 'stability_pool':
+            reward_token_list = self.get_stability_pool_reward_address(contract)
 
         return reward_token_list
     
@@ -196,6 +224,9 @@ class Rewarder(ERC_20.ERC_20):
             vault_address = self.get_lending_pool_rewards_vault_address(contract, reward_token)
 
         elif self.rewarder_type == 'reliquary_mrp_token' or self.rewarder_type == 'reliquary_other_token':
+            vault_address = self.rewarder_address
+        
+        elif self.rewarder_type == 'stability_pool':
             vault_address = self.rewarder_address
             
         return vault_address
@@ -210,6 +241,9 @@ class Rewarder(ERC_20.ERC_20):
 
         vault_address_list = []
         vault_reward_balance_list = []
+        vault_reward_symbol_list = []
+        vault_reward_token_address_list = []
+
         link_list = []
 
         for reward_token in reward_token_list:
@@ -226,8 +260,15 @@ class Rewarder(ERC_20.ERC_20):
             vault_reward_balance /= vault_token_decimals
             vault_reward_balance_list.append(vault_reward_balance)
 
+            vault_reward_symbol = reward_token_object.functions.symbol().call()
+            time.sleep(self.wait_time)
+            vault_reward_symbol_list.append(vault_reward_symbol)
+
+            vault_reward_token_address_list.append(reward_token)
+
             link = self.get_contract_block_explorer_link(self.index, vault_address)
             link_list.append(link)
+
 
         # Get current UTC time
         utc_now = datetime.now(timezone.utc)
@@ -241,6 +282,8 @@ class Rewarder(ERC_20.ERC_20):
         df['rewarder_type'] = [self.rewarder_type]
         df['rewarder_address'] = vault_address_list
         df['rewarder_balance'] = vault_reward_balance_list
+        df['reward_token_symbol'] = vault_reward_symbol_list
+        df['reward_token_address'] = vault_reward_token_address_list
         df['timestamp'] = readable_utc
         df['link'] = link_list
 

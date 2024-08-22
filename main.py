@@ -26,7 +26,7 @@ from helper_classes import ERC_20 as erc20, oToken, Rewarder
 logging.basicConfig(level=logging.ERROR)
 
 
-runtime_pause = 7200
+runtime_pause = 3600
 # PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
 PROTOCOL_LIST = [Aurelius.Aurelius(),Lore.Lore(),Optimism.Optimism(),Lore.Lore(),Ironclad.Ironclad(),Lore.Lore(),Metis.Metis(),Lore.Lore(),Arbitrum.Arbitrum(),Lore.Lore(),Glyph.Glyph(),Lore.Lore(),Base.Base(),Lore.Lore(),Fantom.Fantom(),Lore.Lore()]
 
@@ -119,9 +119,13 @@ loop_all_functions_2()
 # print(df)
 
 # rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0xC043BA54F34C9fb3a0B45d22e2Ef1f171272Bc9D', 'lending_pool', 0.6, 'ironclad')
+# rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0x1ED3903e792Ff2a3d6A86a9B7930843364bA20E5', 'reliquary_mrp_token', 0.6, 'ironclad')
+# rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0xb08d7643C5fB22fD5B819ca3302b3F89c751ADdf', 'reliquary_other_token', 0.6, 'ironclad')
+# rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0x0490FeCFa551c233264570E80DE5D41273EDD86D', 'stability_pool', 0.6, 'ironclad')
+
 # df = rewarder.run_all()
 # print(df)
-# print(df['link'][0])
+# print(df['link'].tolist()[0])
 
 # mode_o_token = oToken.oToken(EXERCISE_ADDRESS, FROM_BLOCK, RPC_URL, WAIT_TIME, INTERVAL, INDEX)
 # mode_o_token.run_all_o_token_tracking()
@@ -132,7 +136,7 @@ loop_all_functions_2()
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
-# df = cs.read_zip_csv_from_cloud_storage('weeth_balances.zip', bucket_name)
+# df = cs.read_zip_csv_from_cloud_storage('rewarder.zip', bucket_name)
 # df = pd.read_csv('ironclad_o_token_events.csv')
 # df['o_token_amount'] = df['o_token_amount'].astype(float)
 # print(df['o_token_amount'].sum() / 1e18)
