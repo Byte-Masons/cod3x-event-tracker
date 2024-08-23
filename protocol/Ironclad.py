@@ -46,12 +46,13 @@ class Ironclad(Lending_Pool.Lending_Pool):
     
 
     def get_updated_reward_balances(self):
-        lending_pool_rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0xC043BA54F34C9fb3a0B45d22e2Ef1f171272Bc9D', 'lending_pool', 0.6, 'ironclad')
-        oICL_staking_rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0x1ED3903e792Ff2a3d6A86a9B7930843364bA20E5', 'reliquary_mrp_token', 0.6, 'ironclad')
-        weth_staking_rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0xb08d7643C5fB22fD5B819ca3302b3F89c751ADdf', 'reliquary_other_token', 0.6, 'ironclad')
-        stability_pool_rewarder = Rewarder.Rewarder('https://mainnet.mode.network', '0x0490FeCFa551c233264570E80DE5D41273EDD86D', 'stability_pool', 0.6, 'ironclad')
+        lending_pool_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xC043BA54F34C9fb3a0B45d22e2Ef1f171272Bc9D', 'lending_pool', self.WAIT_TIME, self.INDEX)
+        oICL_staking_rewarder = Rewarder.Rewarder(self.RPC_URL, '0x1ED3903e792Ff2a3d6A86a9B7930843364bA20E5', 'reliquary_mrp_token', self.WAIT_TIME, self.INDEX)
+        weth_staking_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xb08d7643C5fB22fD5B819ca3302b3F89c751ADdf', 'reliquary_other_token', self.WAIT_TIME, self.INDEX)
+        stability_pool_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xb42c356CA0d364Bb4130b12221533693AbFD81C8', 'stability_pool', self.WAIT_TIME, self.INDEX)
+        discount_exercise_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xcb727532e24dFe22E74D3892b998f5e915676Da8', 'discount_exercise', self.WAIT_TIME, self.INDEX)
 
-        rewarder_list = [lending_pool_rewarder, oICL_staking_rewarder, weth_staking_rewarder, stability_pool_rewarder]
+        rewarder_list = [lending_pool_rewarder, oICL_staking_rewarder, weth_staking_rewarder, stability_pool_rewarder, discount_exercise_rewarder]
 
         for rewarder in rewarder_list:
             rewarder.run_all()
@@ -59,12 +60,22 @@ class Ironclad(Lending_Pool.Lending_Pool):
         return rewarder_list
     
     def run_all_modules(self):
-        self.run_all_lend_event_tracking()
-        self.lend_revenue_object.run_all_lend_revenue()
-        self.o_token_object.run_all_o_token_tracking()
-        self.o_token_revenue_object.run_all_o_token_revenue()
-        self.cdp_object.run_all_cdp_tracking()
-        self.cdp_revenue_object.run_all_cdp_revenue()
-        total_revenue.run_all()
-        self.get_updated_reward_balances()
+        
+        function_calls = [
+        self.run_all_lend_event_tracking,
+        self.lend_revenue_object.run_all_lend_revenue,
+        self.o_token_object.run_all_o_token_tracking,
+        self.o_token_revenue_object.run_all_o_token_revenue,
+        self.cdp_object.run_all_cdp_tracking,
+        self.cdp_revenue_object.run_all_cdp_revenue,
+        total_revenue.run_all,
+        self.get_updated_reward_balances
+        ]
+
+        for func in function_calls:
+            try:
+                func()
+            except Exception as e:
+                print(f"Error occurred in {func.__name__}: {str(e)}")
+
         return
