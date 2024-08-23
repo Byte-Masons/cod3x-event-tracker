@@ -69,6 +69,11 @@ class Rewarder(ERC_20.ERC_20):
 
         return contract_abi
     
+    def get_discount_exercise_abi(self):
+        contract_abi = [{"inputs":[{"internalType":"contract OptionsToken","name":"oToken_","type":"address"},{"internalType":"address","name":"owner_","type":"address"},{"internalType":"contract IERC20","name":"paymentToken_","type":"address"},{"internalType":"contract IERC20","name":"underlyingToken_","type":"address"},{"internalType":"contract IOracle","name":"oracle_","type":"address"},{"internalType":"uint256","name":"multiplier_","type":"uint256"},{"internalType":"uint256","name":"instantExitFee_","type":"uint256"},{"internalType":"uint256","name":"minAmountToTriggerSwap_","type":"uint256"},{"internalType":"address[]","name":"feeRecipients_","type":"address[]"},{"internalType":"uint256[]","name":"feeBPS_","type":"uint256[]"},{"components":[{"internalType":"address","name":"swapper","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"enum ExchangeType","name":"exchangeTypes","type":"uint8"},{"internalType":"uint256","name":"maxSwapSlippage","type":"uint256"}],"internalType":"struct SwapProps","name":"swapProps_","type":"tuple"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"Exercise__AmountOutIsZero","type":"error"},{"inputs":[],"name":"Exercise__FeeGreaterThanMax","type":"error"},{"inputs":[],"name":"Exercise__InvalidFeeAmounts","type":"error"},{"inputs":[],"name":"Exercise__InvalidOracle","type":"error"},{"inputs":[],"name":"Exercise__MultiplierOutOfRange","type":"error"},{"inputs":[],"name":"Exercise__NotOToken","type":"error"},{"inputs":[],"name":"Exercise__PastDeadline","type":"error"},{"inputs":[],"name":"Exercise__SlippageTooHigh","type":"error"},{"inputs":[],"name":"Exercise__ZapMultiplierIncompatible","type":"error"},{"inputs":[],"name":"Exercise__feeArrayLengthMismatch","type":"error"},{"inputs":[{"internalType":"uint256","name":"exType","type":"uint256"}],"name":"SwapHelper__InvalidExchangeType","type":"error"},{"inputs":[],"name":"SwapHelper__ParamHasAddressZero","type":"error"},{"inputs":[],"name":"SwapHelper__SlippageGreaterThanMax","type":"error"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Claimed","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address[]","name":"feeRecipients","type":"address[]"},{"indexed":False,"internalType":"uint256[]","name":"feeBPS","type":"uint256[]"},{"indexed":False,"internalType":"uint256","name":"totalAmount","type":"uint256"}],"name":"DistributeFees","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"sender","type":"address"},{"indexed":True,"internalType":"address","name":"recipient","type":"address"},{"indexed":False,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":False,"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"name":"Exercised","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"user","type":"address"},{"indexed":True,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address[]","name":"feeRecipients","type":"address[]"},{"indexed":False,"internalType":"uint256[]","name":"feeBPS","type":"uint256[]"}],"name":"SetFees","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"uint256","name":"instantFee","type":"uint256"}],"name":"SetInstantFee","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"uint256","name":"minAmountToTrigger","type":"uint256"}],"name":"SetMinAmountToTrigger","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"uint256","name":"newMultiplier","type":"uint256"}],"name":"SetMultiplier","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"contract IOracle","name":"newOracle","type":"address"}],"name":"SetOracle","type":"event"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"newTreasury","type":"address"}],"name":"SetTreasury","type":"event"},{"anonymous":False,"inputs":[{"indexed":False,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"inputs":[],"name":"FEE_DENOMINATOR","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"}],"name":"claim","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"credit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bytes","name":"params","type":"bytes"}],"name":"exercise","outputs":[{"internalType":"uint256","name":"paymentAmount","type":"uint256"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"feeBPS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"feeRecipients","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"getPaymentAmount","outputs":[{"internalType":"uint256","name":"paymentAmount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"instantExitFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"minAmountToTriggerSwap","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"multiplier","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"oToken","outputs":[{"internalType":"contract IOptionsToken","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"oracle","outputs":[{"internalType":"contract IOracle","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"paymentToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"_feeRecipients","type":"address[]"},{"internalType":"uint256[]","name":"_feeBPS","type":"uint256[]"}],"name":"setFees","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_instantExitFee","type":"uint256"}],"name":"setInstantExitFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_minAmountToTriggerSwap","type":"uint256"}],"name":"setMinAmountToTriggerSwap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"multiplier_","type":"uint256"}],"name":"setMultiplier","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"contract IOracle","name":"oracle_","type":"address"}],"name":"setOracle","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"address","name":"swapper","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"enum ExchangeType","name":"exchangeTypes","type":"uint8"},{"internalType":"uint256","name":"maxSwapSlippage","type":"uint256"}],"internalType":"struct SwapProps","name":"_swapProps","type":"tuple"}],"name":"setSwapProps","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"swapProps","outputs":[{"internalType":"address","name":"swapper","type":"address"},{"internalType":"address","name":"exchangeAddress","type":"address"},{"internalType":"enum ExchangeType","name":"exchangeTypes","type":"uint8"},{"internalType":"uint256","name":"maxSwapSlippage","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"underlyingToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+        
+        return contract_abi
+    
     # Lending Rewarder:
     # Staking Pool Rewarder:
     # Lp Staking Rolling Rewarder:
@@ -89,7 +94,12 @@ class Rewarder(ERC_20.ERC_20):
         contract = lph.get_contract(self.rewarder_address, self.get_stability_pool_abi(), self.web3)
 
         return contract
-        
+    
+    def get_discount_exercise_contract(self):
+        contract = lph.get_contract(self.rewarder_address, self.get_discount_exercise_abi(), self.web3)
+
+        return contract
+
     # # gets the reward token(s) for this kind of rewarder
     def get_lending_pool_reward_token_addresses(self, contract):
         reward_token_address_list = contract.functions.getRewardTokens().call()
@@ -98,8 +108,15 @@ class Rewarder(ERC_20.ERC_20):
     
     # # gets the reliquary staking token native token reward
     def get_reliquary_reward_address(self, contract):
-        reward_token_address_list = [contract.functions.rewardToken().call()]
         
+        try:
+            reward_token_address_list = [contract.functions.rewardToken().call()]
+        except:
+            contract_abi = [{"inputs":[{"internalType":"address","name":"incentivesController","type":"address"},{"internalType":"address","name":"rewardToken","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":False,"inputs":[{"indexed":True,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":True,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[],"name":"INCENTIVES_CONTROLLER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"REWARD_TOKEN","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approveIncentivesController","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"emergencyEtherTransfer","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"emergencyTokenTransfer","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+            contract = lph.get_contract(self.rewarder_address, contract_abi, self.web3)
+
+            reward_token_address_list = [contract.functions.REWARD_TOKEN().call()]
+
         return reward_token_address_list
     
     # # gets the stability pool (community_issuance) reward token
@@ -109,6 +126,11 @@ class Rewarder(ERC_20.ERC_20):
         
         return reward_token_address_list
 
+    # # technically is just the liquid mrp tokens that will be used to exercise
+    def get_discount_exercise_reward_address(self, contract):
+        reward_token_address_list = [contract.functions.underlyingToken().call()]
+        
+        return reward_token_address_list
 
     # # gets the vault contract address
     def get_lending_pool_rewards_vault_address(self, contract, token_address):
@@ -120,8 +142,8 @@ class Rewarder(ERC_20.ERC_20):
     def get_rewarder_config_df(self):
         df = pd.DataFrame()
 
-        protocol_list = ['ironclad']
-        block_explorer_list = ['https://explorer.mode.network/address/']
+        protocol_list = ['ironclad', 'lore', 'aurelius', 'harbor']
+        block_explorer_list = ['https://explorer.mode.network/address/', 'https://scrollscan.com/address/', 'https://explorer.mantle.xyz/address/', 'https://bscscan.com/address/']
 
         df['protocol'] = protocol_list
         df['block_explorer'] = block_explorer_list
@@ -196,6 +218,9 @@ class Rewarder(ERC_20.ERC_20):
 
         elif self.rewarder_type == 'stability_pool':
             contract = self.get_stability_pool_contract()
+        
+        elif self.rewarder_type == 'discount_exercise':
+            contract = self.get_discount_exercise_contract()
 
         return contract
     
@@ -213,6 +238,9 @@ class Rewarder(ERC_20.ERC_20):
         elif self.rewarder_type == 'stability_pool':
             reward_token_list = self.get_stability_pool_reward_address(contract)
 
+        elif self.rewarder_type == 'discount_exercise':
+            reward_token_list = self.get_discount_exercise_reward_address(contract)
+
         return reward_token_list
     
     # # gets the address of our rewards vault
@@ -227,6 +255,9 @@ class Rewarder(ERC_20.ERC_20):
             vault_address = self.rewarder_address
         
         elif self.rewarder_type == 'stability_pool':
+            vault_address = self.rewarder_address
+
+        elif self.rewarder_type == 'discount_exercise':
             vault_address = self.rewarder_address
             
         return vault_address
