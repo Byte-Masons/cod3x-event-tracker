@@ -20,7 +20,7 @@ class Rewarder(ERC_20.ERC_20):
 
     def __init__(self, rpc_url: str, rewarder_address:str, rewarder_type:str, wait_time:float, index: str):
         self.rpc_url = rpc_url
-        self.index = index
+        self.index = index.split('_')[0]
         self.rewarder_address = rewarder_address
         self.rewarder_type = rewarder_type
         self.wait_time = wait_time
@@ -274,6 +274,7 @@ class Rewarder(ERC_20.ERC_20):
         vault_reward_balance_list = []
         vault_reward_symbol_list = []
         vault_reward_token_address_list = []
+        vault_reward_token_link_list = []
 
         link_list = []
 
@@ -296,9 +297,13 @@ class Rewarder(ERC_20.ERC_20):
             vault_reward_symbol_list.append(vault_reward_symbol)
 
             vault_reward_token_address_list.append(reward_token)
+            vault_reward_token_link = self.get_contract_block_explorer_link(self.index, reward_token)
 
             link = self.get_contract_block_explorer_link(self.index, vault_address)
+            vault_reward_token_link_list.append(vault_reward_token_link)
+            
             link_list.append(link)
+
 
 
         # Get current UTC time
@@ -316,7 +321,8 @@ class Rewarder(ERC_20.ERC_20):
         df['reward_token_symbol'] = vault_reward_symbol_list
         df['reward_token_address'] = vault_reward_token_address_list
         df['timestamp'] = readable_utc
-        df['link'] = link_list
+        df['rewarder_link'] = link_list
+        df['reward_token_link'] = vault_reward_token_link_list
 
         cloud_df = self.update_rewarder_cloud_file(df)
         cs.df_write_to_cloud_storage_as_zip(cloud_df, self.cloud_file_name, self.cloud_bucket_name)
