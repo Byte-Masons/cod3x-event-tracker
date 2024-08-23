@@ -34,7 +34,17 @@ class Metis(Lending_Pool.Lending_Pool):
         self.lend_revenue_object = cod3x_lend_revenue_tracking.cod3x_lend_revenue_tracking(self.PROTOCOL_DATA_PROVIDER_ADDRESS, self.TREASURY_ADDRESS, self.RPC_URL, self.INDEX)
     
     def run_all_modules(self):
-        self.run_all_lend_event_tracking()
-        self.lend_revenue_object.run_all_lend_revenue()
-        total_revenue.run_all()
+
+        function_calls = [
+        self.run_all_lend_event_tracking,
+        self.lend_revenue_object.run_all_lend_revenue,
+        total_revenue.run_all
+        ]
+
+        for func in function_calls:
+            try:
+                func()
+            except Exception as e:
+                print(f"Error occurred in {func.__name__}: {str(e)}")
+                
         return

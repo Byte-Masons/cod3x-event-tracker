@@ -19,7 +19,7 @@ from lending_pool import treasury_tracker as tt, User_Balance
 from cdp import CDP
 from revenue_tracking import cod3x_lend_revenue_tracking as cod3x, Transaction_Labeler as tl, cod3x_lend_total_revenue_tracking as cdx_total, total_revenue
 from datetime import datetime, timezone
-from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base, Fantom, Lore
+from protocol import Aurelius,Ironclad, Arbitrum, Optimism, Metis, Glyph, Base, Fantom, Lore, Harbor
 import logging
 from helper_classes import ERC_20 as erc20, oToken, Rewarder
 
@@ -27,8 +27,8 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 3600
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore()]
-PROTOCOL_LIST = [Aurelius.Aurelius(),Lore.Lore(),Optimism.Optimism(),Lore.Lore(),Ironclad.Ironclad(),Lore.Lore(),Metis.Metis(),Lore.Lore(),Arbitrum.Arbitrum(),Lore.Lore(),Glyph.Glyph(),Lore.Lore(),Base.Base(),Lore.Lore(),Fantom.Fantom(),Lore.Lore()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Lore.Lore(),Optimism.Optimism(),Lore.Lore(),Ironclad.Ironclad(),Lore.Lore(),Metis.Metis(),Lore.Lore(),Arbitrum.Arbitrum(),Lore.Lore(),Glyph.Glyph(),Lore.Lore(),Base.Base(),Lore.Lore(),Fantom.Fantom(),Lore.Lore(), Harbor.Harbor()]
 
 # # will try to run the function it it fails for whatever reason
 def run_robust_function(function, input):
