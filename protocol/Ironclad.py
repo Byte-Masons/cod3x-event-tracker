@@ -3,7 +3,7 @@ import os
 import time
 import pandas as pd
 import sqlite3
-from lending_pool import Lending_Pool, lending_pool_helper as lph
+from lending_pool import Lending_Pool, lending_pool_helper as lph, User_Balance
 from revenue_tracking import cod3x_lend_revenue_tracking, total_revenue, o_token_revenue_tracking, cdp_mint_fee_revenue_tracking
 from helper_classes import oToken, Rewarder
 from cdp import CDP
@@ -26,6 +26,8 @@ class Ironclad(Lending_Pool.Lending_Pool):
     BORROWER_OPERATIONS_ADDRESS = '0x2d1b857F459ca527991f574A5CB2cfF2763088f2'
     CDP_FROM_BLOCK = 11202864
 
+    CONTRACT_BLACKLIST = ['0x0000000000000000000000000000000000000000', '0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3', '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF']
+
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
         self.gateway_address = self.GATEWAY_ADDRESS
@@ -43,6 +45,7 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.o_token_revenue_object = o_token_revenue_tracking.o_token_revenue_tracking(self.INDEX)
         self.cdp_object = CDP.CDP(self.BORROWER_OPERATIONS_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
         self.cdp_revenue_object = cdp_mint_fee_revenue_tracking.cdp_mint_fee_revenue_tracking(self.INDEX)
+        self.user_balancer = User_Balance.User_Balance('ironclad', 'lend', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', 'wrseth', 18, '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', self.CONTRACT_BLACKLIST)
     
 
     def get_updated_reward_balances(self):
@@ -69,6 +72,7 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.cdp_object.run_all_cdp_tracking,
         self.cdp_revenue_object.run_all_cdp_revenue,
         total_revenue.run_all,
+        self.user_balancer.run_all,
         self.get_updated_reward_balances
         ]
 

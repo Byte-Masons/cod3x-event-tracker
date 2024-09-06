@@ -185,10 +185,13 @@ class Rewarder(ERC_20.ERC_20):
 
         for protocol in protocol_list:
             for rewarder_type in rewarder_type_list:
+                i = 0
                 for token_address in rewarder_token_address_list:
+                    
+                    
+                    last_checked_timestamp = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['timestamp'].tolist()[i]
 
-                    last_checked_timestamp = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['timestamp'].tolist()[0]
-                    rewarder_balance = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['rewarder_balance'].tolist()[0]
+                    rewarder_balance = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type)]['rewarder_balance'].tolist()[i]
 
                     temp_df = cloud_df.loc[(cloud_df['protocol'] == protocol) & (cloud_df['rewarder_type'] == rewarder_type) & (cloud_df['reward_token_address'] == token_address)]
                     
@@ -202,7 +205,8 @@ class Rewarder(ERC_20.ERC_20):
                         temp_df = df.loc[(df['protocol'] == protocol) & (df['rewarder_type'] == rewarder_type) & (df['reward_token_address'] == token_address)]
                         cloud_df = pd.concat([cloud_df, temp_df])
                         cloud_df = cloud_df.drop_duplicates(subset=['protocol', 'rewarder_type', 'reward_token_address'], keep='last')
-        
+                    i += 1
+                    
         return cloud_df
 
     # # will return the contract associated with our specific rewarder type
@@ -304,8 +308,14 @@ class Rewarder(ERC_20.ERC_20):
             
             link_list.append(link)
 
+        # try:
+        #     owner = contract.functions.owner().call()
+        # except:
+        #     print(contract.address)
 
+        # time.sleep(self.wait_time)
 
+        # print(owner)
         # Get current UTC time
         utc_now = datetime.now(timezone.utc)
 
@@ -314,17 +324,24 @@ class Rewarder(ERC_20.ERC_20):
 
         df = pd.DataFrame()
 
-        df['protocol'] = [self.index]
-        df['rewarder_type'] = [self.rewarder_type]
+        df['protocol'] = [self.index for x in vault_address_list]
+        df['rewarder_type'] = [self.rewarder_type for x in vault_address_list]
+        
+        # try:
+        #     df['rewarder_owner'] = [owner for x in vault_address_list]
+        # except:
+        #     df['rewarder_owner'] = ['Not Applicable' for x in vault_address_list]
+
         df['rewarder_address'] = vault_address_list
         df['rewarder_balance'] = vault_reward_balance_list
         df['reward_token_symbol'] = vault_reward_symbol_list
         df['reward_token_address'] = vault_reward_token_address_list
-        df['timestamp'] = readable_utc
+        df['timestamp'] = [readable_utc for x in vault_address_list]
         df['rewarder_link'] = link_list
         df['reward_token_link'] = vault_reward_token_link_list
 
         cloud_df = self.update_rewarder_cloud_file(df)
+
         cs.df_write_to_cloud_storage_as_zip(cloud_df, self.cloud_file_name, self.cloud_bucket_name)
         
         return cloud_df

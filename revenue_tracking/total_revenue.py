@@ -175,7 +175,7 @@ def get_data_card_df(df):
 
     revenue_data_card_df['total_revenue'] = total_revenue
 
-    revenue_data_card_df['target_daily_revenue'] = 7000
+    revenue_data_card_df['target_daily_revenue'] = 40000
 
     return revenue_data_card_df
 
