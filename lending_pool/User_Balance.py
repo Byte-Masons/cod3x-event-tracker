@@ -23,7 +23,7 @@ class User_Balance():
         self.leverager_address = leverager_address
         self.contract_blacklist = contract_blacklist
 
-        self.balance_file_name = self.token_name + '_balances.zip'
+        self.balance_file_name = self.index + '_' + self.token_name + '_balances.zip'
 
     def get_event_cloud_file_name(self):
         cloud_file_name = self.index + '_' + self.event_type + '_events.zip'

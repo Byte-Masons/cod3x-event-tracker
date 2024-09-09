@@ -110,7 +110,7 @@ def run_all_treasury_2():
 
 loop_all_functions_2()
 
-# lend_events = Aurelius.Aurelius()
+# lend_events = Lore.Lore()
 # lend_events.run_all_modules()
 
 # df = cdx_total.run_all()
@@ -136,7 +136,7 @@ loop_all_functions_2()
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
-# df = cs.read_zip_csv_from_cloud_storage('lore_lend_events.zip', bucket_name)
+# df = cs.read_zip_csv_from_cloud_storage('ironclad_wrseth_balances.zip', bucket_name)
 # df = pd.read_csv('test_test.csv')
 # df['o_token_amount'] = df['o_token_amount'].astype(float)
 # print(df['o_token_amount'].sum() / 1e18)
