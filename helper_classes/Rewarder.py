@@ -10,6 +10,7 @@ from lending_pool import lending_pool_helper as lph
 from helper_classes import ERC_20
 from sql_interfacer import sql
 from cloud_storage import cloud_storage as cs
+from web3 import Web3
 
 # Lending Rewarder:
 # Staking Pool Rewarder:
@@ -139,6 +140,13 @@ class Rewarder(ERC_20.ERC_20):
         
         return reward_token_address_list
     
+    # # calls the 'owner' function on our given contract
+    def call_owner(self, contract):
+        
+        owner = contract.functions.owner().call()
+        
+        return owner
+    
     def get_rewarder_config_df(self):
         df = pd.DataFrame()
 
@@ -266,6 +274,27 @@ class Rewarder(ERC_20.ERC_20):
             
         return vault_address
     
+    # # gets the owner of the rewarder contract
+    def get_owner_address(self, contract):
+
+        owner_address = ''
+
+        if self.rewarder_type == 'lending_pool':
+            owner_address = self.call_owner(contract)
+
+        elif self.rewarder_type == 'reliquary_mrp_token':
+            # Convert the role to bytes32
+            default_admin_role = Web3.keccak(text="0x0000000000000000000000000000000000000000000000000000000000000000")
+            owner_address = contract.functions.getRoleMember('0x0000000000000000000000000000000000000000000000000000000000000000',0).call()
+        
+        elif self.rewarder_type == 'stability_pool':
+            vault_address = self.rewarder_address
+
+        elif self.rewarder_type == 'discount_exercise':
+            vault_address = self.rewarder_address
+            
+        return owner_address
+    
     def run_all(self):
 
         contract = self.contract_type_setup()
@@ -279,6 +308,7 @@ class Rewarder(ERC_20.ERC_20):
         vault_reward_symbol_list = []
         vault_reward_token_address_list = []
         vault_reward_token_link_list = []
+        owner_list = []
 
         link_list = []
 
@@ -307,6 +337,12 @@ class Rewarder(ERC_20.ERC_20):
             vault_reward_token_link_list.append(vault_reward_token_link)
             
             link_list.append(link)
+
+            print(vault_address)
+            owner_address = self.get_owner_address(contract)
+            time.sleep(self.wait_time)
+
+            owner_list.append(owner_address)
 
         # try:
         #     owner = contract.functions.owner().call()
@@ -342,7 +378,7 @@ class Rewarder(ERC_20.ERC_20):
 
         cloud_df = self.update_rewarder_cloud_file(df)
 
-        cs.df_write_to_cloud_storage_as_zip(cloud_df, self.cloud_file_name, self.cloud_bucket_name)
+        # cs.df_write_to_cloud_storage_as_zip(cloud_df, self.cloud_file_name, self.cloud_bucket_name)
         
         return cloud_df
     
