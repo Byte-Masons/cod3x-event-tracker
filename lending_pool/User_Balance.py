@@ -33,6 +33,13 @@ class User_Balance():
     # # will return a dataframe only containing the asset we specify
     def get_asset_df(self):
         df = cs.read_zip_csv_from_cloud_storage(self.cloud_file_name, self.cloud_bucket_name)
+
+        if self.index == 'ironclad':
+            df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_2_lend_events.zip', self.cloud_bucket_name)
+            combined_df = pd.concat([df, df_2])
+            combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
+            df = combined_df
+            
         max_block = df['block_number'].astype(int).max()
         df = df.loc[df['token_address'] == self.token_address]
 
