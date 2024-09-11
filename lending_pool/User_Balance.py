@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class User_Balance():
 
-    def __init__(self, index:str, event_type:str, token_address:str, token_name:str, token_decimals:int, leverager_address:str, contract_blacklist:list):
+    def __init__(self, index:str, event_type:str, token_address:str, token_name:str, token_decimals:int, leverager_address_list:list, contract_blacklist:list):
         self.index = index
         self.event_type = event_type
         self.cloud_file_name = self.get_event_cloud_file_name()
@@ -20,7 +20,7 @@ class User_Balance():
         self.token_address = token_address
         self.token_name = token_name
         self.decimals = 10 ** token_decimals
-        self.leverager_address = leverager_address
+        self.leverager_address = leverager_address_list
         self.contract_blacklist = contract_blacklist
 
         self.balance_file_name = self.index + '_' + self.token_name + '_balances.zip'
@@ -39,6 +39,13 @@ class User_Balance():
             combined_df = pd.concat([df, df_2])
             combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
             df = combined_df
+        
+        if self.index == 'ironclad_2':
+            df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_lend_events.zip', self.cloud_bucket_name)
+            combined_df = pd.concat([df, df_2])
+            combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
+            df = combined_df
+
             
         max_block = df['block_number'].astype(int).max()
         df = df.loc[df['token_address'] == self.token_address]
@@ -51,7 +58,7 @@ class User_Balance():
     # # will classify leverager transaction as a deposit or withdraw
     def set_leverager_flow(self, df):
 
-        df.loc[(df['to_address'] == self.leverager_address), 'event_type'] = 'withdraw'
+        df.loc[(df['to_address'].isin(self.leverager_address)), 'event_type'] = 'withdraw'
         
         return df
     
