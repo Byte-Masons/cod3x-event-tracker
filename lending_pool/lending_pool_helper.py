@@ -201,6 +201,7 @@ def get_transfer_events(contract, from_block, to_block):
     from_block = int(from_block)
     to_block = int(to_block)
     
+    print('From Block: ', from_block, ' To Block: ', to_block)
     events = contract.events.Transfer.get_logs(fromBlock=from_block, toBlock=to_block)
     
     return events

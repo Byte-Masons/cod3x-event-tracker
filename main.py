@@ -110,7 +110,7 @@ def run_all_treasury_2():
 
 loop_all_functions_2()
 
-# lend_events = Lore.Lore()
+# lend_events = Ironclad.Ironclad()
 # lend_events.run_all_modules()
 
 # df = cdx_total.run_all()
@@ -136,19 +136,23 @@ loop_all_functions_2()
 
 # cdx_total.run_all()
 # bucket_name = 'cooldowns2'
-# df = cs.read_zip_csv_from_cloud_storage('ironclad_wrseth_balances.zip', bucket_name)
-# df = pd.read_csv('test_test.csv')
+# df = cs.read_zip_csv_from_cloud_storage('ironclad_lend_events.zip', bucket_name)
+# df.to_csv('wrseth_1.csv', index=False)
+# df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_2_lend_events.zip', bucket_name)
+# df_2 = pd.read_csv('ironclad_lend_events.csv')
 # df['o_token_amount'] = df['o_token_amount'].astype(float)
 # print(df['o_token_amount'].sum() / 1e18)
-# df = sql.get_transaction_data_df('ironclad_lend_events')
+# df_2 = sql.get_transaction_data_df('ironclad_lend_events')
 # df = sql.get_o_token_data_df('ironclad_o_token_events')
 # df = sql.get_cdp_token_data_df('aurelius_cdp_events')
+# df = pd.concat([df, df_2])
 # df = df.drop_duplicates(subset=['tx_hash', 'from_address', 'to_address', 'token_address', 'token_volume'])
 # df['timestamp'] = df['timestamp'].astype(float)
 # df = df.sort_values(by='timestamp', ascending=False)
 # df = df[-5:]
+# print(df.loc[df['from_address'] == '0x62365E0af7b6A188D063825AFa3399Ba0b5AA7Cd'])
+# df = df.loc[(df['to_address'] == '0x62365E0af7b6A188D063825AFa3399Ba0b5AA7Cd') | (df['from_address'] == '0x62365E0af7b6A188D063825AFa3399Ba0b5AA7Cd')]
 # print(df)
-# df = df.loc[df['collateral_amount'] != '0x0000000000000000000000000000000000000000']
 # df.to_csv('test_test.csv', index=False)
 # print(len(df['tx_hash'].unique()))
 # df['block_number'] = df['block_number'].astype(int)

@@ -18,15 +18,16 @@ class Ironclad(Lending_Pool.Lending_Pool):
     INDEX = 'ironclad_2'
     # INDEX = 'ironclad'
     CLOUD_BUCKET_NAME = 'cooldowns2'
-    INTERVAL = 500
-    WAIT_TIME = 0.6
+    INTERVAL = 105
+    WAIT_TIME = 0.3
     GATEWAY_ADDRESS = '0x6387c7193B5563DD17d659b9398ACd7b03FF0080'
     EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
     FROM_BLOCK = 10257616
-    BORROWER_OPERATIONS_ADDRESS = '0x2d1b857F459ca527991f574A5CB2cfF2763088f2'
+    BORROWER_OPERATIONS_ADDRESS = '0x9571873B4Df31D317d4ED4FE4689915A2F3fF7d4'
+    # BORROWER_OPERATIONS_ADDRESS = '0x2d1b857F459ca527991f574A5CB2cfF2763088f2'
     CDP_FROM_BLOCK = 11202864
 
-    CONTRACT_BLACKLIST = ['0x0000000000000000000000000000000000000000', '0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3', '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF']
+    CONTRACT_BLACKLIST = ['0x0000000000000000000000000000000000000000', '0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3', '0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA', '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF']
 
     def __init__(self):
         self.protocol_data_provider_address = self.PROTOCOL_DATA_PROVIDER_ADDRESS
@@ -45,7 +46,7 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.o_token_revenue_object = o_token_revenue_tracking.o_token_revenue_tracking(self.INDEX)
         self.cdp_object = CDP.CDP(self.BORROWER_OPERATIONS_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
         self.cdp_revenue_object = cdp_mint_fee_revenue_tracking.cdp_mint_fee_revenue_tracking(self.INDEX)
-        self.user_balancer = User_Balance.User_Balance('ironclad', 'lend', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', 'wrseth', 18, '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', self.CONTRACT_BLACKLIST)
+        self.user_balancer = User_Balance.User_Balance('ironclad', 'lend', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', 'wrseth', 18, ['0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA','0x9A6Add057603d3366ac3cA97Fe80126b7f96af05'], self.CONTRACT_BLACKLIST)
     
 
     def get_updated_reward_balances(self):
@@ -82,4 +83,6 @@ class Ironclad(Lending_Pool.Lending_Pool):
             except Exception as e:
                 print(f"Error occurred in {func.__name__}: {str(e)}")
 
+        self.run_all_lend_event_tracking()
+        
         return

@@ -61,4 +61,6 @@ class Harbor(Lending_Pool.Lending_Pool):
             except Exception as e:
                 print(f"Error occurred in {func.__name__}: {str(e)}")
 
+        # self.get_updated_reward_balances()
+
         return
