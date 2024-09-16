@@ -26,6 +26,7 @@ class Rewarder(ERC_20.ERC_20):
         self.rewarder_type = rewarder_type
         self.vault_address = rewarder_address
         self.wait_time = wait_time
+        self.owner_address = ''
 
         self.cloud_file_name = 'rewarder.zip'
         self.cloud_bucket_name = 'cooldowns2'
@@ -332,6 +333,32 @@ class Rewarder(ERC_20.ERC_20):
             
         return owner_address
     
+    # # will produce a string on how each rewarder needs to be funded
+    def get_how_to_fund(self, contract):
+        
+        how_to_fund = ''
+
+        if self.rewarder_type == 'lending_pool':
+            how_to_fund = 'Transfer Reward Token from any wallet'
+
+        elif self.rewarder_type == 'reliquary_mrp_token':
+            how_to_fund = 'Transfer Reward Token from any wallet'
+        
+        elif self.rewarder_type == 'reliquary_other_token':
+            
+            if self.index == 'harbor':
+                how_to_fund = 'Transfer Reward Token from any wallet'
+            else:
+                how_to_fund = 'Approve Reward Token + call fund from Owner'
+
+        elif self.rewarder_type == 'stability_pool':
+            how_to_fund = 'Approve Reward Token + call fund from Owner'
+
+        elif self.rewarder_type == 'discount_exercise':
+            how_to_fund = 'Transfer Reward Token from any wallet'
+            
+        return how_to_fund
+
     def run_all(self):
 
         contract = self.contract_type_setup()
@@ -346,14 +373,16 @@ class Rewarder(ERC_20.ERC_20):
         vault_reward_token_address_list = []
         vault_reward_token_link_list = []
         owner_list = []
+        owner_link_list = []
 
         link_list = []
+        how_to_fund_list = []
+
 
         for reward_token in reward_token_list:
             vault_address = self.get_vault_address(contract, reward_token)
             vault_address_list.append(vault_address)
             self.vault_address = vault_address
-            print(vault_address)
 
             time.sleep(self.wait_time)
             reward_token_object = lph.get_contract(reward_token, ERC_20.ERC_20.get_erc_20_abi_no_self(), self.web3)
@@ -378,9 +407,15 @@ class Rewarder(ERC_20.ERC_20):
             
             link_list.append(link)
             owner_address = self.get_owner_address(contract)
+            owner_list.append(owner_address)
+            self.owner_address = owner_address
+            owner_link = self.get_contract_block_explorer_link(self.index, owner_address)
+            owner_link_list.append(owner_link)
             time.sleep(self.wait_time)
 
-            owner_list.append(owner_address)
+            how_to_fund = self.get_how_to_fund(contract)
+            how_to_fund_list.append(how_to_fund)
+
 
         # Get current UTC time
         utc_now = datetime.now(timezone.utc)
@@ -401,6 +436,8 @@ class Rewarder(ERC_20.ERC_20):
         df['rewarder_link'] = link_list
         df['reward_token_link'] = vault_reward_token_link_list
         df['rewarder_owner'] = owner_list
+        df['rewarder_owner_link'] = owner_link_list
+        df['how_to_fund'] = how_to_fund_list
 
         cloud_df = self.update_rewarder_cloud_file(df)
 
