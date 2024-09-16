@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lending_pool import lending_pool_helper as lph
-from helper_classes import ERC_20
+from helper_classes import ERC_20, Reliquary
 from sql_interfacer import sql
 from cloud_storage import cloud_storage as cs
 from web3 import Web3
@@ -359,6 +359,38 @@ class Rewarder(ERC_20.ERC_20):
             
         return how_to_fund
 
+    # # returns the unix timestamp of when the reliqs last distribution will occur and will require a refill
+    def def_get_last_distribution(self, contract):
+
+        last_distribution_unix = contract.functions.lastDistributionTime().call()
+
+        return last_distribution_unix
+    
+    def get_when_to_fund(self, contract):
+        when_to_fund = 0000000000
+
+        if self.rewarder_type == 'lending_pool':
+            when_to_fund = 0000000000
+
+        elif self.rewarder_type == 'reliquary_mrp_token':
+            when_to_fund = 0000000000
+        
+        elif self.rewarder_type == 'reliquary_other_token':
+            # # will use an abi that should work for sure if the first one fails
+            try:
+                when_to_fund = self.def_get_last_distribution(contract)
+            except:
+                contract = lph.get_contract(contract.address, self.get_child_reliquary_abi(), self.web3)
+                when_to_fund = self.def_get_last_distribution(contract)
+
+        elif self.rewarder_type == 'stability_pool':
+            when_to_fund = self.def_get_last_distribution(contract)
+
+        elif self.rewarder_type == 'discount_exercise':
+            when_to_fund = 0000000000
+
+        return when_to_fund
+    
     def run_all(self):
 
         contract = self.contract_type_setup()
@@ -377,7 +409,7 @@ class Rewarder(ERC_20.ERC_20):
 
         link_list = []
         how_to_fund_list = []
-
+        when_to_fund_list = []
 
         for reward_token in reward_token_list:
             vault_address = self.get_vault_address(contract, reward_token)
@@ -415,6 +447,10 @@ class Rewarder(ERC_20.ERC_20):
 
             how_to_fund = self.get_how_to_fund(contract)
             how_to_fund_list.append(how_to_fund)
+
+            when_to_fund = self.get_when_to_fund(contract)
+            when_to_fund_list.append(when_to_fund)
+            print(when_to_fund)
 
 
         # Get current UTC time
