@@ -18,8 +18,8 @@ class Ironclad(Lending_Pool.Lending_Pool):
     INDEX = 'ironclad_2'
     # INDEX = 'ironclad'
     CLOUD_BUCKET_NAME = 'cooldowns2'
-    INTERVAL = 105
-    WAIT_TIME = 0.3
+    INTERVAL = 500
+    WAIT_TIME = 0.6
     GATEWAY_ADDRESS = '0x6387c7193B5563DD17d659b9398ACd7b03FF0080'
     EXERCISE_ADDRESS = '0xcb727532e24dFe22E74D3892b998f5e915676Da8'
     FROM_BLOCK = 10257616
@@ -82,7 +82,5 @@ class Ironclad(Lending_Pool.Lending_Pool):
                 func()
             except Exception as e:
                 print(f"Error occurred in {func.__name__}: {str(e)}")
-
-        self.run_all_lend_event_tracking()
         
         return
