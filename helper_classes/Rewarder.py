@@ -450,7 +450,7 @@ class Rewarder(ERC_20.ERC_20):
 
             when_to_fund = self.get_when_to_fund(contract)
             when_to_fund_list.append(when_to_fund)
-            print(when_to_fund)
+            
 
 
         # Get current UTC time
@@ -474,6 +474,7 @@ class Rewarder(ERC_20.ERC_20):
         df['rewarder_owner'] = owner_list
         df['rewarder_owner_link'] = owner_link_list
         df['how_to_fund'] = how_to_fund_list
+        df['when_to_fund'] = when_to_fund_list
 
         cloud_df = self.update_rewarder_cloud_file(df)
 
