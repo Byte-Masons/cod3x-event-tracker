@@ -665,6 +665,29 @@ def get_post_snapshot_data(cursor, snapshot_table_name, all_data_table_name):
     return rows
 
 # # makes a dataframe of our transaction table data
+def get_vote_df(all_data_table_name):
+    
+    connection = sqlite3.connect("turtle.db")
+
+    cursor = connection.cursor()
+
+    query = f"""
+        SELECT *
+        FROM {all_data_table_name}
+    """
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+    
+    column_list = ['voter_address', 'tx_hash', 'timestamp', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast', 'total_gauge_voting_power', 'total_contract_voting_power', 'block_number']
+
+    df = get_sql_df(rows, column_list)
+    
+    return df
+
+
+# # makes a dataframe of our transaction table data
 def get_transaction_data_df(all_data_table_name):
     
     connection = sqlite3.connect("turtle.db")
