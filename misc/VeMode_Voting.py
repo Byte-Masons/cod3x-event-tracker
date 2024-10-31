@@ -267,8 +267,9 @@ class VeMode_Voting(ERC_20.ERC_20):
             cloud_df = self.make_default_df()
 
         df = self.create_event_table(cloud_df)
-        from_block = self.get_contract_from_block(df)
+        # from_block = self.get_contract_from_block(df)
 
+        from_block = 14405023
         latest_block = lph.get_latest_block(self.web3)
 
         interval = self.interval
@@ -306,8 +307,62 @@ class VeMode_Voting(ERC_20.ERC_20):
             print('Current Event Block vs Latest Event Block to Check: ', from_block, '/', latest_block, 'Blocks Remaining: ', latest_block - from_block)
             time.sleep(wait_time)
         
-        df = sql.get_cdp_token_data_df(self.table_name)
+        df = sql.get_vote_df(self.table_name)
         df = df.drop_duplicates(subset=self.duplicate_column_list)
         cs.df_write_to_cloud_storage_as_zip(df, self.cloud_file_name, self.cloud_bucket_name)
         
         return
+
+# # returns the absolute latest vote per user
+# def get_users_last_vote():
+#     df = sql.get_vote_df('ironclad_vote_events')
+    
+#     df[['timestamp', 'voting_power_cast']] = df[['timestamp', 'voting_power_cast']].astype(float)
+#     df['epoch'] = df['epoch'].astype(int)
+
+#     # # voting epoch
+#     df = df.loc[df['epoch'] == 1430]
+
+#     # Get indices of rows with max timestamp for each voter_address
+#     max_timestamp_idx = df.groupby('voter_address')['timestamp'].idxmax()
+    
+#     # Return those rows from the original dataframe
+#     latest_votes_df = df.loc[max_timestamp_idx]
+
+#     return latest_votes_df
+
+def get_users_last_vote():
+    df = sql.get_vote_df('ironclad_vote_events')
+    
+    df[['timestamp', 'voting_power_cast']] = df[['timestamp', 'voting_power_cast']].astype(float)
+    df['epoch'] = df['epoch'].astype(int)
+
+    # Filter for voting epoch
+    df = df.loc[df['epoch'] == 1430]
+
+    # Get max timestamp for each voter_address
+    max_timestamps = df.groupby('voter_address')['timestamp'].max()
+    
+    # Return all rows that match each voter's max timestamp
+    latest_votes_df = df.merge(
+        max_timestamps.reset_index(), 
+        on=['voter_address', 'timestamp']
+    )
+
+    latest_votes_df = latest_votes_df.drop_duplicates(subset=['voter_address', 'tx_hash', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast'])
+    return latest_votes_df
+
+def get_user_ironclad_votes():
+
+    df = get_users_last_vote()
+
+    # # ICL gauge
+    df = df.loc[df['gauge_address'] == '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8']
+
+    total_vote_power_cast = df['voting_power_cast'].sum()
+
+    df['total_epoch_votes'] = total_vote_power_cast
+
+    df['voter_share_of_total'] = df['voting_power_cast'] / df['total_epoch_votes']
+
+    return df
