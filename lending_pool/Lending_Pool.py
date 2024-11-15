@@ -227,6 +227,9 @@ class Lending_Pool(ERC_20.ERC_20, Protocol_Data_Provider.Protocol_Data_Provider)
 
         from_block = lph.get_from_block(self.index, self.interval)
 
+        # # Temporary since I needed to restart with smaller interval
+        # from_block -= 5000
+
         latest_block = lph.get_latest_block(self.web3) 
         interval = self.interval
         wait_time = self.wait_time

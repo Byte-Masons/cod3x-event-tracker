@@ -332,24 +332,52 @@ class VeMode_Voting(ERC_20.ERC_20):
 #     return latest_votes_df
 
 def get_users_last_vote():
-    df = sql.get_vote_df('ironclad_vote_events')
+    try:
+        df = sql.get_vote_df('ironclad_vote_events')
+        df['vote_source'] = 'veMode'
+    except:
+        df = pd.DataFrame()
     
-    df[['timestamp', 'voting_power_cast']] = df[['timestamp', 'voting_power_cast']].astype(float)
-    df['epoch'] = df['epoch'].astype(int)
+    try:
+        df_2 = sql.get_vote_df('ironclad_bpt_vote_events')
+        df_2['vote_source'] = 'bpt'
+    except:
+        df_2 = pd.DataFrame()
 
-    # Filter for voting epoch
-    df = df.loc[df['epoch'] == 1430]
+    df_list = [df, df_2]
 
-    # Get max timestamp for each voter_address
-    max_timestamps = df.groupby('voter_address')['timestamp'].max()
+    # # will host the respective dataframes after they have been processed
+    processed_df_list = []
+    # # finds the last vote for each df source
+    for df in df_list:
+        if len(df) > 0:
+
+            df[['timestamp', 'voting_power_cast']] = df[['timestamp', 'voting_power_cast']].astype(float)
+            df['epoch'] = df['epoch'].astype(int)
+
+            df.drop_duplicates(subset=['voter_address', 'tx_hash', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast'])
+            # Filter for voting epoch
+            df = df.loc[df['epoch'] == 1430]
+
+            # Get max timestamp for each voter_address
+            max_timestamps = df.groupby('voter_address')['timestamp'].max()
+            
+            # Return all rows that match each voter's max timestamp
+            latest_votes_df = df.merge(
+                max_timestamps.reset_index(), 
+                on=['voter_address', 'timestamp']
+            )
+
+            latest_votes_df = latest_votes_df.drop_duplicates(subset=['voter_address', 'tx_hash', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast'])
+
+            # # makes a new column for the total vote power cast per user
+            # voter_total_power = latest_votes_df.groupby('voter_address')['voting_power_cast'].sum()
+            # latest_votes_df['total_voter_power_cast'] = latest_votes_df['voter_address'].map(voter_total_power)
+
+            processed_df_list.append(latest_votes_df)
     
-    # Return all rows that match each voter's max timestamp
-    latest_votes_df = df.merge(
-        max_timestamps.reset_index(), 
-        on=['voter_address', 'timestamp']
-    )
+    latest_votes_df = pd.concat(processed_df_list)
 
-    latest_votes_df = latest_votes_df.drop_duplicates(subset=['voter_address', 'tx_hash', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast'])
     return latest_votes_df
 
 def get_user_ironclad_votes():
