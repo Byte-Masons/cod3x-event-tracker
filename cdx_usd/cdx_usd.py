@@ -2,6 +2,8 @@ import requests
 import pandas as pd
 from io import StringIO
 import time
+from datetime import datetime
+
 
 DUNE_KEY = 'cp6G2OF5wnUnpc4xblcBc5nKq43As6UM'
 QUERY_ID = 4289320
@@ -82,18 +84,28 @@ def format_df(df):
 # # then returns a nicely formatted dataframe
 def run_all():
 
-    execution_id = execute_query()
-
-    query_is_finished = get_query_status(execution_id)
-
-    # # will wait for our query to finish
-    while query_is_finished == False:
-        time.sleep(2.5)
-        query_is_finished = get_query_status(execution_id)
-
     df = get_cdx_usd_revenue_df()
 
     df = format_df(df)
+
+    last_day_checked = df['day'].max()
+
+    current_day = datetime.now().strftime('%Y/%m/%d')
+
+    if last_day_checked != current_day:
+
+        execution_id = execute_query()
+
+        query_is_finished = get_query_status(execution_id)
+
+        # # will wait for our query to finish
+        while query_is_finished != True:
+            time.sleep(2.5)
+            query_is_finished = get_query_status(execution_id)
+
+        df = get_cdx_usd_revenue_df()
+
+        df = format_df(df)
 
     return df
 

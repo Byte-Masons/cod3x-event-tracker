@@ -131,7 +131,7 @@ loop_all_functions_2()
 
 # sql.drop_table('ironclad_vote_events')
 
-# df = cs.read_zip_csv_from_cloud_storage('ironclad_retro_lend_events.zip', 'cooldowns2')
+# df = cs.read_zip_csv_from_cloud_storage('our_lend_revenue_data_card.zip', 'cooldowns2')
 # df.to_csv('ironclad_lend_events.csv', index=False)
 
 # df['block_number'] = df['block_number'].astype(int)

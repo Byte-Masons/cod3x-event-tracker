@@ -159,6 +159,18 @@ def get_n_days_revenue(df, new_column_name, lookback_days):
 
     return df
 
+# # here we can specify what % of revenue we take home based on the deployment
+def get_rev_share_split(df):
+
+    # Multiply the revenue columns by 0.3 where deployment is not 'make.fun'
+    mask = df['deployment'] != 'make.fun'
+
+    df.loc[mask, 'daily_revenue'] *= 0.3
+    df.loc[mask, 'total_deployment_revenue'] *= 0.3
+    df.loc[mask, 'total_aggregate_revenue'] *= 0.3
+
+    return df
+
 # # gets our data_card_df
 def get_data_card_df(df):
 
@@ -280,18 +292,33 @@ def run_all():
     deployment_df['total_deployment_revenue'] = deployment_df.groupby(['deployment'])['daily_revenue'].cumsum()
     deployment_df['total_aggregate_revenue'] = deployment_df['daily_revenue'].cumsum()
 
-    deployment_df = get_ma_df(deployment_df)
+    # # makes our rev share dataframe
+    deployment_df_2 = get_rev_share_split(deployment_df)
 
     # # gets the total revenue per token
     lend_revenue_list = cs.get_all_prefix_files('cooldowns2', 'lend_revenue')
     token_revenue_df = get_combined_revenue_df(lend_revenue_list)
     token_revenue_df = get_total_revenue_per_token(token_revenue_df)
 
-    # # makes our data_card df
-    revenue_data_card_df = deployment_df[['day', 'daily_revenue', 'total_aggregate_revenue', 'total_7_days_ma_revenue','total_30_days_ma_revenue','total_90_days_ma_revenue','total_180_days_ma_revenue']]
-    revenue_data_card_df.rename(columns = {'total_aggregate_revenue':'total_revenue', 'total_7_days_ma_revenue': '7_days_ma_revenue', 'total_30_days_ma_revenue': '30_days_ma_revenue', 'total_90_days_ma_revenue': '90_days_ma_revenue','total_180_days_ma_revenue': '180_days_ma_revenue'}, inplace = True)
-    revenue_data_card_df = aggregate_daily_revenue(revenue_data_card_df)
-    revenue_data_card_df = get_data_card_df(revenue_data_card_df)
+    
+    deployment_df_list = [deployment_df, deployment_df_2]
+    
+    revenue_card_df_list = []
+    
+    # # will house our transformed deployment_dfs
+    temp_deployment_df_list = []
+
+    for deployment_df in deployment_df_list:
+        deployment_df = get_ma_df(deployment_df)
+
+        # # makes our data_card df
+        revenue_data_card_df = deployment_df[['day', 'daily_revenue', 'total_aggregate_revenue', 'total_7_days_ma_revenue','total_30_days_ma_revenue','total_90_days_ma_revenue','total_180_days_ma_revenue']]
+        revenue_data_card_df.rename(columns = {'total_aggregate_revenue':'total_revenue', 'total_7_days_ma_revenue': '7_days_ma_revenue', 'total_30_days_ma_revenue': '30_days_ma_revenue', 'total_90_days_ma_revenue': '90_days_ma_revenue','total_180_days_ma_revenue': '180_days_ma_revenue'}, inplace = True)
+        revenue_data_card_df = aggregate_daily_revenue(revenue_data_card_df)
+        revenue_data_card_df = get_data_card_df(revenue_data_card_df)
+
+        temp_deployment_df_list.append(deployment_df)
+        revenue_card_df_list.append(revenue_data_card_df)
 
     # # revenue per revenue_type
     concat_df = concat_df.sort_values(by='day')
@@ -299,9 +326,10 @@ def run_all():
     concat_df = concat_df[['day', 'revenue_type', 'daily_revenue', 'cumulative_revenue']]
 
     # # writes our juicy dataframes to the cloud
-    cs.df_write_to_cloud_storage_as_zip(deployment_df, 'combined_deployment_revenue.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(temp_deployment_df_list[0], 'combined_deployment_revenue.zip', 'cooldowns2')
     cs.df_write_to_cloud_storage_as_zip(token_revenue_df, 'total_revenue_per_token.zip', 'cooldowns2')
-    cs.df_write_to_cloud_storage_as_zip(revenue_data_card_df, 'lend_revenue_data_card.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(revenue_card_df_list[0], 'lend_revenue_data_card.zip', 'cooldowns2')
+    cs.df_write_to_cloud_storage_as_zip(revenue_card_df_list[1], 'our_lend_revenue_data_card.zip', 'cooldowns2')
     cs.df_write_to_cloud_storage_as_zip(concat_df, 'revenue_by_type.zip', 'cooldowns2')
 
     return concat_df
