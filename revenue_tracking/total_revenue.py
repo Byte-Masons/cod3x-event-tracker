@@ -6,6 +6,7 @@ from sql_interfacer import sql
 import sys
 import os
 import time
+from cdx_usd import cdx_usd
 
 protocol_df = lph.get_lp_config_df()
 
@@ -263,12 +264,15 @@ def run_all():
     protocol_revenue_list = cs.get_all_prefix_files('cooldowns2', 'revenue')
 
     lend_df = get_general_revenue_df(protocol_revenue_list, 'lend')
+
     lend_df['revenue_type'] = 'reserve_factor'
     cdp_df = get_general_revenue_df(protocol_revenue_list, 'cdp')
     cdp_df['revenue_type'] = 'cdp_mint_fee'
     o_token_df = get_general_revenue_df(protocol_revenue_list, 'o_token')
 
-    concat_df = pd.concat([lend_df, cdp_df, o_token_df])
+    cdxusd_df = cdx_usd.run_all()
+
+    concat_df = pd.concat([lend_df, cdp_df, o_token_df, cdxusd_df])
 
     deployment_df = concat_df
 

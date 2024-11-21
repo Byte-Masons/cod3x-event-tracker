@@ -6,7 +6,7 @@ import sqlite3
 from lending_pool import Lending_Pool, lending_pool_helper as lph, User_Balance
 from revenue_tracking import cod3x_lend_revenue_tracking, total_revenue, o_token_revenue_tracking, cdp_mint_fee_revenue_tracking
 from helper_classes import oToken, Rewarder
-from cdp import CDP
+from cdp import CDP, Stability_Pool
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -25,7 +25,11 @@ class Ironclad(Lending_Pool.Lending_Pool):
     FROM_BLOCK = 10257616
     BORROWER_OPERATIONS_ADDRESS = '0x9571873B4Df31D317d4ED4FE4689915A2F3fF7d4'
     # BORROWER_OPERATIONS_ADDRESS = '0x2d1b857F459ca527991f574A5CB2cfF2763088f2'
-    CDP_FROM_BLOCK = 11202864
+    
+    STABILITY_POOL_ADDRESS = '0x8D62F275e91916Eeb0c9012Ac63961cDac306c69'
+    # STABILITY_POOL_ADDRESS = '0x193aDcE432205b3FF34B764230E81430c9E3A7B5'
+    # CDP_FROM_BLOCK = 11202864
+    CDP_FROM_BLOCK = 11959405
 
     CONTRACT_BLACKLIST = ['0x0000000000000000000000000000000000000000', '0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3', '0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA', '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF']
 
@@ -47,7 +51,7 @@ class Ironclad(Lending_Pool.Lending_Pool):
         self.cdp_object = CDP.CDP(self.BORROWER_OPERATIONS_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
         self.cdp_revenue_object = cdp_mint_fee_revenue_tracking.cdp_mint_fee_revenue_tracking(self.INDEX)
         self.user_balancer = User_Balance.User_Balance('ironclad', 'lend', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', 'wrseth', 18, ['0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA','0x9A6Add057603d3366ac3cA97Fe80126b7f96af05'], self.CONTRACT_BLACKLIST)
-    
+        self.stability_pool_object = Stability_Pool.Stability_Pool(self.STABILITY_POOL_ADDRESS, self.CDP_FROM_BLOCK, self.RPC_URL, self.WAIT_TIME, self.INTERVAL, self.INDEX)
 
     def get_updated_reward_balances(self):
         lending_pool_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xC043BA54F34C9fb3a0B45d22e2Ef1f171272Bc9D', 'lending_pool', self.WAIT_TIME, self.INDEX)
@@ -83,4 +87,6 @@ class Ironclad(Lending_Pool.Lending_Pool):
             except Exception as e:
                 print(f"Error occurred in {func.__name__}: {str(e)}")
         
+        # self.run_all_lend_event_tracking()
+
         return
