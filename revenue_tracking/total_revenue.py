@@ -295,6 +295,8 @@ def run_all():
     deployment_df['total_deployment_revenue'] = deployment_df.groupby(['deployment'])['daily_revenue'].cumsum()
     deployment_df['total_aggregate_revenue'] = deployment_df['daily_revenue'].cumsum()
 
+    deployment_df = deployment_df.loc[deployment_df['deployment'] != 'our']
+    
     # # makes our rev share dataframe
     deployment_df_2 = get_rev_share_split(deployment_df)
 
