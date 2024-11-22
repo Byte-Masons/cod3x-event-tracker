@@ -162,14 +162,17 @@ def get_n_days_revenue(df, new_column_name, lookback_days):
 # # here we can specify what % of revenue we take home based on the deployment
 def get_rev_share_split(df):
 
+    # # creates a copy instead of a view
+    temp_df = df.copy()
+
     # Multiply the revenue columns by 0.3 where deployment is not 'make.fun'
-    mask = df['deployment'] != 'make.fun'
+    mask = temp_df['deployment'] != 'make.fun'
 
-    df.loc[mask, 'daily_revenue'] *= 0.3
-    df.loc[mask, 'total_deployment_revenue'] *= 0.3
-    df.loc[mask, 'total_aggregate_revenue'] *= 0.3
+    temp_df.loc[mask, 'daily_revenue'] *= 0.3
+    temp_df.loc[mask, 'total_deployment_revenue'] *= 0.3
+    temp_df.loc[mask, 'total_aggregate_revenue'] *= 0.3
 
-    return df
+    return temp_df
 
 # # gets our data_card_df
 def get_data_card_df(df):
