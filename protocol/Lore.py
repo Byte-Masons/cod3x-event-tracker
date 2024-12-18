@@ -21,7 +21,9 @@ class Lore(Lending_Pool.Lending_Pool):
     WAIT_TIME = 0.6
     GATEWAY_ADDRESS = '0x204f5ccC7b5217B8477C8FA45708144FB0a61831'
     CONTRACT_BLACKLIST = ['0x0000000000000000000000000000000000000000', '0x4cE1A1eC13DBd9084B1A741b036c061b2d58dABf', '0x9df4Ac62F9E435DbCD85E06c990a7f0ea32739a9', '0x5F272Ee6348BDE137D9a6c640c42DDcF0dE3D0aA']
-    EXERCISE_ADDRESS = '0x9e864C08564506AfDA9A584B5388907b1dD67FAa'
+    # # Old v1 Exercise
+    # EXERCISE_ADDRESS = '0x9e864C08564506AfDA9A584B5388907b1dD67FAa'
+    EXERCISE_ADDRESS = '0x3dfa8693acFe64aC38d60c808e63624204d2035c'
     FROM_BLOCK = 8584681
     BORROWER_OPERATIONS_ADDRESS = '0x3DBcD766770998D583996A6cC65D530bB415CeA5'
     STABILITY_POOL_ADDRESS = '0x81df91f066d935EF3655eE7ffBAc036A6fDF6226'
@@ -54,7 +56,7 @@ class Lore(Lending_Pool.Lending_Pool):
         oLore_staking_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xCfcD1A9221434642b221273949361E768431EE13', 'reliquary_mrp_token', self.WAIT_TIME, self.INDEX)
         weth_staking_rewarder = Rewarder.Rewarder(self.RPC_URL, '0xa756519222eC4f81a9DCFE736b8B03a837f366bc', 'reliquary_other_token', self.WAIT_TIME, self.INDEX)
         stability_pool_rewarder = Rewarder.Rewarder(self.RPC_URL, '0x7F30c91B7Fb2691D2a0D681f77056001520276B2', 'stability_pool', self.WAIT_TIME, self.INDEX)
-        discount_exercise_rewarder = Rewarder.Rewarder(self.RPC_URL, '0x9e864C08564506AfDA9A584B5388907b1dD67FAa', 'discount_exercise', self.WAIT_TIME, self.INDEX)
+        discount_exercise_rewarder = Rewarder.Rewarder(self.RPC_URL, '0x3dfa8693acFe64aC38d60c808e63624204d2035c', 'discount_exercise', self.WAIT_TIME, self.INDEX)
 
         rewarder_list = [lending_pool_rewarder, oLore_staking_rewarder, weth_staking_rewarder, stability_pool_rewarder, discount_exercise_rewarder]
 
@@ -66,26 +68,24 @@ class Lore(Lending_Pool.Lending_Pool):
     def run_all_modules(self):
 
         function_calls = [
-        # self.run_all_lend_event_tracking,
-        # self.lend_revenue_object.run_all_lend_revenue,
-        # self.o_token_object.run_all_o_token_tracking,
-        # self.o_token_revenue_object.run_all_o_token_revenue,
-        # self.cdp_object.run_all_cdp_tracking,
-        # self.cdp_revenue_object.run_all_cdp_revenue,
-        # total_revenue.run_all,
-        # # # weETH balance updater
-        # self.user_balancer.run_all,
-        # self.user_balancer_2.run_all,
-        # self.stability_pool_object.run_all
-        # self.get_updated_reward_balances
+        self.run_all_lend_event_tracking,
+        self.lend_revenue_object.run_all_lend_revenue,
+        self.o_token_object.run_all_o_token_tracking,
+        self.o_token_revenue_object.run_all_o_token_revenue,
+        self.cdp_object.run_all_cdp_tracking,
+        self.cdp_revenue_object.run_all_cdp_revenue,
+        total_revenue.run_all,
+        # # weETH balance updater
+        self.user_balancer.run_all,
+        self.user_balancer_2.run_all,
+        self.stability_pool_object.run_all,
+        self.get_updated_reward_balances
         ]
 
-        # for func in function_calls:
-        #     try:
-        #         func()
-        #     except Exception as e:
-        #         print(f"Error occurred in {func.__name__}: {str(e)}")
-        
-        self.stability_pool_object.run_all()
+        for func in function_calls:
+            try:
+                func()
+            except Exception as e:
+                print(f"Error occurred in {func.__name__}: {str(e)}")
         
         return 

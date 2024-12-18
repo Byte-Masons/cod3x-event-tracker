@@ -136,6 +136,18 @@ class VeMode_Voting(ERC_20.ERC_20):
 
         return
     
+    # # will load our cloud df information into the sql database
+    def insert_bulk_data_into_table(self, df, table_name):
+
+        query = f"""
+        INSERT INTO {table_name} (voter_address, tx_hash, timestamp, gauge_address, epoch, token_id, voting_power_cast, total_gauge_voting_power, total_contract_voting_power, block_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+        sql.write_to_custom_table(query, df)
+
+        return
+    
     # # creates our local oToken table
     def create_event_table(self, cloud_df):
         query = f"""
@@ -268,11 +280,11 @@ class VeMode_Voting(ERC_20.ERC_20):
             cloud_df = self.make_default_df()
 
         df = self.create_event_table(cloud_df)
-        # from_block = self.get_contract_from_block(df)
+        from_block = self.get_contract_from_block(df)
 
         # from_block = 14405023
 
-        from_block = 14405023
+        # from_block = 14405023
 
         latest_block = lph.get_latest_block(self.web3)
 
@@ -439,98 +451,100 @@ class VeMode_Voting(ERC_20.ERC_20):
 
 
 
-def get_users_last_vote():
-    try:
-        # df = sql.get_vote_df('ironclad_vote_events')
+    def get_users_last_vote():
+        try:
+            # df = sql.get_vote_df('ironclad_vote_events')
 
-        df = cs.read_zip_csv_from_cloud_storage('ironclad_vote_events.zip', 'cooldowns2')
-        df['vote_source'] = 'veMode'
-    except:
-        print('ironclad_vote_events failed')
-        df = pd.DataFrame()
-    
-    try:
-        # df_2 = sql.get_vote_df('ironclad_bpt_vote_events')
-        df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_bpt_vote_events.zip', 'cooldowns2')
-        df_2['vote_source'] = 'bpt'
-    except:
-        print('ironclad_bpt_vote_events failed')
-        df_2 = pd.DataFrame()
+            df = cs.read_zip_csv_from_cloud_storage('ironclad_vote_events.zip', 'cooldowns2')
+            df['vote_source'] = 'veMode'
+        except:
+            print('ironclad_vote_events failed')
+            df = pd.DataFrame()
+        
+        try:
+            # df_2 = sql.get_vote_df('ironclad_bpt_vote_events')
+            df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_bpt_vote_events.zip', 'cooldowns2')
+            df_2['vote_source'] = 'bpt'
+        except:
+            print('ironclad_bpt_vote_events failed')
+            df_2 = pd.DataFrame()
 
-    df_list = [df, df_2]
+        df_list = [df, df_2]
 
-    # # will host the respective dataframes after they have been processed
-    processed_df_list = []
+        # # will host the respective dataframes after they have been processed
+        processed_df_list = []
 
-    # temp_df = pd.concat(df_list)
-    # temp_df.to_csv('test_test.csv', index=False)
-    # # finds the last vote for each df source
-    for df in df_list:
-        if len(df) > 0:
-            # Convert datatypes
-            df[['timestamp', 'voting_power_cast']] = df[['timestamp', 'voting_power_cast']].astype(float)
-            df[['epoch', 'token_id', 'block_number']] = df[['epoch', 'token_id', 'block_number']].astype(int)
-            
-            # Remove exact duplicates first
-            df = df.drop_duplicates(subset=['voter_address', 'tx_hash', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast'])
-            
-            # # makes a unique key to track votes
-            df['primary_key'] = df['voter_address'].astype(str) + '_' + df['vote_source'].astype(str) + '_' + df['token_id'].astype(str)
-
-            primary_key_list = df['primary_key'].unique()
-
-            for primary_key in primary_key_list:
-                # # makes a temp dataframe for each token_id
-                temp_df = df.loc[df['primary_key'] == primary_key]
-
-                # # finds the last block_number the primary_key voted on
-                max_pk_block_number = temp_df['block_number'].max()
-
-                temp_df = temp_df.loc[temp_df['block_number'] == max_pk_block_number]
+        # temp_df = pd.concat(df_list)
+        # temp_df.to_csv('test_test.csv', index=False)
+        # # finds the last vote for each df source
+        for df in df_list:
+            if len(df) > 0:
+                # Convert datatypes
+                df[['timestamp', 'voting_power_cast']] = df[['timestamp', 'voting_power_cast']].astype(float)
+                df[['epoch', 'token_id', 'block_number']] = df[['epoch', 'token_id', 'block_number']].astype(int)
                 
-                # # we filter our df down to only contain values with the ICL gauge
-                temp_df = temp_df.loc[temp_df['gauge_address'].str.lower() == '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8'.lower()]
+                # Remove exact duplicates first
+                df = df.drop_duplicates(subset=['voter_address', 'tx_hash', 'gauge_address', 'epoch', 'token_id', 'voting_power_cast'])
+                
+                # # makes a unique key to track votes
+                df['primary_key'] = df['voter_address'].astype(str) + '_' + df['vote_source'].astype(str) + '_' + df['token_id'].astype(str)
 
-                checker_df = df.loc[df['primary_key'] == primary_key]
-                check_max_block_number = checker_df['block_number'].max()
+                primary_key_list = df['primary_key'].unique()
 
-                if max_pk_block_number != check_max_block_number:
-                    print('block_number_mismatch')
-                    print('temp: ', max_pk_block_number, '/', check_max_block_number, ' total_token_id_max')
+                for primary_key in primary_key_list:
+                    # # makes a temp dataframe for each token_id
+                    temp_df = df.loc[df['primary_key'] == primary_key]
 
-                # # ensures we only add data if it contains our gauge vote
-                if len(temp_df) > 0:
+                    # # finds the last block_number the primary_key voted on
+                    max_pk_block_number = temp_df['block_number'].max()
+
+                    temp_df = temp_df.loc[temp_df['block_number'] == max_pk_block_number]
                     
-                    # # weights the votes. 80% for veMODe and 20% for MODE bpt
-                    if temp_df['vote_source'].iloc[0] == 'veMode':
-                        temp_df['voting_power_cast'] *= 1
-                    
-                    else:
-                        temp_df['voting_power_cast'] *= 1
+                    # # we filter our df down to only contain values with the ICL gauge
+                    temp_df = temp_df.loc[temp_df['gauge_address'].str.lower() == '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8'.lower()]
 
-                    # # adds our last_vote rowed df to our list
-                    processed_df_list.append(temp_df)
-    
-    # Combine all processed dataframes
-    final_df = pd.concat(processed_df_list)
-    
-    return final_df
+                    checker_df = df.loc[df['primary_key'] == primary_key]
+                    check_max_block_number = checker_df['block_number'].max()
 
-def get_user_ironclad_votes():
+                    if max_pk_block_number != check_max_block_number:
+                        print('block_number_mismatch')
+                        print('temp: ', max_pk_block_number, '/', check_max_block_number, ' total_token_id_max')
 
-    df = get_users_last_vote()
+                    # # ensures we only add data if it contains our gauge vote
+                    if len(temp_df) > 0:
+                        
+                        # # weights the votes. 80% for veMODe and 20% for MODE bpt
+                        if temp_df['vote_source'].iloc[0] == 'veMode':
+                            temp_df['voting_power_cast'] *= 1
+                        
+                        else:
+                            temp_df['voting_power_cast'] *= 1
 
-    df = df.drop_duplicates(subset=['voter_address', 'tx_hash', 'token_id', 'voting_power_cast', 'block_number'])
+                        # # adds our last_vote rowed df to our list
+                        processed_df_list.append(temp_df)
+        
+            # Combine all processed dataframes
+            final_df = pd.concat(processed_df_list)
+            
+            return final_df
 
-    df = df.loc[df['voter_address'] != '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8']
+    def get_user_ironclad_votes(self):
 
-    # # ICL gauge
-    # df = df.loc[df['gauge_address'] == '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8']
+        # df = get_users_last_vote()
 
-    # total_vote_power_cast = df['voting_power_cast'].sum()
+        # df = df.drop_duplicates(subset=['voter_address', 'tx_hash', 'token_id', 'voting_power_cast', 'block_number'])
 
-    # df['total_epoch_votes'] = total_vote_power_cast
+        df = self.get_contract_user_votes()
 
-    # df['voter_share_of_total'] = df['voting_power_cast'] / df['total_epoch_votes']
+        df = df.loc[df['voter_address'] != '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8']
 
-    return df
+        # # ICL gauge
+        # df = df.loc[df['gauge_address'] == '0x969904a7e77381a89Ae2BeE4c4C7d1C10e3563F8']
+
+        # total_vote_power_cast = df['voting_power_cast'].sum()
+
+        # df['total_epoch_votes'] = total_vote_power_cast
+
+        # df['voter_share_of_total'] = df['voting_power_cast'] / df['total_epoch_votes']
+
+        return df

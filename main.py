@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 3600
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
 # PROTOCOL_LIST = [Ironclad.Ironclad()]
 
 # # will try to run the function it it fails for whatever reason
@@ -112,27 +112,66 @@ def run_all_treasury_2():
 
 loop_all_functions_2()
 
-# lend_events = Ironclad.Ironclad()
+# lend_events = Lore.Lore()
 # lend_events.run_all_modules()
 
-# df = cdx_usd.run_all()
+# df = cs.read_zip_csv_from_cloud_storage('rewarder.zip', 'cooldowns2')
+# # df = df[:1]
+# df = df.loc[df['rewarder_address'] != '0x9e864C08564506AfDA9A584B5388907b1dD67FAa']
+# df = df.loc[df['rewarder_address'] != '0x7F30c91B7Fb2691D2a0D681f77056001520276B2']
+# df = df.loc[df['rewarder_address'] != '0x7F30c91B7Fb2691D2a0D681f77056001520276B2']
+# df['block_number'] = 14405023
+
 # print(df)
+
+# df.to_csv('test_test.csv', index=False)
+# cs.df_write_to_cloud_storage_as_zip(df, 'rewarder.zip', 'cooldowns2')
+
+# df = pd.read_csv('affected_old.csv')
+# df[['mode_owed', 'icl_owed']] = df[['mode_owed', 'icl_owed']].astype(float)
+# df = df[['voter_address', 'mode_owed', 'icl_owed']]
+
+# voting_power_summed = df.groupby('voter_address')[['mode_owed', 'icl_owed']].sum().reset_index()
+
+# print(voting_power_summed)
+# voting_power_summed.to_csv('test_test.csv', index=False)
 
 # total_revenue.run_all()
 
-# ve_mode_voting = VeMode_Voting.VeMode_Voting('0x2aA8A5C1Af4EA11A1f1F10f3b73cfB30419F77Fb', 14405098, 'https://mainnet.mode.network', 0.43, 2500, 'ironclad_bpt')
+# ve_mode_voting = VeMode_Voting.VeMode_Voting('0x71439Ae82068E19ea90e4F506c74936aE170Cf58', 14405098, 'https://mainnet.mode.network', 0.6, 2500, 'ironclad_vote_events')
+# ve_mode_voting = VeMode_Voting.VeMode_Voting('0x2aA8A5C1Af4EA11A1f1F10f3b73cfB30419F77Fb', 14405098, 'https://mainnet.mode.network', 1, 2500, 'ironclad_bpt')
 # ve_mode_voting.run_all_event_tracking()
+# df = ve_mode_voting.get_contract_user_votes()
 
-# df = sql.get_vote_df('ironclad_bpt_vote_events')
+# df = pd.read_csv('test_test.csv')
+
+# df = ve_mode_voting.get_user_ironclad_votes()
+# df = df.loc[df['vote_source'] == 'bpt']
+# print(df['vote_cast_amount'].astype(float).sum()/1e18)
+# print(df['total_gauge_votes'].iloc[0])
+
+# df.to_csv('test_vote.csv')
+
+# df_1 = pd.read_csv('test_test.csv')
+# df_2 = pd.read_csv('Copy_of_voting_Mode.csv')
+
+# missing_transactions = df_2[~df_2['transaction_hash'].isin(df_1['tx_hash'])]
+
+# missing_transactions.to_csv('missing_transactions.csv', index=False)
+
+# df.to_csv('test_test.csv', index=False)
+
+# df = sql.get_vote_df('ironclad_vote_events_vote_events')
 # df = VeMode_Voting.get_user_ironclad_votes()
 
 # print(df)
+
 # df.to_csv('vote_test.csv', index=False)
 
-# sql.drop_table('ironclad_vote_events')
+# sql.drop_table('ironclad_bpt')
 
-# df = cs.read_zip_csv_from_cloud_storage('our_lend_revenue_data_card.zip', 'cooldowns2')
-# df.to_csv('ironclad_lend_events.csv', index=False)
+# df = cs.read_zip_csv_from_cloud_storage('ironclad_bpt_vote_events.zip', 'cooldowns2')
+# df.to_csv('test_test.csv', index=False)
 
 # df['block_number'] = df['block_number'].astype(int)
 # print(df['block_number'].min())
