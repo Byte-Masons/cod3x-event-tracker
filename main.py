@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 3600
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
 # PROTOCOL_LIST = [Ironclad.Ironclad()]
 
 # # will try to run the function it it fails for whatever reason
