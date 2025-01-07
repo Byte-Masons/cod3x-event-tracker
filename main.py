@@ -14,6 +14,7 @@ import threading
 import sqlite3
 from lending_pool import approval_tracker
 from lending_pool import lending_pool_helper as lph
+from lending_pool import v2_balance_tracker
 # from lending_pool import current_balance_tracker as cbt
 from lending_pool import treasury_tracker as tt, User_Balance
 from cdp import CDP, Stability_Pool
@@ -29,7 +30,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 3600
-PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
+# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
 # PROTOCOL_LIST = [Ironclad.Ironclad()]
 
 # # will try to run the function it it fails for whatever reason
@@ -110,7 +111,26 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-loop_all_functions_2()
+# loop_all_functions_2()
+
+# protocol_name = 'ironclad'
+df = v2_balance_tracker.run_all()
+
+# df = v2_balance_tracker.handle_protocol_multiple_file_df('ironclad')
+
+print(df)
+
+df.to_csv('test_test_2.csv', index=False)
+
+# df = pd.read_csv('test_test_2.csv')
+# df = df.loc[df['user_address'] != '0x0000000000000000000000000000000000000000']
+# df = df.groupby(['user_address'])['user_balance'].sum().reset_index()
+
+# print('average: ', df['user_balance'].mean())
+# print('median: ', df['user_balance'].median())
+
+# df = df.sort_values(by='user_balance', ascending=False)
+# print(df)
 
 # lend_events = Lore.Lore()
 # lend_events.run_all_modules()
@@ -127,7 +147,7 @@ loop_all_functions_2()
 # df.to_csv('test_test.csv', index=False)
 # cs.df_write_to_cloud_storage_as_zip(df, 'rewarder.zip', 'cooldowns2')
 
-# df = pd.read_csv('affected_old.csv')
+# df = pd.read_csv('weighted_airdrop.csv')
 # df[['mode_owed', 'icl_owed']] = df[['mode_owed', 'icl_owed']].astype(float)
 # df = df[['voter_address', 'mode_owed', 'icl_owed']]
 
@@ -150,7 +170,7 @@ loop_all_functions_2()
 # print(df['vote_cast_amount'].astype(float).sum()/1e18)
 # print(df['total_gauge_votes'].iloc[0])
 
-# df.to_csv('test_vote.csv')
+# df.to_csv('test_vote.csv', index=False)
 
 # df_1 = pd.read_csv('test_test.csv')
 # df_2 = pd.read_csv('Copy_of_voting_Mode.csv')

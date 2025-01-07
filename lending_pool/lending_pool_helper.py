@@ -11,6 +11,12 @@ def get_lp_config_df():
 
     return lp_config_df
 
+def get_protocol_config_df():
+    csv_file_path = "./config/protocol_config.csv"
+    config_df = pd.read_csv(csv_file_path)
+
+    return config_df
+
 # # reads from our static config csv
 def get_token_config_df():
     token_config_df = pd.read_csv('./config/token_config.csv')
