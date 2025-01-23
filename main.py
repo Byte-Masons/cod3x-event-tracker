@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from lending_pool import lp_tracker
 from lending_pool import balance_and_points as bp
 from sql_interfacer import sql
@@ -114,23 +115,33 @@ def run_all_treasury_2():
 # loop_all_functions_2()
 
 # protocol_name = 'ironclad'
-df = v2_balance_tracker.run_all()
+# df = v2_balance_tracker.run_all_2()
 
-# df = v2_balance_tracker.handle_protocol_multiple_file_df('ironclad')
+# df = cs.read_zip_csv_from_cloud_storage('Oracle_Comparer.zip', 'cooldowns2')
+# print(df)
 
-print(df)
-
-df.to_csv('test_test_2.csv', index=False)
+# df.to_csv('test_test_2.csv', index=False)
 
 # df = pd.read_csv('test_test_2.csv')
-# df = df.loc[df['user_address'] != '0x0000000000000000000000000000000000000000']
-# df = df.groupby(['user_address'])['user_balance'].sum().reset_index()
+# print(df)
+# df = df.loc[df['token_address'].isin(['0xe7334Ad0e325139329E747cF2Fc24538dD564987', '0x02CD18c03b5b3f250d2B29C87949CDAB4Ee11488', '0x9c29a8eC901DBec4fFf165cD57D4f9E03D4838f7', 
+#                                       '0x272CfCceFbEFBe1518cd87002A8F9dfd8845A6c4', '0x58254000eE8127288387b04ce70292B56098D55C', '0xe3f709397e87032E61f4248f53Ee5c9a9aBb6440', 
+#                                       '0xC17312076F48764d6b4D263eFdd5A30833E311DC', '0x4522DBc3b2cA81809Fa38FEE8C1fb11c78826268', '0x0F4f2805a6d15dC534d43635314444181A0e82CD', 
+#                                       '0x0Eb9C75689d7dB53727723E42263B44d7A31618c'])]
 
-# print('average: ', df['user_balance'].mean())
-# print('median: ', df['user_balance'].median())
+# df = df.sort_values(by='effective_balance', ascending=False)
+# print(df)
+
+
+# df = df.loc[df['user'] != '0x0000000000000000000000000000000000000000']
+# df = df.groupby(['user'])['net_usd_balance'].sum().reset_index()
+# df = df.loc[df['net_usd_balance'] > 1]
+# print('average: ', df['net_usd_balance'].mean())
+# print('median: ', df['net_usd_balance'].median())
 
 # df = df.sort_values(by='user_balance', ascending=False)
 # print(df)
+# print(df.loc[df['user'] == '0x0BcaB08abA1c82e7074B5Bc197649f471f73FB83'].sort_values(by='block_number', ascending=False))
 
 # lend_events = Lore.Lore()
 # lend_events.run_all_modules()
@@ -147,21 +158,16 @@ df.to_csv('test_test_2.csv', index=False)
 # df.to_csv('test_test.csv', index=False)
 # cs.df_write_to_cloud_storage_as_zip(df, 'rewarder.zip', 'cooldowns2')
 
-# df = pd.read_csv('weighted_airdrop.csv')
-# df[['mode_owed', 'icl_owed']] = df[['mode_owed', 'icl_owed']].astype(float)
-# df = df[['voter_address', 'mode_owed', 'icl_owed']]
-
-# voting_power_summed = df.groupby('voter_address')[['mode_owed', 'icl_owed']].sum().reset_index()
-
-# print(voting_power_summed)
-# voting_power_summed.to_csv('test_test.csv', index=False)
 
 # total_revenue.run_all()
 
 # ve_mode_voting = VeMode_Voting.VeMode_Voting('0x71439Ae82068E19ea90e4F506c74936aE170Cf58', 14405098, 'https://mainnet.mode.network', 0.6, 2500, 'ironclad_vote_events')
 # ve_mode_voting = VeMode_Voting.VeMode_Voting('0x2aA8A5C1Af4EA11A1f1F10f3b73cfB30419F77Fb', 14405098, 'https://mainnet.mode.network', 1, 2500, 'ironclad_bpt')
 # ve_mode_voting.run_all_event_tracking()
-# df = ve_mode_voting.get_contract_user_votes()
+
+# df = ve_mode_voting.get_user_ironclad_votes()
+
+# df.to_csv('test_test.csv', index=False)
 
 # df = pd.read_csv('test_test.csv')
 

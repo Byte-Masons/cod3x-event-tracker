@@ -548,3 +548,44 @@ class VeMode_Voting(ERC_20.ERC_20):
         # df['voter_share_of_total'] = df['voting_power_cast'] / df['total_epoch_votes']
 
         return df
+    
+
+    # ve_mode_voting = VeMode_Voting.VeMode_Voting('0x71439Ae82068E19ea90e4F506c74936aE170Cf58', 14405098, 'https://mainnet.mode.network', 0.6, 2500, 'ironclad_vote_events')
+    # df = ve_mode_voting.get_user_ironclad_votes()
+
+    # df = pd.read_csv('mode_airdrop.csv')
+    # df['icl_owed'] = 0
+    # df[['mode_owed', 'icl_owed']] = df[['mode_owed', 'icl_owed']].astype(float)
+    # df = df[['voter_address', 'mode_owed', 'icl_owed']]
+
+    # voting_power_summed = df.groupby('voter_address')[['mode_owed', 'icl_owed']].sum().reset_index()
+
+    # print(voting_power_summed)
+    # voting_power_summed.to_csv('test_test.csv', index=False)
+
+    # # part of the code for our 10 random winners, uses their mode weighting for their chances
+    # Calculate total MODE owed across all users
+    # total_mode = voting_power_summed['mode_owed'].sum()
+
+    # # Calculate each user's percentage share
+    # voting_power_summed['mode_share'] = voting_power_summed['mode_owed'] / total_mode * 100
+
+    # # Select 10 random users weighted by their MODE share
+    # # Using numpy's random.choice with probabilities proportional to MODE share
+    # selected_indices = np.random.choice(
+    #     voting_power_summed.index,
+    #     size=10,
+    #     replace=False,  # Don't select the same user twice
+    #     p=voting_power_summed['mode_owed'] / total_mode  # Normalize to probabilities
+    # )
+
+    # # Get the selected users
+    # selected_users = voting_power_summed.iloc[selected_indices]
+
+    # # Display results
+    # print("\nSelected Users:")
+    # print(selected_users[['voter_address', 'mode_owed', 'mode_share']])
+
+    # print("\nTotal MODE share of selected users: {:.2f}%".format(
+    #     selected_users['mode_share'].sum()
+    # ))

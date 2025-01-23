@@ -37,13 +37,13 @@ class User_Balance():
         if self.index == 'ironclad':
             df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_2_lend_events.zip', self.cloud_bucket_name)
             combined_df = pd.concat([df, df_2])
-            combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
+            combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume', 'asset_price', 'usd_token_amount'])
             df = combined_df
         
         if self.index == 'ironclad_2':
             df_2 = cs.read_zip_csv_from_cloud_storage('ironclad_lend_events.zip', self.cloud_bucket_name)
             combined_df = pd.concat([df, df_2])
-            combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume'])
+            combined_df = combined_df.drop_duplicates(subset=['to_address', 'from_address', 'tx_hash', 'token_address', 'token_volume', 'asset_price', 'usd_token_amount'])
             df = combined_df
 
             
@@ -51,7 +51,7 @@ class User_Balance():
         df = df.loc[df['token_address'] == self.token_address]
 
         df['max_block'] = max_block
-        df = df[['from_address', 'to_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'max_block', 'event_type']]
+        df = df[['from_address', 'to_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'max_block', 'asset_price', 'usd_token_amount', 'event_type']]
 
         return df
 
@@ -126,4 +126,18 @@ class User_Balance():
         df = df.loc[df['user'] != '0x574F42132cB7C9f57Ac9B832960ee4e5Af807E54']
         cs.df_write_to_cloud_storage_as_zip(df, self.balance_file_name, self.cloud_bucket_name)
         
+        return df
+    
+    def run_all_no_cloud_write(self):
+        df = self.get_asset_df()
+        df = self.attribute_positive_and_negative_token_flows(df)
+        df = self.set_user_transactions(df)
+        df = df[['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'max_block', 'asset_price', 'usd_token_amount', 'event_type']]
+        df = df.drop_duplicates(subset=['user_address', 'tx_hash', 'token_address', 'reserve_address', 'token_volume', 'timestamp', 'block_number', 'event_type'])
+        df = self.set_user_balances_over_time(df)
+
+        df.rename(columns = {'user_address':'user', 'balance':'effective_balance'}, inplace = True)
+        df = df[df['user'].notna()]
+        df = df.loc[df['user'] != '0x574F42132cB7C9f57Ac9B832960ee4e5Af807E54']
+    
         return df

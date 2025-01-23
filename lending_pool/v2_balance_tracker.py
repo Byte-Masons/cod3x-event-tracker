@@ -5,6 +5,7 @@ import pandas as pd
 import sqlite3
 
 from lending_pool import lending_pool_helper as lph
+from lending_pool import User_Balance
 from helper_classes import ERC_20, Protocol_Data_Provider, Sanitize
 from cloud_storage import cloud_storage as cs
 from sql_interfacer import sql
@@ -113,6 +114,7 @@ def get_token_decimal_df(df, config_df):
 
     return df
 
+# # run_all workstream
 def get_user_balance_usd(df, pricing_df):
 
     df = df.loc[df['user_balance'] > 1]
@@ -126,6 +128,23 @@ def get_user_balance_usd(df, pricing_df):
 
         df.loc[df['token_address'] == token_address, 'user_balance'] /= token_decimals
         df.loc[df['token_address'] == token_address, 'user_balance'] *= token_price
+
+        i += 1
+
+    return df
+
+# # run_all_2 workstream
+def get_df_usd_balance(df, pricing_df):
+
+    i = 0
+
+    df['net_usd_balance'] = df['effective_balance']
+
+    while i < len(pricing_df):
+        token_address = pricing_df['token_address'].tolist()[i]
+        token_price = pricing_df['most_recent_price'].tolist()[i]
+
+        df.loc[df['token_address'] == token_address, 'net_usd_balance'] *= token_price
 
         i += 1
 
@@ -222,5 +241,79 @@ def run_all():
     # df = get_user_token_combo_balances(df)
 
     # df = get_user_balance_usd(df, most_recent_pricing_df)
+
+    return df
+
+# # version that uses the User_Balance class
+def run_all_2():
+
+    config_df = lph.get_protocol_config_df()
+
+    protocol_list = config_df['protocol'].tolist()
+    rpc_list = config_df['rpc_url'].tolist()
+    wait_time_list = config_df['wait_time'].tolist()
+
+    i = 0
+
+    # df_list = [pd.read_csv('./test_test.csv')]
+
+    contract_blacklist = ['0x0000000000000000000000000000000000000000', '0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3', '0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA', '0x9A6Add057603d3366ac3cA97Fe80126b7f96af05', '0xd93E25A8B1D645b15f8c736E1419b4819Ff9e6EF']
+
+    df_list = []
+
+    while i < len(config_df):
+
+        protocol_name = protocol_list[i]
+        rpc_url = rpc_list[i]
+        wait_time = wait_time_list[i]
+        event_type = 'lend'
+        
+        # # for every protocol
+        if '_' not in protocol_name:
+            event_df = handle_protocol_multiple_file_df(protocol_name)
+
+            event_df['protocol'] = protocol_name
+
+            df = event_df
+            token_list = event_df['token_address'].unique()
+
+            # # for every token in that protocol
+            for token_address in token_list:
+                token_contract = ERC_20.ERC_20(token_address, rpc_url)
+
+                string_decimals = str(token_contract.decimals)
+
+                decimals_whole_number = len(string_decimals) - 1
+
+                user_balance = User_Balance.User_Balance(protocol_name, event_type, token_address, token_contract.name, decimals_whole_number, ['0x2dDD3BCA2Fa050532B8d7Fd41fB1449382187dAA','0x9A6Add057603d3366ac3cA97Fe80126b7f96af05'], contract_blacklist)
+
+                df = user_balance.run_all_no_cloud_write()
+
+                most_recent_pricing_df = get_most_recent_token_prices_df(df)
+
+                most_recent_pricing_df.to_csv('test_test.csv',index=False)
+                # # adds decimals to our pricing df
+                most_recent_pricing_df = get_token_decimal_df(most_recent_pricing_df, config_df)
+                most_recent_pricing_df.to_csv('test_test.csv',index=False)
+
+                # # don't want to do much with empty dataframes
+                if len(df) > 0:
+                    df['protocol'] = protocol_name
+                    
+                    df['block_number'] = df['block_number'].astype(int)
+                    # First sort by block_number in descending order 
+                    df = df.sort_values('block_number', ascending=False)
+
+                    # Then group by user and token_address and take the first row of effective_balance
+                    df = df.groupby(['user', 'token_address', 'protocol'])['effective_balance'].first().reset_index()
+                    df = get_df_usd_balance(df, most_recent_pricing_df)
+
+                    df_list.append(df)
+
+                time.sleep(1)
+
+        i += 1
+
+    df = pd.concat(df_list)
 
     return df
