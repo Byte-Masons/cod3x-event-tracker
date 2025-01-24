@@ -5,15 +5,24 @@ import time
 from datetime import datetime
 
 
-DUNE_KEY = 'cp6G2OF5wnUnpc4xblcBc5nKq43As6UM'
-QUERY_ID = 4289320
+# DUNE_KEY = 'cp6G2OF5wnUnpc4xblcBc5nKq43As6UM'
+# QUERY_ID = 4289320
+
+# DUNE_KEY = 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP'
+# QUERY_ID = 4613480
+
+KEY_LIST = ['cp6G2OF5wnUnpc4xblcBc5nKq43As6UM', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP']
+QUERY_LIST = [4289320, 4613480]
+
+AMO_QUERY_ID_LIST = [4289320]
+MEME_TOKEN_LP_QUERY_ID_LIST = [4613480]
 
 # # executes our query to refresh data
-def execute_query():
+def execute_query(query_id, dune_key):
 
-    url = f"https://api.dune.com/api/v1/query/{QUERY_ID}/execute"
+    url = f"https://api.dune.com/api/v1/query/{query_id}/execute"
 
-    headers = {"X-DUNE-API-KEY": DUNE_KEY}
+    headers = {"X-DUNE-API-KEY": dune_key}
 
     response = requests.request("POST", url, headers=headers)
 
@@ -21,7 +30,7 @@ def execute_query():
 
     return execution_id
 
-def get_query_status(execution_id):
+def get_query_status(execution_id, dune_key):
     """
     Takes in an execution ID.
     Fetches the status of query execution using the API
@@ -29,19 +38,19 @@ def get_query_status(execution_id):
     """
     url = f"https://api.dune.com/api/v1/execution/{execution_id}/status"
 
-    headers = {"X-DUNE-API-KEY": DUNE_KEY}
+    headers = {"X-DUNE-API-KEY": dune_key}
 
     response = requests.request("GET", url, headers=headers)
 
     return response.json()['is_execution_finished']
 
-def get_cdx_usd_revenue_df():
+def get_query_dataframe(query_id, dune_key):
     
     df = pd.DataFrame()
 
-    url = f'https://api.dune.com/api/v1/query/{QUERY_ID}/results/csv'
+    url = f'https://api.dune.com/api/v1/query/{query_id}/results/csv'
     headers = {
-        'X-Dune-API-Key': DUNE_KEY
+        'X-Dune-API-Key': dune_key
     }
     params = {
         'limit': 25000
@@ -64,17 +73,25 @@ def get_cdx_usd_revenue_df():
     return df
 
 # # formats our dataframe to match our other revenue dataframes
-def format_df(df):
+def format_df(df, query_id):
 
     df['deployment'] = 'make.fun'
-
+    
     df['daily_revenue'] = df['daily_swap_fees']
 
     df['total_deployment_revenue'] = df['cumulative_swap_fees']
 
-    df['revenue_type'] = 'cdxUSD_amo'
+    if query_id in AMO_QUERY_ID_LIST:
+        df['revenue_type'] = 'cdxUSD_amo'
+
+    elif query_id in MEME_TOKEN_LP_QUERY_ID_LIST:
+        df['revenue_type'] = 'memecoin_lp'
+    
+    else:
+        df['revenue_type'] = 'unknown'
 
     df['total_revenue'] = df['total_deployment_revenue']
+
 
     df = df[['day', 'deployment', 'daily_revenue', 'total_deployment_revenue', 'total_revenue', 'revenue_type']]
 
@@ -84,28 +101,50 @@ def format_df(df):
 # # then returns a nicely formatted dataframe
 def run_all():
 
-    df = get_cdx_usd_revenue_df()
+    df_list = []
 
-    df = format_df(df)
+    i = 0
+    while i < len(QUERY_LIST):
+        query_id = QUERY_LIST[i]
+        dune_key = KEY_LIST[i]
 
-    last_day_checked = df['day'].max()
+        df = get_query_dataframe(query_id, dune_key)
 
-    current_day = datetime.now().strftime('%Y/%m/%d')
+        df = format_df(df, query_id)
 
-    if last_day_checked != current_day:
+        last_day_checked = df['day'].max()
 
-        execution_id = execute_query()
+        current_day = datetime.now().strftime('%Y/%m/%d')
 
-        query_is_finished = get_query_status(execution_id)
+        # # if today hasn't been checked
+        if last_day_checked != current_day:
+            
+            # Get start of 17:00 (5 PM) for current day
+            today = datetime.now().date()
+            twenty_hour = datetime.combine(today, time(17, 0))  # 17:00
+            twenty_hour_unix = int(twenty_hour.timestamp())
 
-        # # will wait for our query to finish
-        while query_is_finished != True:
-            time.sleep(2.5)
-            query_is_finished = get_query_status(execution_id)
+            # # we will only execute the query data if the current unix timestamp is greater than 17th hour of the day
+            if time.time() >= twenty_hour_unix:
 
-        df = get_cdx_usd_revenue_df()
+                execution_id = execute_query(query_id, dune_key)
 
-        df = format_df(df)
+                query_is_finished = get_query_status(execution_id, dune_key)
+
+                # # will wait for our query to finish
+                while query_is_finished != True:
+                    time.sleep(2.5)
+                    query_is_finished = get_query_status(execution_id, dune_key)
+
+                df = get_query_dataframe(query_id, dune_key)
+
+                df = format_df(df, query_id)
+
+        df_list.append(df)
+
+        i += 1
+
+    df = pd.concat(df_list)
 
     return df
 

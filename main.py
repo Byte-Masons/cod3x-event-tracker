@@ -31,7 +31,7 @@ logging.basicConfig(level=logging.ERROR)
 
 
 runtime_pause = 3600
-# PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
+PROTOCOL_LIST = [Aurelius.Aurelius(),Optimism.Optimism(),Ironclad.Ironclad(),Metis.Metis(),Arbitrum.Arbitrum(),Glyph.Glyph(),Base.Base(), Fantom.Fantom(), Lore.Lore(), Harbor.Harbor()]
 # PROTOCOL_LIST = [Ironclad.Ironclad()]
 
 # # will try to run the function it it fails for whatever reason
@@ -112,10 +112,13 @@ def run_all_treasury_2():
 
     run_all_treasury()
 
-# loop_all_functions_2()
+loop_all_functions_2()
 
 # protocol_name = 'ironclad'
 # df = v2_balance_tracker.run_all_2()
+
+# df = total_revenue.run_all()
+# print(df)
 
 # df = cs.read_zip_csv_from_cloud_storage('Oracle_Comparer.zip', 'cooldowns2')
 # print(df)
