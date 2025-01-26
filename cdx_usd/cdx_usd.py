@@ -1,8 +1,8 @@
 import requests
 import pandas as pd
 from io import StringIO
-import time
-from datetime import datetime
+import time as t
+from datetime import datetime, time, date
 
 
 # DUNE_KEY = 'cp6G2OF5wnUnpc4xblcBc5nKq43As6UM'
@@ -119,13 +119,13 @@ def run_all():
         # # if today hasn't been checked
         if last_day_checked != current_day:
             
-            # Get start of 17:00 (5 PM) for current day
-            today = datetime.now().date()
-            twenty_hour = datetime.combine(today, time(17, 0))  # 17:00
+            # Get start of 16:00 (4 PM) for current day
+            today = date.today()  # You'll need this first
+            twenty_hour = datetime.combine(today, time(12, 0))  # 17:00
             twenty_hour_unix = int(twenty_hour.timestamp())
 
-            # # we will only execute the query data if the current unix timestamp is greater than 17th hour of the day
-            if time.time() >= twenty_hour_unix:
+            # # we will only execute the query data if the current unix timestamp is greater than 16th hour of the day
+            if datetime.now().timestamp() >= twenty_hour_unix:
 
                 execution_id = execute_query(query_id, dune_key)
 
@@ -133,7 +133,7 @@ def run_all():
 
                 # # will wait for our query to finish
                 while query_is_finished != True:
-                    time.sleep(2.5)
+                    t.sleep(2.5)
                     query_is_finished = get_query_status(execution_id, dune_key)
 
                 df = get_query_dataframe(query_id, dune_key)
