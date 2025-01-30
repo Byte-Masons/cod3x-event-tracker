@@ -11,7 +11,7 @@ from datetime import datetime, time, date
 # DUNE_KEY = 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP'
 # QUERY_ID = 4613480
 
-KEY_LIST = ['cp6G2OF5wnUnpc4xblcBc5nKq43As6UM', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP']
+KEY_LIST = ['VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP', 'cp6G2OF5wnUnpc4xblcBc5nKq43As6UM', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP']
 QUERY_LIST = [4289320, 4613480, 4644603]
 
 AMO_QUERY_ID_LIST = [4289320]
@@ -62,14 +62,20 @@ def get_query_dataframe(query_id, dune_key):
     if response.status_code == 200:
         # Convert the CSV string data to a pandas DataFrame
         df = pd.read_csv(StringIO(response.text))
-        df['day'] = pd.to_datetime(df['day']).dt.strftime('%Y-%m-%d')
+        try:
+            df['day'] = pd.to_datetime(df['day']).dt.strftime('%Y-%m-%d')
+        except:
+            print(df)
         
         # # Optional: Display first few rows to verify the data
         # print(df.head())
     else:
         print(f"Request failed with status code: {response.status_code}")
 
-    df['day'] = pd.to_datetime(df['day']).dt.strftime('%Y/%m/%d')
+    try:
+        df['day'] = pd.to_datetime(df['day']).dt.strftime('%Y/%m/%d')
+    except:
+        print(df)
 
     return df
 
@@ -112,39 +118,45 @@ def run_all():
         query_id = QUERY_LIST[i]
         dune_key = KEY_LIST[i]
 
-        df = get_query_dataframe(query_id, dune_key)
+        try:
+            df = get_query_dataframe(query_id, dune_key)
 
-        df = format_df(df, query_id)
+            df = format_df(df, query_id)
 
-        last_day_checked = df['day'].max()
+            last_day_checked = df['day'].max()
 
-        current_day = datetime.now().strftime('%Y/%m/%d')
+            current_day = datetime.now().strftime('%Y/%m/%d')
 
-        # # if today hasn't been checked
-        if last_day_checked != current_day:
-            
-            # Get start of 16:00 (4 PM) for current day
-            today = date.today()  # You'll need this first
-            twenty_hour = datetime.combine(today, time(16, 0))  # 17:00
-            twenty_hour_unix = int(twenty_hour.timestamp())
+            # # if today hasn't been checked
+            if last_day_checked != current_day:
+                
+                # Get start of 16:00 (4 PM) for current day
+                today = date.today()  # You'll need this first
+                twenty_hour = datetime.combine(today, time(16, 0))  # 17:00
+                twenty_hour_unix = int(twenty_hour.timestamp())
 
-            # # we will only execute the query data if the current unix timestamp is greater than 16th hour of the day
-            if datetime.now().timestamp() >= twenty_hour_unix:
+                # # we will only execute the query data if the current unix timestamp is greater than 16th hour of the day
+                if datetime.now().timestamp() >= twenty_hour_unix:
 
-                execution_id = execute_query(query_id, dune_key)
+                    execution_id = execute_query(query_id, dune_key)
 
-                query_is_finished = get_query_status(execution_id, dune_key)
-
-                # # will wait for our query to finish
-                while query_is_finished != True:
-                    t.sleep(2.5)
                     query_is_finished = get_query_status(execution_id, dune_key)
 
-                df = get_query_dataframe(query_id, dune_key)
+                    # # will wait for our query to finish
+                    while query_is_finished != True:
+                        t.sleep(2.5)
+                        query_is_finished = get_query_status(execution_id, dune_key)
 
-                df = format_df(df, query_id)
+                    df = get_query_dataframe(query_id, dune_key)
 
-        df_list.append(df)
+                    df = format_df(df, query_id)
+            df_list.append(df)
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            
+            print('Index Failed: ', i)
+            pass
 
         i += 1
 
