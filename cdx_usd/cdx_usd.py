@@ -11,11 +11,12 @@ from datetime import datetime, time, date
 # DUNE_KEY = 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP'
 # QUERY_ID = 4613480
 
-KEY_LIST = ['cp6G2OF5wnUnpc4xblcBc5nKq43As6UM', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP']
-QUERY_LIST = [4289320, 4613480]
+KEY_LIST = ['cp6G2OF5wnUnpc4xblcBc5nKq43As6UM', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP', 'VXuyds2VnSrnvUYBYsdrcl4NecZZxMwP']
+QUERY_LIST = [4289320, 4613480, 4644603]
 
 AMO_QUERY_ID_LIST = [4289320]
 MEME_TOKEN_LP_QUERY_ID_LIST = [4613480]
+TONY_SOLANA_ID_LIST = [4644603]
 
 # # executes our query to refresh data
 def execute_query(query_id, dune_key):
@@ -87,6 +88,9 @@ def format_df(df, query_id):
     elif query_id in MEME_TOKEN_LP_QUERY_ID_LIST:
         df['revenue_type'] = 'memecoin_lp'
     
+    elif query_id in TONY_SOLANA_ID_LIST:
+        df['revenue_type'] = 'tony_solana'
+
     else:
         df['revenue_type'] = 'unknown'
 
@@ -121,7 +125,7 @@ def run_all():
             
             # Get start of 16:00 (4 PM) for current day
             today = date.today()  # You'll need this first
-            twenty_hour = datetime.combine(today, time(12, 0))  # 17:00
+            twenty_hour = datetime.combine(today, time(16, 0))  # 17:00
             twenty_hour_unix = int(twenty_hour.timestamp())
 
             # # we will only execute the query data if the current unix timestamp is greater than 16th hour of the day
