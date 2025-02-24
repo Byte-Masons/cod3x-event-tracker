@@ -1305,3 +1305,25 @@ def set_n_days_avg_revenue(df, new_column_name, lookback_days):
     df = df.merge(day_revenue_df[['day', new_column_name]], on='day', how='left')
 
     return df
+
+# # will get all the unique users who have used a lending market protocol
+def get_unique_lending_pool_users(file_name_list, bucket):
+
+    df_list = []
+
+    for file_name in file_name_list:
+        df = cs.read_zip_csv_from_cloud_storage(file_name, bucket)
+
+        df = df[['to_address']]
+
+        df_list.append(df)
+    
+    combo_df = pd.concat(df_list)
+
+    unique_user_list = combo_df['to_address'].unique()
+
+    df = pd.DataFrame()
+
+    df['user_address'] = unique_user_list
+
+    return df
