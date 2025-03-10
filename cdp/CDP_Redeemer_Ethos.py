@@ -91,14 +91,15 @@ class EthosRedemptionBot:
         
         try:
             # First try to fetch a fresh price
-            current_price = price_feed.functions.fetchPrice(collateral_address).call()
-            time.sleep(WAIT_TIME)
-            return current_price
-        except Exception as e:
-            # If fetching fails, get the last good price
             last_price = price_feed.functions.lastGoodPrice(collateral_address).call()
             time.sleep(WAIT_TIME)
             return last_price
+        
+        except Exception as e:
+            # If fetching fails, get the last good price
+            current_price = price_feed.functions.fetchPrice(collateral_address).call()
+            time.sleep(WAIT_TIME)
+            return current_price
     
     def get_redemption_hints(
         self,
@@ -157,7 +158,13 @@ class EthosRedemptionBot:
         time.sleep(WAIT_TIME)
         if lusd_balance < lusd_amount:
             raise ValueError("Insufficient LUSD balance")
-
+        
+        # # checks to make sure we have approved the TroveManager enough to redeem with
+        lusd_allowance = self.lusd_token.functions.allowance(self.account.address,TROVE_MANAGER_ADDRESS).call()
+        time.sleep(WAIT_TIME)
+        if lusd_amount > lusd_allowance:
+            raise ValueError("Insufficient LUSD Allowance: ", 'Want to Redeem: ', float(lusd_amount)/1e18, 'Allowance Amount: ', float(lusd_allowance)/1e18)
+        
         # Get initial redemption hints
         hints = self.get_redemption_hints(
             collateral_address,
@@ -216,6 +223,7 @@ class EthosRedemptionBot:
 
     # # gets the current redemption fee
     def get_lusd_fee(self, last_good_price):
+
         redemption_amount_dec = Decimal(str(REDEMPTION_AMOUNT))
         lusd_amount = int(redemption_amount_dec * Decimal('1000000000000000000'))
         
@@ -227,6 +235,7 @@ class EthosRedemptionBot:
 
         current_redemption_fee = float(redemption_fee_with_decay) / float(collateral_amount)
         current_redemption_fee = int(current_redemption_fee * 1e18)
+        print('Current Redemption Fee: ', current_redemption_fee/1e18)
 
         return current_redemption_fee
 
