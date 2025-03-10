@@ -13,7 +13,7 @@ LUSD_TOKEN_ADDRESS = '0xc5b001DC33727F8F26880B184090D3E252470D45'
 PRICE_FEED_ADDRESS = '0xadd6F326a395629926D9a535d809B5e3d8c7FE8d'
 
 REDEMPTION_AMOUNT = 100
-MAX_FEE_PERCENTAGE = 0.025
+MAX_FEE_PERCENTAGE = 0.024
 COLATERAL_TO_REDEEM = 'WETH'
 
 # Collateral addresses
@@ -221,7 +221,7 @@ class EthosRedemptionBot:
         
         collateral_amount = int(lusd_amount / last_good_price * 1e18)
 
-        redemption_fee_with_decay = int(self.trove_manager.functions.getRedemptionFeeWithDecay(collateral_amount).call())
+        redemption_fee_with_decay = int(self.trove_manager.functions.getRedemptionFee(collateral_amount).call())
 
         time.sleep(WAIT_TIME)
 
