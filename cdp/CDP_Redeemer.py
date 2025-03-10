@@ -90,10 +90,12 @@ class EthosRedemptionBot:
         try:
             # First try to fetch a fresh price
             current_price = price_feed.functions.fetchPrice(collateral_address).call()
+            time.sleep(WAIT_TIME)
             return current_price
         except Exception as e:
             # If fetching fails, get the last good price
             last_price = price_feed.functions.lastGoodPrice(collateral_address).call()
+            time.sleep(WAIT_TIME)
             return last_price
     
     def get_redemption_hints(
@@ -150,6 +152,7 @@ class EthosRedemptionBot:
         
         # Check LUSD balance
         lusd_balance = self.lusd_token.functions.balanceOf(self.account.address).call()
+        time.sleep(WAIT_TIME)
         if lusd_balance < lusd_amount:
             raise ValueError("Insufficient LUSD balance")
 
@@ -171,6 +174,7 @@ class EthosRedemptionBot:
             50,  # numTrials
             42   # random seed
         ).call()
+        time.sleep(WAIT_TIME)
         
         # Extract the hint address from the response
         hint_address = approx_hint_response[0]
@@ -182,6 +186,7 @@ class EthosRedemptionBot:
             hint_address,                 # _prevId
             hint_address                  # _nextId
         ).call()
+        time.sleep(WAIT_TIME)
 
         # Perform the redemption
         tx = self.trove_manager.functions.redeemCollateral(
@@ -208,11 +213,18 @@ class EthosRedemptionBot:
         return self.w3.eth.wait_for_transaction_receipt(tx_hash)
 
     # # gets the current redemption fee
-    def get_lusd_fee(self):
+    def get_lusd_fee(self, last_good_price):
         redemption_amount_dec = Decimal(str(REDEMPTION_AMOUNT))
         lusd_amount = int(redemption_amount_dec * Decimal('1000000000000000000'))
+        
+        collateral_amount = int(lusd_amount / last_good_price * 1e18)
 
-        current_redemption_fee = int(self.trove_manager.functions.getRedemptionFee(lusd_amount).call())
+        redemption_fee_with_decay = int(self.trove_manager.functions.getRedemptionFeeWithDecay(collateral_amount).call())
+
+        time.sleep(WAIT_TIME)
+
+        current_redemption_fee = float(redemption_fee_with_decay) / float(collateral_amount)
+        current_redemption_fee = int(current_redemption_fee * 1e18)
 
         return current_redemption_fee
 
@@ -239,7 +251,8 @@ if __name__ == "__main__":
     print(f"Redemption amount in LUSD: {REDEMPTION_AMOUNT}")
     print(f"Redemption amount in Wei: {lusd_amount}")
 
-    current_fee_percentage = bot.get_lusd_fee()
+    current_fee_percentage = bot.get_lusd_fee(current_price)
+
     if current_fee_percentage  <= MAX_FEE_PERCENTAGE:
 
         # Perform redemption
