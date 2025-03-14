@@ -12,8 +12,8 @@ SORTED_TROVES_ADDRESS = '0x1eFcDA945bbb19E250C58acfEAc237d43eFDca39'
 LUSD_TOKEN_ADDRESS = '0x77fbf86399ed764A084F77B9acCb049F3DbC32d2'
 PRICE_FEED_ADDRESS = '0xD2B4C9B0d70e3Da1fBDD98f469bD02E77E12FC79'
 
-REDEMPTION_AMOUNT = 2000
-MAX_FEE_PERCENTAGE = 0.024
+REDEMPTION_AMOUNT = 150
+MAX_FEE_PERCENTAGE = 0.1
 COLATERAL_TO_REDEEM = 'WEETH'
 
 # Collateral addresses
@@ -89,15 +89,12 @@ class EthosRedemptionBot:
         
         try:
             # First try to fetch a fresh price
-            last_price = price_feed.functions.lastGoodPrice(collateral_address).call()
-            time.sleep(WAIT_TIME)
-            return last_price
-        
+            current_price = price_feed.functions.fetchPrice(collateral_address).call()
+            return current_price
         except Exception as e:
             # If fetching fails, get the last good price
-            current_price = price_feed.functions.fetchPrice(collateral_address).call()
-            time.sleep(WAIT_TIME)
-            return current_price
+            last_price = price_feed.functions.lastGoodPrice(collateral_address).call()
+            return last_price
     
     def get_redemption_hints(
         self,
@@ -143,7 +140,7 @@ class EthosRedemptionBot:
         collateral_symbol: str,
         lusd_amount: int,
         price: int,
-        max_fee_percentage: int = MAX_FEE_PERCENTAGE,
+        max_fee_percentage: int = 250000000000000000,
         max_iterations: int = 50
     ):
         """
@@ -153,16 +150,9 @@ class EthosRedemptionBot:
         
         # Check LUSD balance
         lusd_balance = self.lusd_token.functions.balanceOf(self.account.address).call()
-        time.sleep(WAIT_TIME)
         if lusd_balance < lusd_amount:
             raise ValueError("Insufficient LUSD balance")
-        
-        # # checks to make sure we have approved the TroveManager enough to redeem with
-        lusd_allowance = self.lusd_token.functions.allowance(self.account.address,TROVE_MANAGER_ADDRESS).call()
-        time.sleep(WAIT_TIME)
-        if lusd_amount > lusd_allowance:
-            raise ValueError("Insufficient LUSD Allowance: ", 'Want to Redeem: ', float(lusd_amount)/1e18, 'Allowance Amount: ', float(lusd_allowance)/1e18)
-        
+
         # Get initial redemption hints
         hints = self.get_redemption_hints(
             collateral_address,
@@ -181,7 +171,6 @@ class EthosRedemptionBot:
             50,  # numTrials
             42   # random seed
         ).call()
-        time.sleep(WAIT_TIME)
         
         # Extract the hint address from the response
         hint_address = approx_hint_response[0]
@@ -193,7 +182,6 @@ class EthosRedemptionBot:
             hint_address,                 # _prevId
             hint_address                  # _nextId
         ).call()
-        time.sleep(WAIT_TIME)
 
         # Perform the redemption
         tx = self.trove_manager.functions.redeemCollateral(
@@ -219,24 +207,6 @@ class EthosRedemptionBot:
         # Wait for receipt
         return self.w3.eth.wait_for_transaction_receipt(tx_hash)
 
-    # # gets the current redemption fee
-    def get_lusd_fee(self, last_good_price):
-
-        redemption_amount_dec = Decimal(str(REDEMPTION_AMOUNT))
-        lusd_amount = int(redemption_amount_dec * Decimal('1000000000000000000'))
-        
-        collateral_amount = int(lusd_amount / last_good_price * 1e18)
-
-        redemption_fee_with_decay = int(self.trove_manager.functions.getRedemptionFee(collateral_amount).call())
-
-        time.sleep(WAIT_TIME)
-
-        current_redemption_fee = float(redemption_fee_with_decay) / float(collateral_amount)
-        current_redemption_fee = int(current_redemption_fee * 1e18)
-        print('Current Redemption Fee: ', current_redemption_fee/1e18)
-
-        return current_redemption_fee
-
 # Example usage:
 if __name__ == "__main__":
     # Initialize the bot
@@ -260,19 +230,10 @@ if __name__ == "__main__":
     print(f"Redemption amount in LUSD: {REDEMPTION_AMOUNT}")
     print(f"Redemption amount in Wei: {lusd_amount}")
 
-    current_fee_percentage = bot.get_lusd_fee(current_price)
-
-    if current_fee_percentage  <= MAX_FEE_PERCENTAGE:
-
-        # Perform redemption
-        receipt = bot.perform_redemption(
-            collateral_symbol=COLATERAL_TO_REDEEM,
-            lusd_amount=lusd_amount,
-            price=current_price
-        )
-        print(f"Redemption transaction hash: {receipt['transactionHash'].hex()}")
-    
-    else:
-        print('Redemption fee to high:')
-        print('Current Fee: ', current_fee_percentage/1e18)
-        print('Max Fee: ', MAX_FEE_PERCENTAGE/1e18)
+    # Perform redemption
+    receipt = bot.perform_redemption(
+        collateral_symbol=COLATERAL_TO_REDEEM,
+        lusd_amount=lusd_amount,
+        price=current_price
+    )
+    print(f"Redemption transaction hash: {receipt['transactionHash'].hex()}")
