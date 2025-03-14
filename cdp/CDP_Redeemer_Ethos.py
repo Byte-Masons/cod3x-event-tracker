@@ -12,8 +12,8 @@ SORTED_TROVES_ADDRESS = '0xe36e5aA08756074D7e12d6a753b5Ed2c54Aea573'
 LUSD_TOKEN_ADDRESS = '0xc5b001DC33727F8F26880B184090D3E252470D45'
 PRICE_FEED_ADDRESS = '0xadd6F326a395629926D9a535d809B5e3d8c7FE8d'
 
-REDEMPTION_AMOUNT = 100
-MAX_FEE_PERCENTAGE = 0.024
+REDEMPTION_AMOUNT = 250
+MAX_FEE_PERCENTAGE = 0.025
 COLATERAL_TO_REDEEM = 'WETH'
 
 # Collateral addresses
@@ -91,15 +91,12 @@ class EthosRedemptionBot:
         
         try:
             # First try to fetch a fresh price
-            last_price = price_feed.functions.lastGoodPrice(collateral_address).call()
-            time.sleep(WAIT_TIME)
-            return last_price
-        
+            current_price = price_feed.functions.fetchPrice(collateral_address).call()
+            return current_price
         except Exception as e:
             # If fetching fails, get the last good price
-            current_price = price_feed.functions.fetchPrice(collateral_address).call()
-            time.sleep(WAIT_TIME)
-            return current_price
+            last_price = price_feed.functions.lastGoodPrice(collateral_address).call()
+            return last_price
     
     def get_redemption_hints(
         self,
@@ -155,16 +152,9 @@ class EthosRedemptionBot:
         
         # Check LUSD balance
         lusd_balance = self.lusd_token.functions.balanceOf(self.account.address).call()
-        time.sleep(WAIT_TIME)
         if lusd_balance < lusd_amount:
             raise ValueError("Insufficient LUSD balance")
-        
-        # # checks to make sure we have approved the TroveManager enough to redeem with
-        lusd_allowance = self.lusd_token.functions.allowance(self.account.address,TROVE_MANAGER_ADDRESS).call()
-        time.sleep(WAIT_TIME)
-        if lusd_amount > lusd_allowance:
-            raise ValueError("Insufficient LUSD Allowance: ", 'Want to Redeem: ', float(lusd_amount)/1e18, 'Allowance Amount: ', float(lusd_allowance)/1e18)
-        
+
         # Get initial redemption hints
         hints = self.get_redemption_hints(
             collateral_address,
@@ -183,7 +173,6 @@ class EthosRedemptionBot:
             50,  # numTrials
             42   # random seed
         ).call()
-        time.sleep(WAIT_TIME)
         
         # Extract the hint address from the response
         hint_address = approx_hint_response[0]
@@ -195,7 +184,6 @@ class EthosRedemptionBot:
             hint_address,                 # _prevId
             hint_address                  # _nextId
         ).call()
-        time.sleep(WAIT_TIME)
 
         # Perform the redemption
         tx = self.trove_manager.functions.redeemCollateral(
@@ -223,19 +211,16 @@ class EthosRedemptionBot:
 
     # # gets the current redemption fee
     def get_lusd_fee(self, last_good_price):
-
         redemption_amount_dec = Decimal(str(REDEMPTION_AMOUNT))
         lusd_amount = int(redemption_amount_dec * Decimal('1000000000000000000'))
+
+        redemption_rate_with_decay = int(self.trove_manager.functions.getRedemptionRateWithDecay().call())
         
         collateral_amount = int(lusd_amount / last_good_price * 1e18)
 
-        redemption_fee_with_decay = int(self.trove_manager.functions.getRedemptionFee(collateral_amount).call())
+        redemption_fee_with_decay = int(self.trove_manager.functions.getRedemptionFeeWithDecay(collateral_amount).call())
 
-        time.sleep(WAIT_TIME)
-
-        current_redemption_fee = float(redemption_fee_with_decay) / float(collateral_amount)
-        current_redemption_fee = int(current_redemption_fee * 1e18)
-        print('Current Redemption Fee: ', current_redemption_fee/1e18)
+        current_redemption_fee = redemption_rate_with_decay * redemption_fee_with_decay / 1e18
 
         return current_redemption_fee
 
@@ -263,8 +248,7 @@ if __name__ == "__main__":
     print(f"Redemption amount in Wei: {lusd_amount}")
 
     current_fee_percentage = bot.get_lusd_fee(current_price)
-
-    if current_fee_percentage  <= MAX_FEE_PERCENTAGE:
+    if current_fee_percentage  != 0:
 
         # Perform redemption
         receipt = bot.perform_redemption(
